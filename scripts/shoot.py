@@ -35,6 +35,8 @@ async def main() -> None:
                 page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
                 for path in a.paths.split(","):
                     await page.goto(a.base + path, wait_until="load", timeout=20000)
+                    if await page.locator(".stage-host").count():
+                        await page.wait_for_selector(".stage-host[data-ready='true']", timeout=10000)
                     await page.evaluate("document.fonts.ready")
                     for k in [k for k in a.keys.split(",") if k]:
                         await page.keyboard.press(k)

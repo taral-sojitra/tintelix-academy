@@ -43,4 +43,11 @@ describe("RichText", () => {
     const { container } = render(<RichText text="<img src=x onerror=alert(1)>" outputs={{}} />);
     expect(container.querySelector("img")).toBeNull();
   });
+
+  it("announces only the step, not the whole narrative, so moving a slider does not re-read it", () => {
+    const { container } = render(<StepNarrative step={step} index={2} total={6} outputs={{ dbReads: 1080, dbBusyPct: 16.6 }} />);
+    const live = container.querySelectorAll("[aria-live]");
+    expect(live).toHaveLength(1);
+    expect(live[0]!.textContent).toBe(`Step 3 of 6: ${step.title}`);
+  });
 });

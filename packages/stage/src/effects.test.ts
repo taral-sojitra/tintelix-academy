@@ -31,4 +31,21 @@ describe("Effects", () => {
     fx.float(110, 105, "b", "green");
     expect(fx.floats).toHaveLength(1);
   });
+
+  it("with reduced motion, nothing ripples, labels stay put and dashed wires hold still", () => {
+    const fx = new Effects({ reducedMotion: true, rand: rng(4) });
+    fx.ripple(10, 10, "red", 140, 1.2);
+    fx.float(50, 50, "180 ms", "amber");
+    fx.step(0.5);
+    expect(fx.ripples).toHaveLength(0);
+    expect(fx.floats[0]!.y).toBe(50);
+    expect(fx.flow).toBe(0);
+  });
+
+  it("without reduced motion, the dashes on wires flow with time", () => {
+    const fx = new Effects({ reducedMotion: false, rand: rng(4) });
+    fx.step(0.5);
+    fx.step(0.25);
+    expect(fx.flow).toBeCloseTo(0.75);
+  });
 });

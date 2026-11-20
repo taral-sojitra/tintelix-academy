@@ -212,3 +212,12 @@ svg.i { width: 16px; height: 16px; flex: none; }
   body { background: #fff; }
   .sheet-card { break-inside: avoid; border-color: #ccc; }
 }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

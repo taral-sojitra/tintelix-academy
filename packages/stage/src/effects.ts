@@ -9,6 +9,8 @@ export class Effects {
   ripples: Ripple[] = [];
   particles: Particle[] = [];
   floats: Float[] = [];
+  /** Seconds of dash flow along wires; stays at 0 when motion is reduced. */
+  flow = 0;
   readonly trailLimit: number;
   private readonly reducedMotion: boolean;
   private readonly rand: () => number;
@@ -20,6 +22,7 @@ export class Effects {
   }
 
   ripple(x: number, y: number, color: Hue, maxR = 26, life = 0.7): void {
+    if (this.reducedMotion) return;
     this.ripples.push({ x, y, color, r: 4, maxR, life, max: life });
   }
 
@@ -40,6 +43,7 @@ export class Effects {
   }
 
   step(dt: number): void {
+    if (!this.reducedMotion) this.flow += dt;
     for (const r of this.ripples) {
       r.life -= dt;
       r.r += (r.maxR - r.r) * Math.min(1, dt * 6);
@@ -55,7 +59,7 @@ export class Effects {
     this.particles = this.particles.filter((q) => q.life > 0);
     for (const f of this.floats) {
       f.life -= dt;
-      f.y -= dt * (f.big ? 10 : 22);
+      if (!this.reducedMotion) f.y -= dt * (f.big ? 10 : 22);
     }
     this.floats = this.floats.filter((f) => f.life > 0);
   }

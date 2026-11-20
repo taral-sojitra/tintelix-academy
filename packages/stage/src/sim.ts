@@ -58,17 +58,25 @@ export class Queue {
   get waiting(): number {
     return this.items.length;
   }
-  tick(dt: number): Packet | null {
-    if (!this.serving && this.items.length) {
-      this.serving = this.items.shift()!;
-      this.remain = 1 / this.mu;
+  /** Advance by dt seconds and return every packet finished in that time, oldest first. */
+  tick(dt: number): Packet[] {
+    const done: Packet[] = [];
+    let left = dt;
+    for (;;) {
+      if (!this.serving) {
+        if (!this.items.length) return done;
+        this.serving = this.items.shift()!;
+        this.remain = 1 / this.mu;
+      }
+      if (this.remain > left + 1e-9) {
+        this.remain -= left;
+        return done;
+      }
+      // The leftover time goes to the next packet, so the rate does not depend on the tick size.
+      left -= this.remain;
+      done.push(this.serving);
+      this.serving = null;
     }
-    if (!this.serving) return null;
-    this.remain -= dt;
-    if (this.remain > 1e-9) return null;
-    const done = this.serving;
-    this.serving = null;
-    return done;
   }
   clear(): void {
     this.items = [];
@@ -158,8 +166,7 @@ export class Sim {
     }
     for (const p of [...this.packets]) this.advance(p, dt);
     for (const [name, q] of Object.entries(this.queues)) {
-      const done = q.tick(dt);
-      if (done) {
+      for (const done of q.tick(dt)) {
         done.hidden = false;
         this.router.served?.(done, name, this);
       }

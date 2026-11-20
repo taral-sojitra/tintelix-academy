@@ -1,5 +1,5 @@
 import type { Inputs, SceneSpec } from "@tintelix/schema";
-import { formatOutput } from "@tintelix/schema";
+import { formatOutput } from "@tintelix/schema/format";
 import type { Effects } from "../effects";
 import { cacheAside } from "../routers/cache-aside";
 import type { SimEvent } from "../sim";
@@ -8,6 +8,18 @@ import type { SceneRuntime, StepContext, Tile, WireStyle } from "./types";
 export const KEY_COUNT = 24;
 /** Storm cycle, in seconds of simulated time: keys live 5 s, the cache is empty 2.5 s, then refills. */
 const STORM = { cycle: 14, expire: 5, empty: 7.5 };
+
+/**
+ * The latency shown above Users for one finished read, in ms, drawn so the labels agree with the
+ * model: about 5% of all reads land above its p95, and those are always misses.
+ */
+export function replyLatencyMs(hit: boolean, live: Record<string, number>, rand: () => number): number {
+  const p95 = live.p95 ?? 25.5;
+  if (hit) return 21 + rand() * Math.max(0, Math.min(6, p95 - 21));
+  const missShare = 1 - (live.hitRatePct ?? 0) / 100;
+  const aboveP95 = missShare > 0 ? Math.min(1, 0.05 / missShare) : 1;
+  return rand() < aboveP95 ? p95 * (1 + rand() * 0.25) : 24 + (p95 - 24) * (0.3 + rand() * 0.7);
+}
 
 export interface CacheKey { on: boolean; flash: "" | "flash" | "fill" | "exp"; t: number }
 
@@ -204,9 +216,7 @@ export function createCacheAsideScene(o: { fx: Effects; rand: () => number; scen
           state.pings.users = 1;
           fx.ripple(usersEdge[0], usersEdge[1], e.hit ? "green" : "amber", 20, 0.5);
           if (slow || rand() < 0.28) {
-            const live = ctx.model.run(this.liveInputs(ctx));
-            const u = Math.min(live.dbBusy ?? 0, 0.95);
-            const ms = e.hit ? 21 + rand() * 6 : 24 + (12 / (1 - u)) * (0.35 + rand() * 1.05);
+            const ms = replyLatencyMs(e.hit, ctx.model.run(this.liveInputs(ctx)), rand);
             fx.float(users.x + 36 + rand() * 70, users.y - 16, formatOutput("p95", Math.round(ms)), e.hit ? "green" : ms > 120 ? "red" : "amber");
           }
           break;

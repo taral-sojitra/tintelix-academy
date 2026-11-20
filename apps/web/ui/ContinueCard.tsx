@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { openStore, type LessonProgress } from "@tintelix/store";
+import type { LessonProgress } from "@tintelix/store";
+import { getStore } from "./store";
 import { Icon } from "./Icon";
 
 export interface ContinueTarget {
@@ -17,43 +18,58 @@ export interface ContinueTarget {
   minutes: number;
 }
 
-/** "Continue" when the learner has started a lesson on this device, otherwise "Start here". */
+type Mode = "start" | "continue" | "finished";
+
+/** Which lesson the card points at: one in progress, else the first not yet done, else the last one finished. */
+function pick(lessons: ContinueTarget[], all: LessonProgress[]): { target: ContinueTarget; mode: Mode; step: number } {
+  const mine = all.filter((p) => lessons.some((l) => l.id === p.lessonId));
+  const byId = (id: string) => lessons.find((l) => l.id === id)!;
+  const recent = [...mine].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const open = recent.find((p) => !p.done);
+  if (open) return { target: byId(open.lessonId), mode: "continue", step: open.lastStep };
+  const next = lessons.find((l) => !mine.some((p) => p.lessonId === l.id && p.done));
+  if (next) return { target: next, mode: "start", step: 0 };
+  const last = byId(recent[0]!.lessonId);
+  return { target: last, mode: "finished", step: last.steps - 1 };
+}
+
+const EYEBROW: Record<Mode, string> = { start: "Start here", continue: "Continue", finished: "Finished" };
+const ACTION: Record<Mode, string> = { start: "Start the lesson", continue: "Resume", finished: "Review the lesson" };
+
+/** "Continue" for a lesson in progress, "Start here" for the next one, "Finished" once every lesson is done. */
 export function ContinueCard({ lessons }: { lessons: ContinueTarget[] }) {
-  const [progress, setProgress] = useState<LessonProgress | null | undefined>(undefined);
+  const [all, setAll] = useState<LessonProgress[]>([]);
   useEffect(() => {
     let live = true;
-    openStore()
+    getStore()
       .allProgress()
-      .then((all) => {
-        if (!live) return;
-        const open = all.filter((p) => !p.done && lessons.some((l) => l.id === p.lessonId));
-        open.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-        setProgress(open[0] ?? null);
+      .then((list) => {
+        if (live) setAll(list);
       });
     return () => {
       live = false;
     };
   }, [lessons]);
 
-  const target = lessons.find((l) => l.id === progress?.lessonId) ?? lessons[0]!;
-  const started = !!progress && progress.lessonId === target.id;
-  const step = started ? progress!.lastStep : 0;
+  const { target, mode, step } = pick(lessons, all);
+  const started = mode !== "start";
   const left = Math.max(1, Math.round(target.minutes * (1 - step / target.steps)));
+  const sub = mode === "finished" ? `all ${target.steps} steps done` : mode === "continue" ? `${left} minutes left` : `${target.minutes} minutes`;
 
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-copy">
         <p className="hero-eyebrow">
-          {started ? "Continue" : "Start here"} · {target.subject} · Lesson {target.order} of {target.total}
+          {EYEBROW[mode]} · {target.subject} · Lesson {target.order} of {target.total}
         </p>
         <h1 id="hero-title">{target.title}</h1>
         <p className="hero-sub">
-          {target.topic} · {started ? `${left} minutes left` : `${target.minutes} minutes`}
+          {target.topic} · {sub}
         </p>
         <div className="hero-actions">
           <Link className="btn primary lg" href={target.href}>
             <Icon name="play" />
-            {started ? "Resume" : "Start the lesson"}
+            {ACTION[mode]}
           </Link>
           <span className="hero-steps" aria-label={`Step ${step + 1} of ${target.steps}`}>
             Step {step + 1} of {target.steps}

@@ -1,5 +1,6 @@
 import { Fragment } from "react";
-import { fillOutputs, type Outputs, type Step } from "@tintelix/schema";
+import type { Outputs, Step } from "@tintelix/schema";
+import { fillOutputs } from "@tintelix/schema/format";
 import type { IconName } from "@tintelix/stage";
 import { Icon } from "../Icon";
 
@@ -31,7 +32,10 @@ export function RichText({ text, outputs }: { text: string; outputs: Outputs }) 
 export function StepNarrative({ step, index, total, outputs }: { step: Step; index: number; total: number; outputs: Outputs }) {
   const tag = TAG[step.tag];
   return (
-    <article className="narr" aria-live="polite">
+    <article className="narr">
+      <p className="sr-only" aria-live="polite">
+        Step {index + 1} of {total}: {step.title}
+      </p>
       <div className="narr-top">
         <span className="eyebrow">
           Step {index + 1} / {total}

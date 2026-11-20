@@ -25,6 +25,7 @@
   "devDependencies": {
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19",
-    "@types/react-dom": "^19"
+    "@types/react-dom": "^19",
+    "fake-indexeddb": "^6.2.8"
   }
 }

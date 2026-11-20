@@ -24,7 +24,18 @@ interface TintelixDB extends DBSchema {
 const DB_NAME = "tintelix";
 const DB_VERSION = 1;
 
-function open(factory: IDBFactory | null): Promise<IDBPDatabase<TintelixDB> | null> {
+const OPEN_TIMEOUT_MS = 1500;
+
+/** The browser's IndexedDB, or null. Reading the global can itself throw when storage is blocked. */
+function globalFactory(): IDBFactory | null {
+  try {
+    return typeof indexedDB === "undefined" ? null : indexedDB;
+  } catch {
+    return null;
+  }
+}
+
+function open(factory: IDBFactory | null, timeoutMs: number): Promise<IDBPDatabase<TintelixDB> | null> {
   try {
     if (!factory) return Promise.resolve(null);
     const request = factory.open(DB_NAME, DB_VERSION);
@@ -33,7 +44,17 @@ function open(factory: IDBFactory | null): Promise<IDBPDatabase<TintelixDB> | nu
       if (!db.objectStoreNames.contains("progress")) db.createObjectStore("progress", { keyPath: "lessonId" });
       if (!db.objectStoreNames.contains("prefs")) db.createObjectStore("prefs", { keyPath: "key" });
     };
-    return (wrap(request) as unknown as Promise<IDBPDatabase<TintelixDB>>).catch(() => null);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const opened = (wrap(request) as unknown as Promise<IDBPDatabase<TintelixDB>>).then((db) => {
+      clearTimeout(timer);
+      // A newer version of the site in another tab needs this connection closed to upgrade.
+      db.addEventListener("versionchange", () => db.close());
+      return db;
+    });
+    const gaveUp = new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), timeoutMs);
+    });
+    return Promise.race([opened, gaveUp]).catch(() => null);
   } catch {
     return Promise.resolve(null);
   }
@@ -42,11 +63,12 @@ function open(factory: IDBFactory | null): Promise<IDBPDatabase<TintelixDB> | nu
 /**
  * Progress and preferences on this device. Storage can be missing or blocked (private browsing,
  * strict settings): then every read returns its empty value and every write quietly does nothing,
- * so lessons still play. Pass `null` to run with no storage at all.
+ * so lessons still play. A database that has not opened after `openTimeoutMs` counts as missing.
+ * Pass `null` to run with no storage at all; leave it out to use the browser's IndexedDB.
  */
-export function openStore(factory: IDBFactory | null = typeof indexedDB === "undefined" ? null : indexedDB): Store {
+export function openStore(factory?: IDBFactory | null, opts: { openTimeoutMs?: number } = {}): Store {
   let dbp: Promise<IDBPDatabase<TintelixDB> | null> | null = null;
-  const db = () => (dbp ??= open(factory));
+  const db = () => (dbp ??= open(factory === undefined ? globalFactory() : factory, opts.openTimeoutMs ?? OPEN_TIMEOUT_MS));
   const safe = async <T>(fallback: T, fn: (d: IDBPDatabase<TintelixDB>) => Promise<T>): Promise<T> => {
     try {
       const d = await db();

@@ -22,12 +22,22 @@ describe("Queue", () => {
     q.push(mk(1)); q.push(mk(2)); q.push(mk(3));
     const served: { id: number; t: number }[] = [];
     for (let i = 1; i <= 31; i++) {
-      const p = q.tick(0.05);
-      if (p) served.push({ id: p.id, t: i * 0.05 });
+      for (const p of q.tick(0.05)) served.push({ id: p.id, t: i * 0.05 });
     }
     expect(served.map((s) => s.id)).toEqual([1, 2, 3]);
     expect(served[0]!.t).toBeCloseTo(0.5, 1);
     expect(q.waiting).toBe(0);
+  });
+
+  it.each([1 / 60, 1 / 30, 1 / 15])("keeps its service rate when the tick is %f s", (dt) => {
+    const mu = 6.5 / 0.96;
+    const q = new Queue(mu);
+    for (let i = 0; i < 2000; i++) q.push({ id: i } as Packet);
+    let served = 0;
+    const ticks = Math.round(100 / dt);
+    for (let i = 0; i < ticks; i++) served += q.tick(dt).length;
+    expect(served).toBeGreaterThanOrEqual(Math.floor(mu * 100) - 1);
+    expect(served).toBeLessThanOrEqual(Math.ceil(mu * 100) + 1);
   });
 });
 

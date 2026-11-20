@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { components as allComponents, getLesson } from "@tintelix/content";
 import type { Outputs } from "@tintelix/schema";
 import { createPlayer, type Player, type Speed } from "@tintelix/stage";
-import { openStore } from "@tintelix/store";
+import { getStore } from "../store";
 import { Icon } from "../Icon";
 import { StepNarrative } from "./StepNarrative";
 import { StepTrack } from "./StepTrack";
@@ -35,7 +35,7 @@ export function LessonPlayer({ subject, slug }: { subject: string; slug: string 
 
   useEffect(() => {
     let cancelled = false;
-    const store = openStore();
+    const store = getStore();
     let player: Player | null = null;
     const sync = () => {
       if (!player) return;

@@ -48,7 +48,9 @@ python3 apps/web/e2e/lesson_smoke.py http://localhost:3123
 
 ## Adding a lesson
 
-A lesson is data plus a small pure model. Nothing in the engine changes per lesson.
+A lesson is data plus a small pure model. Another cache-aside lesson needs no engine changes.
+
+A lesson with a different kind of diagram does need engine work first. The request routing is already a separate, pure `Router`, but `createPlayer` always builds the cache-aside scene, and the stage markup has the cache, database and app-server widgets and the "DB load" chart built in. Before the second kind of lesson, move the legend, rates, queues, widgets and chart metric behind `SceneRuntime`, and choose the scene by lesson.
 
 1. Add a stub for it to the subject's module list in `content/<subject>/subject.ts`.
 2. Create `content/<subject>/<slug>/` with:

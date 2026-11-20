@@ -1,5 +1,5 @@
 import type { Inputs, Lesson, Outputs, Step } from "@tintelix/schema";
-import { formatOutput } from "@tintelix/schema";
+import { formatOutput } from "@tintelix/schema/format";
 import { fitView, type View } from "./camera";
 import { Effects } from "./effects";
 import { makeWire, type Wire } from "./geometry";
@@ -78,7 +78,6 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   let completed = false;
   let stepTime = 0;
   let simTime = 0;
-  let flowClock = 0;
 
   const wires: Record<string, Wire> = Object.fromEntries(Object.entries(lesson.scene.wires).map(([k, w]) => [k, makeWire(w.from, w.to)]));
   const fx = new Effects({ reducedMotion, rand });
@@ -197,12 +196,13 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
       el.classList.toggle("hot", id === "db" && load > 85 && state.playing && !reducedMotion);
       if (id === "db") el.style.setProperty("--heat", Math.max(0, (load - 40) / 60).toFixed(2));
     }
-    dom.chartValue.textContent = formatOutput("dbBusyPct", hist[hist.length - 1] ?? 0);
+    // The label states the model's number; only the line carries the noise.
+    dom.chartValue.textContent = formatOutput("dbBusyPct", load);
   }
 
   function paintCanvas() {
     if (!surfaces || !palette) return;
-    drawBack(surfaces.back, view, wires, scene.wireStyles(), fx.ripples, palette, flowClock);
+    drawBack(surfaces.back, view, wires, scene.wireStyles(), fx.ripples, palette, fx.flow);
     const lane = scene.lane;
     const q = sim.queues.db;
     drawFront(surfaces.front, view, sim.packets, q ? { at: lane, waiting: q.waiting, serving: q.serving !== null, simTime } : null, fx.particles, fx.floats, palette);
@@ -212,7 +212,6 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     if (dt <= 0) return;
     simTime += dt;
     stepTime += dt;
-    flowClock += dt;
     const c = ctx();
     scene.update(dt, c);
     sim.step(dt);

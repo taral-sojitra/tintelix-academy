@@ -59,4 +59,44 @@ describe("openStore", () => {
     expect(await s.getProgress("caching")).toBeNull();
     expect(await s.getPref("theme", "warm")).toBe("warm");
   });
+
+  it("keeps working when even reading the indexedDB global throws (Firefox with storage blocked)", async () => {
+    const saved = Object.getOwnPropertyDescriptor(globalThis, "indexedDB");
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      get() {
+        throw new DOMException("The operation is insecure.", "SecurityError");
+      },
+    });
+    try {
+      const s = openStore();
+      await expect(s.saveStep("caching", 1, 6)).resolves.toBeUndefined();
+      expect(await s.getProgress("caching")).toBeNull();
+    } finally {
+      if (saved) Object.defineProperty(globalThis, "indexedDB", saved);
+    }
+  });
+
+  it("gives up on a database that never opens, so the lesson can still start", { timeout: 1000 }, async () => {
+    const NeverOpens = (globalThis as unknown as { IDBOpenDBRequest: new () => IDBOpenDBRequest }).IDBOpenDBRequest;
+    const hung = { open: () => new NeverOpens() } as unknown as IDBFactory;
+    const s = openStore(hung, { openTimeoutMs: 20 });
+    expect(await s.getProgress("caching")).toBeNull();
+    await expect(s.saveStep("caching", 1, 6)).resolves.toBeUndefined();
+  });
+
+  it("closes its connection when a newer version of the site upgrades the database", async () => {
+    const factory = new IDBFactory();
+    const s = openStore(factory);
+    await s.saveStep("caching", 1, 6);
+    const outcome = await new Promise<string>((resolve) => {
+      const req = factory.open("tintelix", 2);
+      req.onblocked = () => resolve("blocked");
+      req.onsuccess = () => {
+        req.result.close();
+        resolve("upgraded");
+      };
+    });
+    expect(outcome).toBe("upgraded");
+  });
 });

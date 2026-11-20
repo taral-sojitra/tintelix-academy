@@ -1,4 +1,4 @@
-import { ICONS, type IconName } from "@tintelix/stage";
+import { ICONS, type IconName } from "@tintelix/stage/icons";
 
 /** An icon from the shared set; decorative unless given a label. */
 export function Icon({ name, label, className = "i" }: { name: IconName; label?: string; className?: string }) {

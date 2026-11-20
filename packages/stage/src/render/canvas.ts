@@ -12,6 +12,12 @@ export interface Surface {
   h: number;
 }
 
+/** Left edge for a label of width w that starts at x, on a stage w wide. */
+export function fitLabelX(x: number, w: number, stageW: number): number {
+  const margin = 6;
+  return Math.max(margin, Math.min(x, stageW - w - margin));
+}
+
 function clear(s: Surface, view?: View) {
   s.ctx.setTransform(1, 0, 0, 1, 0, 0);
   s.ctx.clearRect(0, 0, s.w * s.dpr, s.h * s.dpr);
@@ -137,17 +143,18 @@ export function drawFront(s: Surface, view: View, packets: Packet[], queue: Queu
     ctx.font = `${f.big ? 700 : 600} ${f.big ? 13 : 11}px "IBM Plex Mono", ui-monospace, monospace`;
     const w = ctx.measureText(f.text).width + (f.big ? 20 : 14);
     const h = f.big ? 24 : 19;
+    const lx = fitLabelX(x, w, s.w);
     ctx.globalAlpha = a;
     ctx.fillStyle = pal.dark ? "rgba(6,16,34,0.9)" : "rgba(255,252,246,0.95)";
     ctx.strokeStyle = withAlpha(c[f.color], 0.75);
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(x, y - h / 2, w, h, h / 2);
+    ctx.roundRect(lx, y - h / 2, w, h, h / 2);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = c[f.color];
     ctx.textBaseline = "middle";
-    ctx.fillText(f.text, x + (f.big ? 10 : 7), y + 0.5);
+    ctx.fillText(f.text, lx + (f.big ? 10 : 7), y + 0.5);
     ctx.globalAlpha = 1;
   }
 }
