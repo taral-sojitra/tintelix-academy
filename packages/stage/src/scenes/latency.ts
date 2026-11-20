@@ -12,17 +12,17 @@ const R_VIS = 5;
 export const MAX_CELLS = 20;
 /** Dots kept in the histogram at once. */
 export const DOTS = 24;
-const DOT_LIFE = 6;
+const DOT_LIFE = 3;
 const LEGEND: SceneRuntime["legend"] = [["cyan", "request"], ["green", "fast reply"], ["amber", "copy won"], ["red", "slow reply"]];
-const CHART: SceneChart = { label: "DASHBOARD AVERAGE · LAST 30 S", output: "meanMs", max: 250, danger: 100 };
+const CHART: SceneChart = { label: "AVERAGE · LAST 30 S", output: "meanMs", max: 250, danger: 100 };
 
 /** Label rows above the plot, one per marker, so equal values never print on top of each other. */
 export const MARKER_ROWS = { avg: 0, p50: 1, p99: 2 } as const;
 type Marker = keyof typeof MARKER_ROWS;
 
 /** Histogram layout inside its SVG, in px. */
-const PAD = { left: 14, right: 14, top: 40, bottom: 20 };
-const ROW_H = 12;
+const PAD = { left: 16, right: 16, top: 54, bottom: 22 };
+const ROW_H = 15;
 
 /** Position of a latency on a log axis from 1 ms (0) to 1,000 ms (width), clamped. */
 export function histX(ms: number, width: number): number {
@@ -91,7 +91,8 @@ export function createLatencyScene(o: { fx: Effects; rand: () => number; scene: 
   };
   const hist = node("histogram");
   const svgW = Math.max(1, hist.w - 24);
-  const svgH = Math.max(1, hist.h - 54);
+  // The node header and padding take about 64 px; the plot gets the rest.
+  const svgH = Math.max(1, hist.h - 64);
   const plotW = Math.max(1, svgW - PAD.left - PAD.right);
   const plotH = Math.max(1, svgH - PAD.top - PAD.bottom);
   const xOf = (ms: number) => PAD.left + histX(ms, plotW);
@@ -198,7 +199,7 @@ export function createLatencyScene(o: { fx: Effects; rand: () => number; scene: 
             const c = state.cells[Math.floor(rand() * n)]!;
             c.tone = kind === "slow" ? "slow" : "copy";
             c.t = holdSec(e.ms, out.fastMs ?? 2);
-            if (kind === "mid") fx.float(e.at[0] + 20, e.at[1] - 30, "copy sent", "amber");
+            if (kind === "mid") fx.float(e.at[0] - 70, e.at[1] + 22, "copy sent", "amber");
           }
           break;
         }
@@ -313,10 +314,10 @@ export function createLatencyScene(o: { fx: Effects; rand: () => number; scene: 
             })
             .join("");
           const bars = (["fast", "mid", "slow"] as const)
-            .map((t) => `<rect class="tx-h-bar ${t}" data-bar="${t}" x="0" y="0" width="22" height="0" rx="3"/><text class="tx-h-share ${t}" data-bar-label="${t}" text-anchor="middle"></text>`)
+            .map((t) => `<rect class="tx-h-bar ${t}" data-bar="${t}" x="0" y="0" width="22" height="0" rx="3"/><text class="tx-h-share ${t}" data-bar-label="${t}" text-anchor="start"></text>`)
             .join("");
           const markers = (Object.keys(MARKER_ROWS) as Marker[])
-            .map((m) => `<line class="tx-h-mark ${m}" data-marker="${m}" x1="0" x2="0" y1="${PAD.top - 2}" y2="${PAD.top + plotH}"/><text class="tx-h-mlabel ${m}" data-marker-label="${m}" text-anchor="middle" y="${10 + MARKER_ROWS[m] * ROW_H}"></text>`)
+            .map((m) => `<line class="tx-h-mark ${m}" data-marker="${m}" x1="0" x2="0" y1="${PAD.top - 2}" y2="${PAD.top + plotH}"/><text class="tx-h-mlabel ${m}" data-marker-label="${m}" text-anchor="middle" y="${13 + MARKER_ROWS[m] * ROW_H}"></text>`)
             .join("");
           const dots = `<circle class="tx-h-dot" data-dot r="3.2" cx="0" cy="0" opacity="0"/>`.repeat(DOTS);
           return `${nodeHead(n)}<svg class="tx-hist" data-hist viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" aria-hidden="true"><line class="tx-h-axisline" x1="${PAD.left}" x2="${PAD.left + plotW}" y1="${PAD.top + plotH}" y2="${PAD.top + plotH}"/>${ticks}${bars}${markers}${dots}</svg>`;
@@ -367,13 +368,14 @@ export function createLatencyScene(o: { fx: Effects; rand: () => number; scene: 
         const h = show ? Math.max(2, barHeight(share, plotH)) : 0;
         const x = xOf(ms);
         set(el.bar, { x: (x - 11).toFixed(1), y: (PAD.top + plotH - h).toFixed(1), height: h.toFixed(1), opacity: show ? 1 : 0 });
-        set(el.label, { x: x.toFixed(1), y: (PAD.top + plotH - h - 5).toFixed(1), opacity: show ? 1 : 0 });
+        // The share sits beside the bar's top, clear of the marker labels above the plot.
+        set(el.label, { x: (x + 15).toFixed(1), y: (PAD.top + plotH - h + 11).toFixed(1), opacity: show ? 1 : 0 });
         text(el.label, show ? formatOutput("pageFastPct", share) : "");
       }
 
       // Markers, labelled from the model; each label on its own row, kept inside the panel.
       const marks: Record<Marker, [string, number]> = {
-        avg: ["avg", display.pageMeanMs ?? 0],
+        avg: [pageMode(ctx) ? "page avg" : "avg", display.pageMeanMs ?? 0],
         p50: ["p50", display.pageP50Ms ?? 0],
         p99: ["p99", display.pageP99Ms ?? 0],
       };
@@ -394,15 +396,17 @@ export function createLatencyScene(o: { fx: Effects; rand: () => number; scene: 
           set(el, { opacity: 0 });
           return;
         }
+        // A dot lands on top of its bar, so it shows against the panel, not the bar.
         const ease = 1 - Math.pow(1 - d.fall, 3);
-        const cy = PAD.top + 4 + ease * (plotH - 10);
-        const cls = `tx-h-dot ${tone(d.ms, display)}`;
+        const t = tone(d.ms, display);
+        const rest = PAD.top + plotH - Math.max(2, barHeight(shares[t][1], plotH)) - 5;
+        const cy = PAD.top - 6 + ease * (rest - PAD.top + 6);
+        const cls = `tx-h-dot ${t}`;
         if (el.getAttribute("class") !== cls) el.setAttribute("class", cls);
         set(el, { cx: (xOf(d.ms) + d.jitter).toFixed(1), cy: cy.toFixed(1), opacity: Math.min(1, d.life / 1.5).toFixed(2) });
       });
 
       for (const [id, el] of Object.entries(els.nodes)) el.style.setProperty("--ping", (state.pings[id] ?? 0).toFixed(2));
-      void ctx;
     },
 
     chartSample(live: Outputs): number {

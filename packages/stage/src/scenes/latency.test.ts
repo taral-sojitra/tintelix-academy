@@ -157,4 +157,11 @@ describe("latency scene", () => {
     expect(dom.world.querySelector('[data-bar-label="fast"]')!.textContent).toBe("95%");
     expect(dom.world.querySelector('[data-bar-label="slow"]')!.textContent).toBe("5%");
   });
+
+  it("calls the histogram's average the page average once it shows pages, not calls", () => {
+    const { scene, ctx, enter, dom } = setup();
+    enter(steps.fanout);
+    scene.paintWidgets(latencyModel.run(scene.liveInputs(ctx())), ctx(), 1 / 30, undefined as never);
+    expect(dom.world.querySelector('[data-marker-label="avg"]')!.textContent).toBe("page avg 21 ms");
+  });
 });
