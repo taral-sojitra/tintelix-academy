@@ -60,5 +60,6 @@ describe("cdnModel", () => {
   it("echoes its inputs so text can quote them", () => {
     const o = run();
     expect([o.traffic, o.pages, o.originKm, o.ttlSec, o.oldPrice, o.newPrice]).toEqual([6000, 2000, 13000, 3600, 999, 799]);
+    expect(o.trips).toBe(4);
   });
 });

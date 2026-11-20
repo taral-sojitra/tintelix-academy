@@ -341,7 +341,7 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
       const bar = world.querySelector<HTMLElement>('[data-meter="origin"]');
       els.meter = bar ? { bar, label: world.querySelector<HTMLElement>('[data-meter-label="origin"]') } : null;
       for (const el of world.querySelectorAll<HTMLElement>(".tx-wlabel")) els.labels[el.dataset.wire!] = el;
-      // The trip across town gets its own small label, made here because it says "×4 per page".
+      // The trip across town gets its own small label, made here because it says how many trips a page needs.
       const w = o.scene.wires.u_edge;
       if (w && !els.labels.u_edge) {
         const mid = makeWire(w.from, w.to).pts[24]!;
@@ -381,9 +381,10 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
         el.hidden = !visible;
         if (el.textContent !== text) el.textContent = text;
       };
-      label("u_origin", `${km} · ${rtt} · ×4 per page`, !state.hasEdge);
+      const trips = `×${formatOutput("trips", display.trips ?? 0)} per page`;
+      label("u_origin", `${km} · ${rtt} · ${trips}`, !state.hasEdge);
       label("edge_origin", `${km} · ${rtt}`, state.hasEdge);
-      label("u_edge", `${formatOutput("rttEdgeMs", display.rttEdgeMs ?? 0)} · ×4 per page`, state.hasEdge);
+      label("u_edge", `${formatOutput("rttEdgeMs", display.rttEdgeMs ?? 0)} · ${trips}`, state.hasEdge);
       for (const [id, el] of Object.entries(els.nodes)) el.style.setProperty("--ping", (state.pings[id] ?? 0).toFixed(2));
     },
 

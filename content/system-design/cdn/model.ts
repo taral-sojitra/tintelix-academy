@@ -45,6 +45,7 @@ export const cdnModel: Model = {
     const p95 = !edge ? noEdgePageMs : 1 - hit > 0.05 ? missPageMs : hitPageMs;
 
     return {
+      trips: TRIPS,
       traffic,
       pages,
       originKm,

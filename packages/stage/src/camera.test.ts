@@ -1,3 +1,4 @@
+import { cdnScene } from "../../../content/system-design/cdn/scene";
 import { fitView } from "./camera";
 
 const bounds = { x: 8, y: 62, w: 896, h: 422 };
@@ -30,6 +31,19 @@ describe("fitView", () => {
       expect(x).toBeLessThanOrEqual(390);
       expect(y).toBeGreaterThanOrEqual(0);
       expect(y).toBeLessThanOrEqual(300);
+    }
+  });
+
+  it("fits the CDN diagram in a 390 × 300 stage, regions included", () => {
+    const v = fitView({ w: 390, h: 300 }, cdnScene.bounds, insets);
+    const boxes = [...Object.values(cdnScene.nodes), ...(cdnScene.regions ?? [])];
+    for (const b of boxes) {
+      for (const [x, y] of [[b.x, b.y], [b.x + b.w, b.y + b.h]] as const) {
+        expect(x * v.s + v.ox).toBeGreaterThanOrEqual(0);
+        expect(x * v.s + v.ox).toBeLessThanOrEqual(390);
+        expect(y * v.s + v.oy).toBeGreaterThanOrEqual(0);
+        expect(y * v.s + v.oy).toBeLessThanOrEqual(300);
+      }
     }
   });
 

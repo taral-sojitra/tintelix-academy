@@ -1,0 +1,108 @@
+import type { Step } from "@tintelix/schema";
+
+export const cdnSteps: Step[] = [
+  {
+    id: "far-away",
+    tag: "problem",
+    title: "Mumbai waits on Virginia",
+    short: "Far away",
+    text: [
+      "The flash sale is busy in Mumbai, but the shop's servers sit in Virginia, {originKm} km away. Even in fibre, one round trip across that distance takes about {rttOriginMs}.",
+      "A page needs {trips} round trips: connect, secure the connection, fetch the page, then fetch its images and scripts. So every page takes about {noEdgePageMs}, and the origin answers all {originReqs} requests a second itself.",
+    ],
+    note: { kind: "watch", text: "A faster server doesn't help here. The time goes into the trips, not the work." },
+    sim: { mode: "direct", speed: 1 },
+    model: { edge: 0 },
+    live: "LIVE · no CDN",
+  },
+  {
+    id: "add-edge",
+    tag: "technique",
+    title: "Keep copies in Mumbai",
+    short: "Add edge",
+    text: [
+      "Put a CDN edge server in Mumbai. The {trips} round trips now cross town instead of the ocean, at {rttEdgeMs} each.",
+      "It starts empty. The first request for each page misses, goes on to Virginia and takes {missPageMs}. The edge keeps a copy, so later requests for that page are hits in {hitPageMs}. As it fills, hits climb to {edgeHitPct}.",
+    ],
+    note: { kind: "idea", text: "A CDN is a cache that sits close to your users instead of close to your database." },
+    changed: [
+      { kind: "add", label: "CDN edge in Mumbai" },
+      { kind: "mod", label: "Page load", value: "{hitPageMs}" },
+      { kind: "mod", label: "Origin load", value: "{originReqs} a second" },
+    ],
+    scene: { add: ["edge"] },
+    sim: { mode: "warm", speed: 1 },
+    model: { edge: 1 },
+    live: "LIVE · edge warming up",
+  },
+  {
+    id: "slow-mo",
+    tag: "technique",
+    title: "Hit or miss, in slow motion",
+    short: "Slow-mo",
+    text: [
+      "**Green** trips stay in the city: the edge has the page and answers in {hitPageMs}.",
+      "**Amber** trips are misses. The edge fetches the page from Virginia over a connection it keeps open, so a miss pays the ocean once, not {trips} times: {missPageMs} in all.",
+    ],
+    note: { kind: "turn", text: "Drag the origin closer or farther. Without the edge, every page pays the distance {trips} times. With it, only misses pay, and only once." },
+    sim: { mode: "steady", speed: 0.35 },
+    model: { edge: 1 },
+    controls: ["originKm"],
+    live: "SLOW MOTION · 0.35×",
+  },
+  {
+    id: "old-price",
+    tag: "problem",
+    title: "The old price won't go away",
+    short: "Old price",
+    text: [
+      "Mid-sale, the shop drops the price from {oldPrice} to {newPrice}. The origin in Virginia changes at once.",
+      "Mumbai's edge doesn't know. Its copy of the page is good for {ttlSec}, and until it expires, shoppers in Mumbai still see {oldPrice}.",
+    ],
+    note: { kind: "watch", text: "A cached page is a promise that it's still true for a while. Change the page, and the promise breaks." },
+    changed: [
+      { kind: "mod", label: "Price at the origin", value: "{newPrice}" },
+      { kind: "mod", label: "Price at the edge", value: "{oldPrice}" },
+    ],
+    sim: { mode: "stale", speed: 1 },
+    model: { edge: 1 },
+    live: "LIVE · price changed at the origin",
+  },
+  {
+    id: "purge",
+    tag: "solution",
+    title: "Purge on change, keep pages short",
+    short: "Purge",
+    text: [
+      "When a price changes, the shop tells the CDN to **purge** that page. Every edge drops its copy, so the next request fetches {newPrice} from Virginia. The change shows within about {staleSec}.",
+      "Pages also get a short TTL, {ttlSec}, in case a purge is ever missed. Images and scripts get versioned names, like app.3f9a.js, and are kept for a year: a new version gets a new name, so an old copy is never served by mistake.",
+    ],
+    note: { kind: "turn", text: "Drag the TTL to its shortest. Most reads still stay in Mumbai, because a busy page is asked for many times before its copy expires." },
+    changed: [
+      { kind: "add", label: "Purge on price change" },
+      { kind: "mod", label: "Page TTL", value: "{ttlSec}" },
+      { kind: "mod", label: "Old price shown for", value: "{staleSec}" },
+    ],
+    sim: { mode: "purge", speed: 1 },
+    model: { edge: 1, ttlSec: 60, purge: 1 },
+    controls: ["ttlSec"],
+    live: "LIVE · purge on change",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What the edge bought us",
+    short: "Recap",
+    text: [
+      "Pages that took {noEdgePageMs} from Virginia now load in {hitPageMs} from the Mumbai edge.",
+      "The origin answers {originReqs} requests a second instead of {traffic}, and a price change shows in about {staleSec}.",
+    ],
+    note: {
+      kind: "next",
+      text: "The cart and checkout are personal, so no edge can cache them: they still cross the ocean. Moving the API itself close to users comes in a later lesson.",
+    },
+    sim: { mode: "steady", speed: 1 },
+    model: { edge: 1, ttlSec: 60, purge: 1 },
+    live: "LIVE · CDN in front",
+  },
+];
