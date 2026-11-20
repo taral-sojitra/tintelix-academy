@@ -226,19 +226,61 @@ async def lesson_switch_latency(page):
     return "switching from Latency step 4 opens Caching fresh at step 1 with its own tiles"
 
 
+async def queueing_flow(page):
+    await page.goto(BASE + "/system-design/queueing", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Busy, then suddenly slow")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='response'] .tx-v")).to_have_text("20 ms")
+    await expect(page.locator("[data-tile='busy'] .tx-v")).to_have_text("50%")
+    await page.evaluate("document.querySelector('.stage-host').scrollIntoView()")
+    await page.wait_for_timeout(1200)
+    seen = set()
+    for _ in range(8):
+        seen.add(await page.locator(".tx-chartv").inner_text())
+        await page.wait_for_timeout(200)
+    assert seen == {"20 ms"}, f"chart label read {sorted(seen)} while step 1 says 20 ms"
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("The curve bends, then goes vertical")
+    await expect(page.locator("#ctl-traffic")).to_be_enabled()
+    panel = page.locator("section.try", has=page.locator("#ctl-traffic"))
+    await set_range(page, "#ctl-traffic", 90)
+    await expect(panel.locator(".try-readout")).to_contain_text("90% busy")
+    await expect(panel.locator(".try-readout")).to_contain_text("takes 100 ms in all")
+    await expect(page.locator("[data-tile='response'] .tx-v")).to_have_text("100 ms", timeout=8000)
+    await expect(page.locator("[data-curve-label]")).to_have_text("90% busy → 100 ms", timeout=8000)
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Add a worker, buy headroom")
+    await expect(page.locator("[data-tile='response'] .tx-v")).to_have_text("12.5 ms", timeout=8000)
+    await page.locator("#ctl-workers").focus()
+    await page.keyboard.press("End")
+    workers_panel = page.locator("section.try", has=page.locator("#ctl-workers"))
+    await expect(workers_panel.locator(".try-readout")).to_contain_text("With 4 workers")
+    return "Queueing lesson: 20 ms at half busy, chart agrees, 90 a second reads 100 ms on the tile and the curve, a second worker brings it to 12.5 ms"
+
+
+async def queueing_cheatsheet(page):
+    res = await page.goto(BASE + "/system-design/queueing/cheatsheet", wait_until="load")
+    assert res is not None and res.status == 200
+    await expect(page.get_by_text("At 90 a second and 100 ms each, 9 requests are inside at once.")).to_be_visible()
+    await expect(page.get_by_text("10× at 90%")).to_be_visible()
+    return "Queueing cheatsheet quotes the model's numbers"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("3 open now")).to_be_visible()
+    await expect(page.get_by_text("4 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("3 of 30 open")).to_be_visible()
-    return "System Design shows 3 lessons open"
+    await expect(page.get_by_text("4 of 30 open")).to_be_visible()
+    return "System Design shows 4 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []
