@@ -2,6 +2,8 @@
 export const ICONS = {
   users: '<circle cx="9" cy="7.5" r="3.5" fill="currentColor" fill-opacity=".3"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0z" fill="currentColor" fill-opacity=".3"/><path d="M15.5 4.2a3.5 3.5 0 0 1 0 6.6"/><path d="M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/>',
   lb: '<rect x="8.5" y="2.5" width="7" height="5" rx="1.5" fill="currentColor" fill-opacity=".35"/><path d="M12 7.5v4M12 11.5H5.5v3M12 11.5h6.5v3M12 11.5v3"/><rect x="2.5" y="14.5" width="6" height="5" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="9" y="14.5" width="6" height="5" rx="1.5" fill="currentColor" fill-opacity=".3"/><rect x="15.5" y="14.5" width="6" height="5" rx="1.5" fill="currentColor" fill-opacity=".3"/>',
+  edge: '<circle cx="11" cy="11" r="7.5" fill="currentColor" fill-opacity=".3"/><path d="M3.5 11h15"/><path d="M11 3.5c2.2 2.1 3.2 4.6 3.2 7.5s-1 5.4-3.2 7.5"/><path d="M11 3.5C8.8 5.6 7.8 8.1 7.8 11s1 5.4 3.2 7.5"/><circle cx="18.5" cy="18.5" r="2.6" fill="currentColor"/>',
+  origin: '<rect x="3" y="9.5" width="14.5" height="11" rx="2" fill="currentColor" fill-opacity=".3"/><path d="M6.5 13.5h.01M6.5 17h.01M10 13.5h4.5M10 17h4.5"/><path d="M19.5 9.5V2.5"/><path d="M19.5 3h2.5l-.8 1.6.8 1.6h-2.5" fill="currentColor" fill-opacity=".5"/>',
   server: '<rect x="3" y="3.5" width="18" height="7.5" rx="2" fill="currentColor" fill-opacity=".3"/><rect x="3" y="13" width="18" height="7.5" rx="2" fill="currentColor" fill-opacity=".3"/><path d="M7 7.25h.01M7 16.75h.01M11 7.25h6M11 16.75h6"/>',
   bolt: '<path d="M13 2.5L4.5 13.5h7l-1 8 8.5-11h-7z"/>',
   db: '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',

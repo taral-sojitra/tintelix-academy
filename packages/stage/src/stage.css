@@ -133,3 +133,19 @@
   .tx-live, .tx-node.k-db.hot { animation: none; }
   .tx-node { transition: opacity .2s; }
 }
+
+/* Long-distance diagrams: labelled regions and wire labels sit behind the nodes. */
+.tx-region {
+  position: absolute; border: 1.5px dashed var(--node-stroke); border-radius: 18px;
+  background: color-mix(in srgb, var(--node-bg) 35%, transparent);
+}
+.tx-region span {
+  position: absolute; left: 14px; top: 10px; font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--label);
+}
+.tx-wlabel {
+  position: absolute; transform: translate(-50%, -150%); white-space: nowrap; pointer-events: none;
+  font-family: var(--mono); font-size: 11px; color: var(--label);
+  background: var(--node-bg); border: 1px solid var(--node-stroke);
+  border-radius: 999px; padding: 2px 9px;
+}

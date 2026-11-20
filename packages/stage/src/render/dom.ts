@@ -1,8 +1,9 @@
 import type { SceneNode, SceneSpec } from "@tintelix/schema";
+import { makeWire } from "../geometry";
 import { iconSvg, type IconName } from "../icons";
 import type { Tile } from "../scenes/types";
 
-const KIND_ICON: Record<SceneNode["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db", edge: "blocks", origin: "server" };
+const KIND_ICON: Record<SceneNode["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db", edge: "edge", origin: "origin" };
 
 /** Escapes text for HTML. Every content string that reaches the stage goes through this. */
 export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -50,6 +51,25 @@ export function buildStage(host: HTMLElement, scene: SceneSpec, opts: StageOptio
   </div>`;
   const root = host.querySelector<HTMLElement>(".tx-stage")!;
   const world = root.querySelector<HTMLElement>(".tx-world")!;
+  // Behind everything else in the world: labelled regions, then labels on long wires.
+  for (const r of scene.regions ?? []) {
+    const el = document.createElement("div");
+    el.className = "tx-region";
+    el.dataset.region = r.id;
+    Object.assign(el.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.w}px`, height: `${r.h}px` });
+    el.innerHTML = `<span>${esc(r.label)}</span>`;
+    world.appendChild(el);
+  }
+  for (const [id, w] of Object.entries(scene.wires)) {
+    if (!w.label) continue;
+    const mid = makeWire(w.from, w.to).pts[24]!;
+    const el = document.createElement("div");
+    el.className = "tx-wlabel";
+    el.dataset.wire = id;
+    Object.assign(el.style, { left: `${mid[0]}px`, top: `${mid[1]}px` });
+    el.textContent = w.label;
+    world.appendChild(el);
+  }
   const nodes: Record<string, HTMLElement> = {};
   for (const [id, n] of Object.entries(scene.nodes)) {
     const el = document.createElement("div");
