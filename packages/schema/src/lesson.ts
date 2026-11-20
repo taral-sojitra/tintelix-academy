@@ -27,6 +27,8 @@ export const Control = z.object({
   max: z.number(),
   step: z.number().positive().optional(),
   unit: z.string().optional(),
+  /** One line under the control, quoting outputs, e.g. "{dbReads} database reads a second". */
+  readout: z.string().optional(),
 });
 export type Control = z.infer<typeof Control>;
 

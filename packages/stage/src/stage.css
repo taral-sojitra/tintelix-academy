@@ -108,7 +108,8 @@
 @keyframes tx-shake { 0% { translate: 0 0; } 25% { translate: 1.3px -0.7px; } 50% { translate: -1.1px 0.8px; } 75% { translate: 0.9px 0.7px; } 100% { translate: 0 0; } }
 
 /* number tiles (rendered into the element passed as `hud`) */
-.tx-hud { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; container-type: inline-size; }
+/* Put the hud inside an element with container-type: inline-size to let the tiles follow its width. */
+.tx-hud { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
 .tx-met { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; transition: border-color .4s, background .4s; min-width: 0; }
 .tx-mh { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
 .tx-k { min-width: 0; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--faint); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -125,8 +126,8 @@
 .tx-met.good .tx-d { color: var(--green-ink); }
 .tx-met.bad { border-color: color-mix(in srgb, var(--red) 40%, var(--border)); background: linear-gradient(180deg, var(--red-soft), var(--surface)); }
 .tx-met.bad .tx-d, .tx-met.bad .tx-v { color: var(--red-ink); }
-@container (max-width: 760px) { .tx-hud { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tx-met[data-tile="req"] { display: none; } }
-@container (max-width: 560px) { .tx-hud { grid-template-columns: repeat(3, minmax(0, 1fr)); } .tx-met[data-tile="dbr"] { display: none; } }
+@container (max-width: 680px) { .tx-hud { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tx-met[data-tile="req"] { display: none; } }
+@container (max-width: 500px) { .tx-hud { grid-template-columns: repeat(3, minmax(0, 1fr)); } .tx-met[data-tile="dbr"] { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .tx-live, .tx-node.k-db.hot { animation: none; }

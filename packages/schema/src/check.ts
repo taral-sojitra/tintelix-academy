@@ -50,6 +50,10 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
         if (!(name in outputs)) problems.push(`${id}/step ${step.id} quotes {${name}}, which the model does not produce`);
       }
     }
+    const defaults = lesson.model.run(lesson.model.defaults);
+    for (const [name, control] of Object.entries(lesson.controls)) {
+      for (const q of quotedOutputs(control.readout ?? "")) if (!(q in defaults)) problems.push(`${id}/control ${name} quotes {${q}}, which the model does not produce`);
+    }
     const sheetOutputs = lesson.model.run({ ...lesson.model.defaults, ...lesson.cheatsheetInputs });
     for (const name of lesson.cheatsheet.flatMap((s) => s.text).flatMap(quotedOutputs)) {
       if (!(name in sheetOutputs)) problems.push(`${id}/cheatsheet quotes {${name}}, which the model does not produce`);

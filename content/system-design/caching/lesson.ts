@@ -15,7 +15,7 @@ export const caching: Lesson = {
   level: 1,
   scene: cachingScene,
   model: cachingModel,
-  controls: { hitRate: { label: "Cache hit rate", min: 0, max: 1, step: 0.01, unit: "%" } },
+  controls: { hitRate: { label: "Cache hit rate", min: 0, max: 1, step: 0.01, unit: "%", readout: "DB reads = (1 − hit rate) × {traffic} = **{dbReads}** a second, so the database is **{dbBusyPct}** busy and p95 is **{p95}**." } },
   steps: cachingSteps,
   components: ["users", "load-balancer", "app-server", "cache", "database"],
   buildsOn: ["vertical-horizontal-scaling"],

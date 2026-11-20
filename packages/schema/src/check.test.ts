@@ -71,6 +71,11 @@ describe("checkContent", () => {
     expect(check(lesson)).toContain("caching/step fix quotes {nope}, which the model does not produce");
   });
 
+  it("flags a quoted value in a control readout the model does not produce", () => {
+    const lesson = makeLesson({ controls: { hitRate: { label: "Hit rate", min: 0, max: 1, readout: "{nope} reads" } } });
+    expect(check(lesson)).toContain("caching/control hitRate quotes {nope}, which the model does not produce");
+  });
+
   it("flags a quoted value in the cheatsheet the model does not produce", () => {
     expect(check(makeLesson({ cheatsheet: [{ heading: "N", text: ["{nope}"] }] }))).toContain(
       "caching/cheatsheet quotes {nope}, which the model does not produce",
