@@ -41,10 +41,15 @@ describe("content", () => {
     expect(getLesson("system-design", "nope")).toBeUndefined();
   });
 
-  it("marks Caching and CDN as available, in teaching order", () => {
+  it("marks Latency percentiles, Caching and CDN as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["caching", "cdn"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "caching", "cdn"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
+  });
+
+  it("opens the subject on lesson 1, The average is lying", () => {
+    expect(lessonSummaries("system-design")[0]).toMatchObject({ id: "latency-percentiles", module: "Measuring systems", order: 1, available: true, title: "The average is lying" });
+    expect(getLesson("system-design", "latency-percentiles")?.title).toBe("The average is lying");
   });
 
   it("lists the CDN lesson as written and in order", () => {
