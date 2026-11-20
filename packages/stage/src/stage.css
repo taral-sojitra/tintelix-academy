@@ -155,6 +155,8 @@
 /* CDN: edge and origin boxes, page copies, price tags. */
 .tx-tile.k-edge { background: var(--green); }
 .tx-tile.k-origin { background: var(--amber); }
+.tx-tile.k-services { background: var(--cyan); }
+.tx-tile.k-histogram { background: var(--blue); }
 .tx-node.k-edge { border-color: color-mix(in srgb, var(--green) 75%, transparent); }
 .tx-node.k-origin .tx-meter i { background: var(--amber); }
 .tx-keys i.stale { background: var(--amber); }

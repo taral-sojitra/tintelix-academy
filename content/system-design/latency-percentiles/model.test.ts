@@ -57,15 +57,17 @@ describe("latency model", () => {
   });
 
   it("splits every page into fast, hedged and slow shares that add up to 100", () => {
-    for (const extra of [{}, { slowPct: 1, calls: 10 }, { slowPct: 1, calls: 10, hedge: 1 }, { slowPct: 1, calls: 10, hedge: 1, hedgeMs: 1 }]) {
+    const cases: Record<string, number>[] = [{}, { slowPct: 1, calls: 10 }, { slowPct: 1, calls: 10, hedge: 1 }, { slowPct: 1, calls: 10, hedge: 1, hedgeMs: 1 }];
+    for (const extra of cases) {
       const o = run(extra);
-      expect(o.pageFastPct + o.pageMidPct + o.pageSlowPct).toBeCloseTo(100, 9);
+      expect(o.pageFastPct! + o.pageMidPct! + o.pageSlowPct!).toBeCloseTo(100, 9);
     }
     expect(run({}).pageMidPct).toBe(0);
   });
 
   it("stays finite at every slider end", () => {
-    for (const extra of [{ slowPct: 0.1 }, { slowPct: 10 }, { slowPct: 1, calls: 100 }, { slowPct: 1, calls: 10, hedge: 1, hedgeMs: 1 }, { slowPct: 1, calls: 10, hedge: 1, hedgeMs: 250 }]) {
+    const ends: Record<string, number>[] = [{ slowPct: 0.1 }, { slowPct: 10 }, { slowPct: 1, calls: 100 }, { slowPct: 1, calls: 10, hedge: 1, hedgeMs: 1 }, { slowPct: 1, calls: 10, hedge: 1, hedgeMs: 250 }];
+    for (const extra of ends) {
       for (const v of Object.values(run(extra))) expect(Number.isFinite(v)).toBe(true);
     }
   });
@@ -77,7 +79,7 @@ describe("latency model", () => {
 
   it("matches the page average to the shares", () => {
     const o = run({ slowPct: 1, calls: 10, hedge: 1 });
-    expect(o.pageMeanMs).toBeCloseTo((o.pageFastPct * 2 + o.pageMidPct * 12 + o.pageSlowPct * 200) / 100, 9);
+    expect(o.pageMeanMs).toBeCloseTo((o.pageFastPct! * 2 + o.pageMidPct! * 12 + o.pageSlowPct! * 200) / 100, 9);
     expect(run({}).pageMeanMs).toBeCloseTo(11.9, 9);
   });
 });

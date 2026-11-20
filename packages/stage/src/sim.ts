@@ -28,6 +28,8 @@ export interface Packet {
   inNode: boolean;
   wait: number;
   trail: Point[];
+  /** The latency this request was given, in ms, for scenes that show it. */
+  ms?: number;
 }
 
 export type SimEvent =
@@ -35,7 +37,11 @@ export type SimEvent =
   | { kind: "pass"; node: string; at: Point }
   | { kind: "leg"; node: string; wire: string; at: Point }
   | { kind: "hit" | "miss" | "fill" | "dbIn" | "dbOut"; node: string; at: Point }
-  | { kind: "reply"; node: string; at: Point; hit: boolean };
+  | { kind: "reply"; node: string; at: Point; hit: boolean }
+  /** A node starts holding a request for `ms` (latency scene). */
+  | { kind: "work"; node: string; at: Point; ms: number }
+  /** A request is back with the user after `ms` (latency scene). */
+  | { kind: "done"; node: string; at: Point; ms: number };
 
 export interface Router {
   /** Give a new request its first legs. */

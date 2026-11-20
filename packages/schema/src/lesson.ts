@@ -16,7 +16,7 @@ export const SCENE_MODES: Record<SceneKind, readonly string[]> = {
 };
 
 export const SceneNode = Rect.extend({
-  kind: z.enum(["users", "lb", "app", "cache", "db", "edge", "origin"]),
+  kind: z.enum(["users", "lb", "app", "cache", "db", "edge", "origin", "services", "histogram"]),
   label: z.string(),
   sub: z.string(),
   hidden: z.boolean().optional(),
