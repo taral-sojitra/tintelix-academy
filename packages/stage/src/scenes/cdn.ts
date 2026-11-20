@@ -278,11 +278,11 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
       const fifth: Tile = showPrices(ctx)
         ? {
             id: "stale",
-            label: "Old price for",
+            label: "Stale for",
             icon: "hourglass",
             hue: "blue",
             value: formatOutput("staleSec", d.staleSec ?? 0),
-            note: afterChange(ctx) ? "purge on change" : "until the copy expires",
+            note: afterChange(ctx) ? "purge on change" : "until it expires",
             mood: afterChange(ctx) ? "good" : "bad",
           }
         : { id: "rtt", label: "Round trip", icon: "clock", hue: "blue", value: formatOutput("rttOriginMs", d.rttOriginMs ?? 0), note: `${formatOutput("originKm", d.originKm ?? 0)} km away`, mood: "" };
@@ -296,7 +296,15 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
           note: has && page < (base.noEdgePageMs ?? 0) - 10 ? `▼ from ${formatOutput("noEdgePageMs", base.noEdgePageMs ?? 0)}` : "typical page",
           mood: page > 300 ? "bad" : page < 100 ? "good" : "",
         },
-        { id: "p95", label: "Slowest 5%", icon: "timer", hue: "violet", value: formatOutput("p95", p95), note: "slowest 5%", mood: p95 > 300 ? "bad" : p95 < 100 ? "good" : "" },
+        {
+          id: "p95",
+          label: "Slowest 5%",
+          icon: "timer",
+          hue: "violet",
+          value: formatOutput("p95", p95),
+          note: !has ? "every page" : p95 > (d.hitPageMs ?? 0) + 1 ? "the misses" : "even these hit",
+          mood: p95 > 300 ? "bad" : p95 < 100 ? "good" : "",
+        },
         {
           id: "hits",
           label: "Edge hits",

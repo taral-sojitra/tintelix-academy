@@ -72,7 +72,8 @@ export function LessonPlayer({ subject, slug }: { subject: string; slug: string 
   const go = useCallback((i: number) => playerRef.current?.go(i), []);
   const step = lesson.steps[view.stepIndex]!;
   const last = lesson.steps.length - 1;
-  const firstUnlock = lesson.steps.findIndex((s) => (s.controls ?? []).length > 0);
+  /** The first step that unlocks a control, so a locked panel can say when it opens. */
+  const unlockAt = (name: string) => lesson.steps.findIndex((s) => (s.controls ?? []).includes(name));
   const components = lesson.components.map((id) => allComponents.find((c) => c.id === id)!).filter(Boolean);
 
   return (
@@ -104,7 +105,7 @@ export function LessonPlayer({ subject, slug }: { subject: string; slug: string 
             control={control}
             value={view.inputs[name] ?? lesson.model.defaults[name] ?? control.min}
             enabled={(step.controls ?? []).includes(name)}
-            lockedText={view.stepIndex < firstUnlock ? `Unlocks at step ${firstUnlock + 1}` : "Locked on this step, so the story plays out"}
+            lockedText={view.stepIndex < unlockAt(name) ? `Unlocks at step ${unlockAt(name) + 1}` : "Locked on this step, so the story plays out"}
             outputs={view.outputs}
             changed={view.overridden}
             onChange={(v) => playerRef.current?.setInput(name, v)}
