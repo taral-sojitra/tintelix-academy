@@ -1,0 +1,63 @@
+import { makeWire } from "./geometry";
+import { rng } from "./rng";
+import { Queue, Sim, type Leg, type Packet, type Router } from "./sim";
+
+const runFor = (sim: Sim, seconds: number, dt = 1 / 30) => {
+  for (let t = 0; t < seconds; t += dt) sim.step(dt);
+};
+
+describe("rng", () => {
+  it("is repeatable for a seed and stays in [0, 1)", () => {
+    const a = rng(7), b = rng(7);
+    const xs = Array.from({ length: 1000 }, () => a());
+    expect(xs.every((x) => x >= 0 && x < 1)).toBe(true);
+    expect(Array.from({ length: 1000 }, () => b())).toEqual(xs);
+  });
+});
+
+describe("Queue", () => {
+  it("serves packets one at a time, in arrival order, at 1/mu seconds each", () => {
+    const q = new Queue(2);
+    const mk = (id: number) => ({ id }) as Packet;
+    q.push(mk(1)); q.push(mk(2)); q.push(mk(3));
+    const served: { id: number; t: number }[] = [];
+    for (let i = 1; i <= 31; i++) {
+      const p = q.tick(0.05);
+      if (p) served.push({ id: p.id, t: i * 0.05 });
+    }
+    expect(served.map((s) => s.id)).toEqual([1, 2, 3]);
+    expect(served[0]!.t).toBeCloseTo(0.5, 1);
+    expect(q.waiting).toBe(0);
+  });
+});
+
+describe("Sim", () => {
+  const wires = { a_b: makeWire([0, 0], [100, 0]) };
+  const straight: Router = {
+    spawn(p) { p.route.push({ wire: "a_b", dir: 1, color: "cyan", end: "b" }); },
+    arrive(p: Packet, leg: Leg) { if (leg.end === "b") p.dead = true; },
+  };
+
+  it("spawns requests as a Poisson process at the given rate", () => {
+    const sim = new Sim({ wires, router: straight, rand: rng(1), ratePerSec: 6.5, speed: 400 });
+    runFor(sim, 60);
+    const spawned = sim.events.filter((e) => e.kind === "spawn").length;
+    expect(spawned).toBeGreaterThan(390 * 0.85);
+    expect(spawned).toBeLessThan(390 * 1.15);
+  });
+
+  it("removes packets once they finish their route", () => {
+    const sim = new Sim({ wires, router: straight, rand: rng(2), ratePerSec: 5, speed: 400 });
+    runFor(sim, 10);
+    sim.ratePerSec = 0;
+    runFor(sim, 2);
+    expect(sim.packets).toHaveLength(0);
+  });
+
+  it("keeps each packet's trail within the trail limit", () => {
+    const sim = new Sim({ wires: { a_b: makeWire([0, 0], [4000, 0]) }, router: straight, rand: rng(3), ratePerSec: 3, speed: 400, trailLimit: 3 });
+    runFor(sim, 3);
+    expect(sim.packets.length).toBeGreaterThan(0);
+    expect(Math.max(...sim.packets.map((p) => p.trail.length))).toBeLessThanOrEqual(3);
+  });
+});
