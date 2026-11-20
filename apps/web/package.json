@@ -1,0 +1,30 @@
+{
+  "name": "@tintelix/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/bricolage-grotesque": "^5.2.10",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/inter": "^5.2.8",
+    "@tintelix/content": "workspace:*",
+    "@tintelix/schema": "workspace:*",
+    "@tintelix/stage": "workspace:*",
+    "@tintelix/store": "workspace:*",
+    "@tintelix/theme": "workspace:*",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19"
+  }
+}
