@@ -5,10 +5,12 @@ export interface Wire {
   pts: Point[];
   cum: number[];
   len: number;
+  /** Packet speed multiplier; below 1 makes a long-haul link visibly slower. */
+  pace: number;
 }
 
 /** Control points sit at half the horizontal distance, so wires leave and enter boxes level. */
-export function makeWire(from: Point, to: Point, samples = 48): Wire {
+export function makeWire(from: Point, to: Point, samples = 48, pace = 1): Wire {
   const k = (to[0] - from[0]) * 0.5;
   const p1: Point = [from[0] + k, from[1]];
   const p2: Point = [to[0] - k, to[1]];
@@ -25,7 +27,7 @@ export function makeWire(from: Point, to: Point, samples = 48): Wire {
     }
     pts.push([x, y]);
   }
-  return { pts, cum, len: cum[samples]! };
+  return { pts, cum, len: cum[samples]!, pace };
 }
 
 /** The point at distance `s` along the wire, shifted `offset` units to its left. */

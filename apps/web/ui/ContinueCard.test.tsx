@@ -16,6 +16,8 @@ const caching: ContinueTarget = {
   minutes: 9,
 };
 
+const cdn: ContinueTarget = { ...caching, id: "cdn", href: "/system-design/cdn", title: "Serve Mumbai from Mumbai", topic: "CDN", order: 6, minutes: 8 };
+
 describe("ContinueCard", () => {
   it("offers to resume a lesson the learner is part-way through", async () => {
     await getStore().saveStep("caching", 2, 6);
@@ -31,5 +33,12 @@ describe("ContinueCard", () => {
     expect(await screen.findByText("Review the lesson")).toBeTruthy();
     expect(screen.getByText(/^Finished/)).toBeTruthy();
     expect(screen.queryByText(/Start here/)).toBeNull();
+  });
+
+  it("moves on to the next lesson once Caching is finished", async () => {
+    await getStore().saveStep("caching", 5, 6);
+    render(<ContinueCard lessons={[caching, cdn]} />);
+    expect(await screen.findByText("Serve Mumbai from Mumbai")).toBeTruthy();
+    expect(screen.getByText(/^Start here/)).toBeTruthy();
   });
 });

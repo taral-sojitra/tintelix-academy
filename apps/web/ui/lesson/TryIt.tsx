@@ -1,4 +1,5 @@
 import type { Control, Outputs } from "@tintelix/schema";
+import { formatOutput } from "@tintelix/schema/format";
 import { Icon } from "../Icon";
 import { RichText } from "./StepNarrative";
 
@@ -16,15 +17,17 @@ export function TryIt({ name, control, value, enabled, lockedText, outputs, onCh
 }) {
   const pct = control.unit === "%";
   const shown = pct ? Math.round(value * 100) : value;
+  // Durations read the way the model's numbers do ("60 s", "60 min"); other values are grouped, then the unit.
+  const text = pct ? `${shown}%` : name.endsWith("Sec") ? formatOutput(name, value) : `${formatOutput(name, value)}${control.unit ? ` ${control.unit}` : ""}`;
   const id = `ctl-${name}`;
   return (
     <section className={`try${enabled ? "" : " off"}`} aria-labelledby={`${id}-label`}>
       <div className="try-head">
         <label id={`${id}-label`} htmlFor={id}>
           <Icon name="target" />
-          Try it: {control.label.toLowerCase()}
+          Try it: {control.label.charAt(0).toLowerCase() + control.label.slice(1)}
         </label>
-        <span className="try-val">{enabled ? `${shown}${control.unit ?? ""}` : "—"}</span>
+        <span className="try-val">{enabled ? text : "—"}</span>
       </div>
       <input
         id={id}
@@ -34,7 +37,7 @@ export function TryIt({ name, control, value, enabled, lockedText, outputs, onCh
         step={pct ? (control.step ?? 0.01) * 100 : control.step ?? 1}
         value={shown}
         disabled={!enabled}
-        aria-valuetext={`${shown}${control.unit === "%" ? " percent" : ` ${control.unit ?? ""}`}`}
+        aria-valuetext={pct ? `${shown} percent` : text}
         onChange={(e) => onChange(pct ? Number(e.target.value) / 100 : Number(e.target.value))}
       />
       <p className="try-readout">{enabled && control.readout ? <RichText text={control.readout} outputs={outputs} /> : lockedText}</p>

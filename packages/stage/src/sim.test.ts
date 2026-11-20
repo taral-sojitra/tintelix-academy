@@ -41,6 +41,35 @@ describe("Queue", () => {
   });
 });
 
+describe("wire pace", () => {
+  const travel = (pace: number) => {
+    const wires = { a_b: makeWire([0, 0], [400, 0], 48, pace) };
+    let t = 0;
+    let spawnedAt = -1;
+    let arrivedAt = -1;
+    const router: Router = {
+      spawn(p) {
+        if (spawnedAt < 0) spawnedAt = t;
+        p.route.push({ wire: "a_b", dir: 1, color: "cyan", end: "b" });
+      },
+      arrive(p: Packet) {
+        if (arrivedAt < 0) arrivedAt = t;
+        p.dead = true;
+      },
+    };
+    const sim = new Sim({ wires, router, rand: rng(3), ratePerSec: 0.5, speed: 400 });
+    const dt = 1 / 240;
+    for (; t < 60 && arrivedAt < 0; t += dt) sim.step(dt);
+    return arrivedAt - spawnedAt;
+  };
+
+  it("a packet on a wire with pace 0.25 takes four times as long", () => {
+    const ratio = travel(0.25) / travel(1);
+    expect(ratio).toBeGreaterThan(3.9);
+    expect(ratio).toBeLessThan(4.1);
+  });
+});
+
 describe("Sim", () => {
   const wires = { a_b: makeWire([0, 0], [100, 0]) };
   const straight: Router = {

@@ -52,7 +52,7 @@ export default async function LessonPage({ params }: { params: Params }) {
           </div>
           <p className="promise">{lesson.promise}</p>
         </header>
-        <LessonPlayer subject={subjectId} slug={slug} />
+        <LessonPlayer key={lesson.id} subject={subjectId} slug={slug} />
       </main>
     </div>
   );

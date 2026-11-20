@@ -16,9 +16,10 @@ function makeLesson(over: Partial<Lesson> = {}): Lesson {
     minutes: 8,
     level: 1,
     scene: {
+      kind: "cache-aside",
       world: { w: 920, h: 540 },
       bounds: { x: 8, y: 62, w: 896, h: 422 },
-      nodes: { db: { x: 0, y: 0, w: 100, h: 60, kind: "db", label: "Database", sub: "Postgres" } },
+      nodes: { db: { x: 20, y: 80, w: 100, h: 60, kind: "db", label: "Database", sub: "Postgres" } },
       wires: { a_d: { from: [0, 0], to: [10, 10] } },
     },
     model,
@@ -40,7 +41,7 @@ const subjects: Subject[] = [
     id: "system-design",
     title: "System Design",
     blurb: "How big systems stay fast.",
-    modules: [{ title: "Speed", lessons: [{ id: "caching", slug: "caching", topic: "Caching", summary: "s", buildsOn: [] }] }],
+    modules: [{ title: "Speed", lessons: [{ id: "caching", slug: "caching", topic: "Caching", title: "Survive the flash sale", summary: "s", buildsOn: [] }] }],
   },
 ];
 const components: Component[] = [
@@ -114,5 +115,34 @@ describe("checkContent", () => {
   it("reports schema problems with their path", () => {
     const problems = check(makeLesson({ minutes: -1 }));
     expect(problems.some((p) => p.startsWith("caching: minutes"))).toBe(true);
+  });
+
+  it("rejects a sim mode the scene kind doesn't have", () => {
+    const lesson = makeLesson();
+    lesson.steps[0]!.sim = { mode: "stale", speed: 1 };
+    expect(check(lesson)).toContain("caching/step drowning uses sim mode stale, which a cache-aside scene doesn't have");
+  });
+
+  it("rejects a node outside the scene bounds", () => {
+    const lesson = makeLesson();
+    lesson.scene.nodes.db!.x = -50;
+    expect(check(lesson)).toContain("caching: node db lies outside the scene bounds");
+  });
+
+  it("rejects a step that names an unknown node", () => {
+    const lesson = makeLesson();
+    lesson.steps[1]!.scene = { add: ["nope"] };
+    expect(check(lesson)).toContain("caching/step fix names unknown node nope");
+  });
+
+  it("rejects a step that sets something that is not a model input", () => {
+    const lesson = makeLesson();
+    lesson.steps[0]!.model = { hitRat: 0.5 };
+    expect(check(lesson)).toContain("caching/step drowning sets hitRat, which is not a model input");
+  });
+
+  it("rejects a lesson that differs from its subject entry", () => {
+    expect(check(makeLesson({ title: "Something else" }))).toContain('caching: title "Something else" differs from its subject entry "Survive the flash sale"');
+    expect(check(makeLesson({ topic: "Caches" }))).toContain('caching: topic "Caches" differs from its subject entry "Caching"');
   });
 });

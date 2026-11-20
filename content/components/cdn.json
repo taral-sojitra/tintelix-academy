@@ -1,0 +1,11 @@
+{
+  "id": "cdn",
+  "name": "CDN edge",
+  "icon": "edge",
+  "category": "traffic",
+  "oneLine": "Keeps copies of pages and files in cities near your users, so most requests never travel to your servers.",
+  "useWhen": ["Your users are far from your servers.", "Most responses are the same for everyone: pages, images, scripts.", "You want your servers to see only the requests nobody has made before."],
+  "watchOut": ["A copy can outlive the content: purge on change, or users see old prices.", "Personal pages must never be cached at the edge.", "A purge sends a burst of misses to the origin."],
+  "numbers": [{ "label": "Round trip to an edge in your city", "value": "about 10 ms" }, { "label": "Mumbai to N. Virginia", "value": "about 193 ms" }, { "label": "Purge on Vercel", "value": "about 300 ms" }],
+  "tools": ["Vercel CDN", "Cloudflare", "Amazon CloudFront", "Fastly", "Akamai"]
+}

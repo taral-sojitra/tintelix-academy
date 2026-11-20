@@ -1,5 +1,5 @@
 import { Component } from "./component";
-import { Lesson } from "./lesson";
+import { Lesson, SCENE_MODES } from "./lesson";
 import { Subject } from "./subject";
 
 export const MAX_TITLE = 40;
@@ -35,7 +35,19 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
     lessonIds.add(id);
     if (lesson.title.length > MAX_TITLE) problems.push(`${id}: title "${lesson.title}" is over ${MAX_TITLE} characters`);
     const home = input.subjects.find((s) => s.id === lesson.home);
-    if (!home?.modules.some((m) => m.lessons.some((l) => l.id === id))) problems.push(`${id}: not listed in subject ${lesson.home}`);
+    const stub = home?.modules.flatMap((m) => m.lessons).find((l) => l.id === id);
+    if (!stub) problems.push(`${id}: not listed in subject ${lesson.home}`);
+    else {
+      for (const field of ["slug", "topic", "title"] as const) {
+        const want = stub[field];
+        if (want !== undefined && lesson[field] !== want) problems.push(`${id}: ${field} "${lesson[field]}" differs from its subject entry "${want}"`);
+      }
+    }
+    const { bounds, nodes, kind } = lesson.scene;
+    for (const [nid, n] of Object.entries(nodes)) {
+      if (n.x < bounds.x || n.y < bounds.y || n.x + n.w > bounds.x + bounds.w || n.y + n.h > bounds.y + bounds.h) problems.push(`${id}: node ${nid} lies outside the scene bounds`);
+    }
+    const inputs = new Set(Object.keys(lesson.model.defaults));
     const known = new Set(input.subjects.flatMap((s) => s.modules.flatMap((m) => m.lessons.map((l) => l.id))));
     for (const b of lesson.buildsOn) if (!known.has(b)) problems.push(`${id}: builds on unknown lesson ${b}`);
     for (const c of lesson.components) if (!componentIds.has(c)) problems.push(`${id}: unknown component ${c}`);
@@ -44,6 +56,11 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
       if (stepIds.has(step.id)) problems.push(`${id}: duplicate step id ${step.id}`);
       stepIds.add(step.id);
       for (const c of step.controls ?? []) if (!(c in lesson.controls)) problems.push(`${id}/step ${step.id} unlocks unknown control ${c}`);
+      const mode = step.sim?.mode;
+      if (mode !== undefined && !SCENE_MODES[kind].includes(mode)) problems.push(`${id}/step ${step.id} uses sim mode ${mode}, which a ${kind} scene doesn't have`);
+      const named = [...(step.scene?.add ?? []), ...(step.scene?.remove ?? []), ...(step.scene?.focus ?? [])];
+      for (const n of named) if (!(n in nodes)) problems.push(`${id}/step ${step.id} names unknown node ${n}`);
+      for (const k of Object.keys(step.model ?? {})) if (!inputs.has(k)) problems.push(`${id}/step ${step.id} sets ${k}, which is not a model input`);
       const outputs = lesson.model.run({ ...lesson.model.defaults, ...step.model });
       const texts = [...step.text, step.note?.text ?? "", ...(step.changed ?? []).map((c) => `${c.label} ${c.value ?? ""}`)];
       for (const name of texts.flatMap(quotedOutputs)) {

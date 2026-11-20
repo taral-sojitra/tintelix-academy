@@ -2,6 +2,7 @@ import type { SceneSpec } from "@tintelix/schema";
 
 /** Geometry from the Caching prototype, in world units. */
 export const cachingScene: SceneSpec = {
+  kind: "cache-aside",
   world: { w: 920, h: 540 },
   bounds: { x: 8, y: 62, w: 896, h: 422 },
   nodes: {

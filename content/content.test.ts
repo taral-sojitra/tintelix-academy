@@ -24,10 +24,15 @@ describe("content", () => {
     expect(getLesson("system-design", "nope")).toBeUndefined();
   });
 
-  it("marks only Caching as available", () => {
+  it("marks Caching and CDN as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["caching"]);
+    expect(open.map((l) => l.id)).toEqual(["caching", "cdn"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 5 });
+  });
+
+  it("lists the CDN lesson as written and in order", () => {
+    expect(lessonSummaries("system-design").find((l) => l.id === "cdn")).toMatchObject({ module: "Speed", order: 6, available: true });
+    expect(getLesson("system-design", "cdn")?.title).toBe("Serve Mumbai from Mumbai");
   });
 
   it("every step's model values keep the hit rate between 0 and 1", () => {
@@ -37,5 +42,14 @@ describe("content", () => {
       expect(h).toBeGreaterThanOrEqual(0);
       expect(h).toBeLessThanOrEqual(1);
     }
+  });
+
+  it("the CDN slow-motion step has misses a learner can see", () => {
+    const cdn = getLesson("system-design", "cdn")!;
+    const slow = cdn.steps.find((s) => s.id === "slow-mo")!;
+    const out = cdn.model.run({ ...cdn.model.defaults, ...slow.model });
+    expect(out.edgeHitPct).toBeLessThan(95);
+    expect(out.edgeHitPct).toBeGreaterThan(80);
+    expect(slow.text.join(" ")).toContain("{edgeHitPct}");
   });
 });

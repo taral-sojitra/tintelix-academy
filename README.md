@@ -2,7 +2,7 @@
 
 Tintelix is an interactive course site. Each lesson is a short story told on a live, animated diagram: you watch a system struggle, change one thing, and see the numbers move.
 
-The first slice ships one complete lesson, **System Design → Caching ("Survive the flash sale")**, plus Home, the System Design subject page, the Components browser and a printable cheatsheet. Six more subjects (Computer Networks, APIs, Linux, Microservices, SQL, DSA) are listed as coming later.
+Two System Design lessons are live: **Caching ("Survive the flash sale")** and **CDN ("Serve Mumbai from Mumbai")**. Around them are Home, the System Design subject page, the Components browser and a printable cheatsheet per lesson. Six more subjects (Computer Networks, APIs, Linux, Microservices, SQL, DSA) are listed as coming later.
 
 ## Repo layout
 
@@ -48,9 +48,10 @@ python3 apps/web/e2e/lesson_smoke.py http://localhost:3123
 
 ## Adding a lesson
 
-A lesson is data plus a small pure model. Another cache-aside lesson needs no engine changes.
+A lesson is data plus a small pure model. Its `scene.kind` picks a scene runtime from `packages/stage/src/scenes/index.ts`. The scene owns the routing, node widgets, legend, request rate, queues, chart and tiles; the player, camera, loop, canvases and controls are shared.
 
-A lesson with a different kind of diagram does need engine work first. The request routing is already a separate, pure `Router`, but `createPlayer` always builds the cache-aside scene, and the stage markup has the cache, database and app-server widgets and the "DB load" chart built in. Before the second kind of lesson, move the legend, rates, queues, widgets and chart metric behind `SceneRuntime`, and choose the scene by lesson.
+- **A lesson on an existing kind of diagram** (`cache-aside`, `cdn`) needs no engine changes.
+- **A new kind of diagram** needs a pure router in `packages/stage/src/routers/`, a scene in `packages/stage/src/scenes/`, its name in `SCENE_KINDS` and its `sim.mode` values in `SCENE_MODES` (`packages/schema/src/lesson.ts`).
 
 1. Add a stub for it to the subject's module list in `content/<subject>/subject.ts`.
 2. Create `content/<subject>/<slug>/` with:
@@ -62,7 +63,14 @@ A lesson with a different kind of diagram does need engine work first. The reque
 3. Register the lesson in `content/index.ts`.
 4. Run `pnpm test`.
 
-`checkContent` fails the tests, and therefore the build, when a step quotes an output the model does not produce, a title is longer than 40 characters, a component or `buildsOn` lesson does not exist, step ids repeat, or the lesson is missing from its subject.
+`checkContent` fails the tests, and therefore the build, when:
+
+- a step, note, "What changed" line, control readout or cheatsheet line quotes an output the model does not produce;
+- a title is longer than 40 characters;
+- a component or `buildsOn` lesson does not exist, or step ids repeat;
+- the lesson is missing from its subject, or its slug, topic or title differs from the subject's entry;
+- a node lies outside the scene's bounds, or a step names a node that doesn't exist;
+- a step uses a `sim.mode` its scene kind doesn't have, or sets something that isn't a model input.
 
 ## Deploying on Vercel
 

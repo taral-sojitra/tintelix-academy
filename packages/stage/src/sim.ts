@@ -200,9 +200,10 @@ export class Sim {
       }
       const w = this.wires[leg.wire]!;
       if (p.s === 0) this.emit({ kind: "leg", node: "", wire: leg.wire, at: [p.x, p.y] });
-      const left = w.len - p.s;
+      // Budget is distance at full pace; a slow wire spends it faster.
+      const left = (w.len - p.s) / w.pace;
       if (budget < left) {
-        p.s += budget;
+        p.s += budget * w.pace;
         budget = 0;
         break;
       }

@@ -2,11 +2,12 @@ import type { Lesson, Subject } from "@tintelix/schema";
 import { components } from "./components";
 import { subjects } from "./subjects";
 import { caching } from "./system-design/caching/lesson";
+import { cdn } from "./system-design/cdn/lesson";
 
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [caching];
+export const lessons: Lesson[] = [caching, cdn];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);

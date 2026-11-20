@@ -1,11 +1,17 @@
-import type { Inputs, SceneSpec } from "@tintelix/schema";
+import type { Inputs, Outputs, SceneNode, SceneSpec } from "@tintelix/schema";
 import { formatOutput } from "@tintelix/schema/format";
 import type { Effects } from "../effects";
 import { cacheAside } from "../routers/cache-aside";
-import type { SimEvent } from "../sim";
-import type { SceneRuntime, StepContext, Tile, WireStyle } from "./types";
+import { esc, kindTile, nodeHead } from "../render/dom";
+import type { Sim, SimEvent } from "../sim";
+import type { SceneChart, SceneRuntime, StepContext, Tile, WireStyle } from "./types";
 
 export const KEY_COUNT = 24;
+/** Visual requests per second at 1×; the database serves a little slower than 6.5/0.92 so its queue shows. */
+const R_VIS = 6.5;
+const MU_VIS = R_VIS / 0.96;
+const LEGEND: SceneRuntime["legend"] = [["cyan", "request"], ["green", "cache hit"], ["amber", "from database"], ["violet", "stored in cache"]];
+const CHART: SceneChart = { label: "DB LOAD · LAST 30 S", output: "dbBusyPct", max: 100, danger: 85 };
 /** Storm cycle, in seconds of simulated time: keys live 5 s, the cache is empty 2.5 s, then refills. */
 const STORM = { cycle: 14, expire: 5, empty: 7.5 };
 
@@ -53,6 +59,15 @@ export function createCacheAsideScene(o: { fx: Effects; rand: () => number; scen
     hasCache: false,
   };
   let ctxRef: StepContext | null = null;
+  const els: {
+    nodes: Record<string, HTMLElement>;
+    meters: Record<string, { bar: HTMLElement; label: HTMLElement | null }>;
+    keys: HTMLElement[];
+    ttl: { box: HTMLElement; text: HTMLElement; ring: SVGCircleElement } | null;
+    queueLabel: HTMLElement | null;
+    newBadge: HTMLElement | null;
+  } = { nodes: {}, meters: {}, keys: [], ttl: null, queueLabel: null, newBadge: null };
+  const wobble = [0, 1, 2].map(() => 30 + rand() * 10);
   let revealTarget = 0;
   let prevCycle = 0;
   let keyClock = 0;
@@ -104,6 +119,84 @@ export function createCacheAsideScene(o: { fx: Effects; rand: () => number; scen
     state,
     hitRate,
     cacheReady,
+    legend: LEGEND,
+    sim: { ratePerSec: R_VIS, queues: { db: MU_VIS } },
+    chart: CHART,
+
+    nodeBody(id: string, n: SceneNode): string {
+      const meter = `<div class="tx-row"><span class="tx-meter"><i data-meter="${id}"></i></span><span data-meter-label="${id}"></span></div>`;
+      switch (n.kind) {
+        case "app":
+          return `<div class="tx-nh">${kindTile(n.kind, true)}<b>${esc(n.label)}</b><span class="tx-leds"><i></i><i></i><i></i></span></div><div class="tx-row"><span class="tx-meter"><i data-meter="${id}"></i></span></div>`;
+        case "cache":
+          return `${nodeHead(n, { badge: "NEW" })}
+        <div class="tx-ttl" data-ttl><span data-ttl-text></span><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" class="tx-ttl-track"/><circle cx="13" cy="13" r="10" class="tx-ttl-ring" data-ttl-ring stroke-dasharray="62.83" stroke-dashoffset="0"/></svg></div>
+        <div class="tx-keys">${"<i></i>".repeat(KEY_COUNT)}</div>
+        ${meter}`;
+        case "db":
+          return `${nodeHead(n)}${meter}
+        <div class="tx-row tx-spread"><span>queue</span><span data-queue></span></div><div class="tx-lane"></div>`;
+        default:
+          return nodeHead(n);
+      }
+    },
+
+    mount(world: HTMLElement) {
+      for (const el of world.querySelectorAll<HTMLElement>("[data-node]")) els.nodes[el.dataset.node!] = el;
+      for (const bar of world.querySelectorAll<HTMLElement>("[data-meter]")) {
+        const id = bar.dataset.meter!;
+        els.meters[id] = { bar, label: world.querySelector<HTMLElement>(`[data-meter-label="${id}"]`) };
+      }
+      els.keys = [...world.querySelectorAll<HTMLElement>(".tx-keys i")];
+      const box = world.querySelector<HTMLElement>("[data-ttl]");
+      els.ttl = box ? { box, text: box.querySelector("[data-ttl-text]")!, ring: box.querySelector("[data-ttl-ring]")! } : null;
+      els.queueLabel = world.querySelector("[data-queue]");
+      els.newBadge = world.querySelector("[data-new]");
+    },
+
+    paintWidgets(display: Outputs, ctx: StepContext, rdt: number, sim: Sim) {
+      const hit = cacheReady() ? display.hitRatePct ?? 0 : 0;
+      const load = display.dbBusyPct ?? 0;
+      const cacheMeter = els.meters.cache;
+      if (cacheMeter) {
+        cacheMeter.bar.style.width = `${Math.round(hit)}%`;
+        if (cacheMeter.label) cacheMeter.label.textContent = `hit ${formatOutput("hitRatePct", hit)}`;
+      }
+      const dbMeter = els.meters.db;
+      if (dbMeter) {
+        dbMeter.bar.style.width = `${Math.min(100, load)}%`;
+        dbMeter.bar.dataset.level = load > 85 ? "high" : load > 50 ? "mid" : "low";
+        if (dbMeter.label) dbMeter.label.textContent = `load ${formatOutput("dbBusyPct", load)}`;
+      }
+      if (els.queueLabel) els.queueLabel.textContent = `${sim.queues.db?.waiting ?? 0} waiting`;
+      ["a0", "a1", "a2"].forEach((id, i) => {
+        wobble[i] = wobble[i]! + (26 + rand() * 18 - wobble[i]!) * Math.min(1, rdt * 1.5);
+        const m = els.meters[id];
+        if (m) m.bar.style.width = `${wobble[i]}%`;
+      });
+      els.keys.forEach((el, i) => {
+        const key = state.keys[i]!;
+        const cls = key.flash ? `on ${key.flash}` : key.on ? "on" : "";
+        if (el.className !== cls) el.className = cls;
+      });
+      if (els.ttl) {
+        els.ttl.box.classList.toggle("show", state.ttl.show);
+        els.ttl.box.dataset.tone = state.ttl.tone;
+        els.ttl.text.textContent = state.ttl.text;
+        els.ttl.ring.style.strokeDashoffset = String(62.83 * (1 - state.ttl.progress));
+      }
+      for (const [id, el] of Object.entries(els.nodes)) {
+        const ping = state.pings[id] ?? 0;
+        el.style.setProperty("--ping", ping.toFixed(2));
+        el.classList.toggle("hot", id === "db" && load > 85 && ctx.playing && !ctx.reducedMotion);
+        if (id === "db") el.style.setProperty("--heat", Math.max(0, (load - 40) / 60).toFixed(2));
+      }
+    },
+
+    chartSample(live: Outputs, sim: Sim): number {
+      const l = live.dbBusyPct ?? 0;
+      return Math.min(100, l + (rand() * 3 - 1.5) + ((sim.queues.db?.waiting ?? 0) > 4 ? 2 : 0));
+    },
 
     liveInputs(ctx): Inputs {
       return { ...ctx.inputs, hitRate: hitRate(ctx) };
@@ -111,6 +204,7 @@ export function createCacheAsideScene(o: { fx: Effects; rand: () => number; scen
 
     enterStep(ctx) {
       ctxRef = ctx;
+      if (els.newBadge) els.newBadge.hidden = !(ctx.step.scene?.add ?? []).includes("cache");
       const had = state.hasCache;
       state.hasCache = ctx.visible.has("cache");
       revealTarget = state.hasCache ? 1 : 0;
