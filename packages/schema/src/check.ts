@@ -36,6 +36,8 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
     if (lesson.title.length > MAX_TITLE) problems.push(`${id}: title "${lesson.title}" is over ${MAX_TITLE} characters`);
     const home = input.subjects.find((s) => s.id === lesson.home);
     if (!home?.modules.some((m) => m.lessons.some((l) => l.id === id))) problems.push(`${id}: not listed in subject ${lesson.home}`);
+    const known = new Set(input.subjects.flatMap((s) => s.modules.flatMap((m) => m.lessons.map((l) => l.id))));
+    for (const b of lesson.buildsOn) if (!known.has(b)) problems.push(`${id}: builds on unknown lesson ${b}`);
     for (const c of lesson.components) if (!componentIds.has(c)) problems.push(`${id}: unknown component ${c}`);
     const stepIds = new Set<string>();
     for (const step of lesson.steps) {
@@ -43,7 +45,7 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
       stepIds.add(step.id);
       for (const c of step.controls ?? []) if (!(c in lesson.controls)) problems.push(`${id}/step ${step.id} unlocks unknown control ${c}`);
       const outputs = lesson.model.run({ ...lesson.model.defaults, ...step.model });
-      const texts = [...step.text, step.note?.text ?? ""];
+      const texts = [...step.text, step.note?.text ?? "", ...(step.changed ?? []).map((c) => `${c.label} ${c.value ?? ""}`)];
       for (const name of texts.flatMap(quotedOutputs)) {
         if (!(name in outputs)) problems.push(`${id}/step ${step.id} quotes {${name}}, which the model does not produce`);
       }

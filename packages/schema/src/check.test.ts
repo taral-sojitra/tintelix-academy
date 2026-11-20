@@ -65,6 +65,12 @@ describe("checkContent", () => {
     expect(check(lesson)).toContain("caching/step drowning quotes {nope}, which the model does not produce");
   });
 
+  it("flags a quoted value in a changed line the model does not produce", () => {
+    const lesson = makeLesson();
+    lesson.steps[1]!.changed = [{ kind: "mod", label: "Load", value: "{nope}" }];
+    expect(check(lesson)).toContain("caching/step fix quotes {nope}, which the model does not produce");
+  });
+
   it("flags a quoted value in the cheatsheet the model does not produce", () => {
     expect(check(makeLesson({ cheatsheet: [{ heading: "N", text: ["{nope}"] }] }))).toContain(
       "caching/cheatsheet quotes {nope}, which the model does not produce",
@@ -94,6 +100,10 @@ describe("checkContent", () => {
 
   it("flags a lesson its home subject does not list", () => {
     expect(check(makeLesson({ id: "cdn", slug: "cdn" }))).toContain("cdn: not listed in subject system-design");
+  });
+
+  it("flags buildsOn entries that name no lesson", () => {
+    expect(check(makeLesson({ buildsOn: ["ghost"] }))).toContain("caching: builds on unknown lesson ghost");
   });
 
   it("reports schema problems with their path", () => {

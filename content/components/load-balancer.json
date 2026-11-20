@@ -1,0 +1,11 @@
+{
+  "id": "load-balancer",
+  "name": "Load balancer",
+  "icon": "lb",
+  "category": "traffic",
+  "oneLine": "Spreads incoming requests across several servers, and stops sending to ones that fail.",
+  "useWhen": ["You run more than one copy of a server.", "You need to replace servers without downtime."],
+  "watchOut": ["Round robin ignores how busy a server is.", "It can become a single point of failure unless it is managed or redundant."],
+  "numbers": [{ "label": "Added latency", "value": "under 1 ms" }],
+  "tools": ["AWS ALB / NLB", "NGINX", "HAProxy", "Envoy"]
+}

@@ -9,6 +9,8 @@ export const LessonStub = z.object({
   id: z.string().min(1),
   slug: z.string().regex(/^[a-z0-9-]+$/),
   topic: z.string().min(1),
+  /** Hook title, when one has been written. */
+  title: z.string().max(40).optional(),
   summary: z.string(),
   buildsOn: z.array(z.string()),
 });

@@ -1,0 +1,110 @@
+import type { Step } from "@tintelix/schema";
+
+const focus = ["a0", "a1", "a2", "cache", "db"];
+
+export const cachingSteps: Step[] = [
+  {
+    id: "drowning",
+    tag: "problem",
+    title: "The database is drowning",
+    short: "Drowning",
+    text: [
+      "The flash sale starts: {traffic} product-page reads arrive every second, and the database answers every one of them. It can handle about {dbCapacity} a second, so it's {dbBusyPct} busy.",
+      "Watch the queue inside the database. Reads wait their turn, and the slowest 5% now take about {p95}.",
+    ],
+    note: { kind: "watch", text: "When a server is nearly full, a little more traffic makes the waiting time shoot up." },
+    sim: { mode: "none", speed: 1 },
+    model: { hitRate: 0 },
+    live: "LIVE · no cache",
+  },
+  {
+    id: "add-cache",
+    tag: "technique",
+    title: "Add a cache",
+    short: "Add cache",
+    text: [
+      "Add Redis, an in-memory store, beside the app servers. Reading from memory takes about half a millisecond.",
+      "It starts empty, so at first every read still misses. Each miss stores its answer, and the hit rate climbs to {hitRatePct} as the cache warms up.",
+    ],
+    note: { kind: "idea", text: "A cache doesn't make the database faster. It makes the database matter less." },
+    changed: [
+      { kind: "add", label: "Redis cache, 64 GB" },
+      { kind: "mod", label: "Hit rate", value: "{hitRatePct}" },
+      { kind: "mod", label: "DB load", value: "{dbBusyPct}" },
+    ],
+    scene: { add: ["cache"] },
+    sim: { mode: "warm", speed: 1 },
+    model: { hitRate: 0.82 },
+    live: "LIVE · cache warming up",
+  },
+  {
+    id: "slow-mo",
+    tag: "technique",
+    title: "Cache-aside, in slow motion",
+    short: "Slow-mo",
+    text: [
+      "Every read asks the cache first. **Green** dots are hits: answered from memory and sent straight back.",
+      "**Amber** dots are misses. The app reads the database, replies, and stores a copy in the cache (**violet**) for next time.",
+    ],
+    note: { kind: "turn", text: "Drag the hit rate. At 0% the database drowns again. Past 95%, even the slowest 5% of reads are hits." },
+    scene: { focus },
+    sim: { mode: "steady", speed: 0.45 },
+    model: { hitRate: 0.82 },
+    controls: ["hitRate"],
+    live: "SLOW MOTION · 0.45×",
+  },
+  {
+    id: "expiry-storm",
+    tag: "problem",
+    title: "Everything expires at once",
+    short: "Expiry storm",
+    text: [
+      "Every key was stored during the same warm-up, with the same 1-hour lifetime (TTL). So they all expire in the same second.",
+      "Watch the timer on the cache. At zero, every read misses at once and the database floods. Then the cache refills, until the next hour comes round.",
+    ],
+    note: { kind: "watch", text: "Averages hide this. Only a chart over time, like the load chart on the stage, shows the spike." },
+    changed: [
+      { kind: "mod", label: "TTL", value: "60 min for every key" },
+      { kind: "del", label: "Once an hour, the hit rate falls to 0%" },
+    ],
+    scene: { focus },
+    sim: { mode: "storm", speed: 1 },
+    model: { hitRate: 0.82 },
+    live: "LIVE · one loop = one hour",
+  },
+  {
+    id: "jitter",
+    tag: "solution",
+    title: "Spread out the expiry",
+    short: "Jitter",
+    text: [
+      "Give each key a slightly random TTL, such as 60 minutes ± 10%. Keys now expire a few at a time, spread across the hour.",
+      "Each expired key costs one miss, and the next read stores it again. The load chart stays flat at about {dbBusyPct}.",
+    ],
+    note: { kind: "tip", text: "For one very busy key, also let a single request rebuild it while the others wait." },
+    changed: [
+      { kind: "mod", label: "TTL", value: "54–66 min, random per key" },
+      { kind: "mod", label: "DB load", value: "flat at about {dbBusyPct}" },
+    ],
+    sim: { mode: "jitter", speed: 1 },
+    model: { hitRate: 0.82 },
+    controls: ["hitRate"],
+    live: "LIVE · random TTLs",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What the cache bought us",
+    short: "Recap",
+    text: [
+      "At a {hitRatePct} hit rate, database reads fall from {traffic} to {dbReads} a second, and the slowest 5% of reads take about {p95}.",
+      "DB reads = (1 − hit rate) × total reads, so going from a 90% to a 95% hit rate halves the database's work.",
+      "Give keys random TTLs so they don't all expire together.",
+    ],
+    note: { kind: "next", text: "Next lesson: CDN, which serves Mumbai from Mumbai." },
+    sim: { mode: "steady", speed: 1 },
+    model: { hitRate: 0.82 },
+    controls: ["hitRate"],
+    live: "LIVE · cache-aside",
+  },
+];
