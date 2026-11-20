@@ -159,17 +159,17 @@ export function drawFront(s: Surface, view: View, packets: Packet[], queue: Queu
   }
 }
 
-/** Database load over the last 30 seconds, with an 85% danger line. */
-export function drawChart(s: Surface, hist: number[], pal: Palette) {
+/** A scene's chart metric over the last 30 seconds, on a 0..max scale with a dashed danger line. */
+export function drawChart(s: Surface, hist: number[], pal: Palette, scale: { max: number; danger: number }) {
   const { ctx, w, h } = s;
   clear(s);
   ctx.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
-  const y = (v: number) => h - 3 - (v / 100) * (h - 6);
+  const y = (v: number) => h - 3 - (Math.min(v, scale.max) / scale.max) * (h - 6);
   const c = pal.colors;
   ctx.lineWidth = 1;
   ctx.setLineDash([]);
   ctx.strokeStyle = withAlpha(c.blue, 0.18);
-  for (const v of [25, 50, 75]) {
+  for (const v of [0.25, 0.5, 0.75].map((f) => f * scale.max)) {
     ctx.beginPath();
     ctx.moveTo(0, y(v));
     ctx.lineTo(w, y(v));
@@ -178,8 +178,8 @@ export function drawChart(s: Surface, hist: number[], pal: Palette) {
   ctx.strokeStyle = withAlpha(c.red, 0.6);
   ctx.setLineDash([3, 3]);
   ctx.beginPath();
-  ctx.moveTo(0, y(85));
-  ctx.lineTo(w, y(85));
+  ctx.moveTo(0, y(scale.danger));
+  ctx.lineTo(w, y(scale.danger));
   ctx.stroke();
   ctx.setLineDash([]);
   const n = hist.length;

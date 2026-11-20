@@ -1,10 +1,31 @@
-import type { SceneSpec } from "@tintelix/schema";
+import type { SceneNode, SceneSpec } from "@tintelix/schema";
 import { iconSvg, type IconName } from "../icons";
-import { KEY_COUNT } from "../scenes/cache-aside";
 import type { Tile } from "../scenes/types";
 
-const KIND_ICON: Record<SceneSpec["nodes"][string]["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db", edge: "blocks", origin: "server" };
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const KIND_ICON: Record<SceneNode["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db", edge: "blocks", origin: "server" };
+
+/** Escapes text for HTML. Every content string that reaches the stage goes through this. */
+export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+/** The coloured icon square for a node kind. */
+export function kindTile(kind: SceneNode["kind"], small = false): string {
+  return `<span class="tx-tile k-${kind}${small ? " sm" : ""}">${iconSvg(KIND_ICON[kind], "")}</span>`;
+}
+
+/** A node's header: icon, label (with an optional badge) and sub-label. */
+export function nodeHead(n: SceneNode, opts: { badge?: string } = {}): string {
+  const badge = opts.badge ? ` <span class="tx-badge" data-new>${esc(opts.badge)}</span>` : "";
+  return `<div class="tx-nh">${kindTile(n.kind)}<div><b>${esc(n.label)}${badge}</b><span class="tx-sub">${esc(n.sub)}</span></div></div>`;
+}
+
+export interface StageOptions {
+  /** Colour key and text for each entry in the legend. */
+  legend: [string, string][];
+  /** Text above the chart, such as "DB LOAD · LAST 30 S". */
+  chartLabel: string;
+  /** The inside of each node box; the scene owns its widgets. */
+  nodeBody: (id: string, node: SceneNode) => string;
+}
 
 export interface StageDom {
   root: HTMLElement;
@@ -15,41 +36,17 @@ export interface StageDom {
   chartValue: HTMLElement;
   tagText: HTMLElement;
   nodes: Record<string, HTMLElement>;
-  keys: HTMLElement[];
-  ttl: { box: HTMLElement; text: HTMLElement; ring: SVGCircleElement } | null;
-  meters: Record<string, { bar: HTMLElement; label: HTMLElement | null }>;
-  queueLabel: HTMLElement | null;
-  newBadge: HTMLElement | null;
-}
-
-function nodeHtml(id: string, n: SceneSpec["nodes"][string]): string {
-  const tile = (sm = false) => `<span class="tx-tile k-${n.kind}${sm ? " sm" : ""}">${iconSvg(KIND_ICON[n.kind], "")}</span>`;
-  const head = `<div class="tx-nh">${tile()}<div><b>${esc(n.label)}</b><span class="tx-sub">${esc(n.sub)}</span></div></div>`;
-  switch (n.kind) {
-    case "app":
-      return `<div class="tx-nh">${tile(true)}<b>${esc(n.label)}</b><span class="tx-leds"><i></i><i></i><i></i></span></div><div class="tx-row"><span class="tx-meter"><i data-meter="${id}"></i></span></div>`;
-    case "cache":
-      return `<div class="tx-nh">${tile()}<div><b>${esc(n.label)} <span class="tx-badge" data-new>NEW</span></b><span class="tx-sub">${esc(n.sub)}</span></div></div>
-        <div class="tx-ttl" data-ttl><span data-ttl-text></span><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" class="tx-ttl-track"/><circle cx="13" cy="13" r="10" class="tx-ttl-ring" data-ttl-ring stroke-dasharray="62.83" stroke-dashoffset="0"/></svg></div>
-        <div class="tx-keys">${"<i></i>".repeat(KEY_COUNT)}</div>
-        <div class="tx-row"><span class="tx-meter"><i data-meter="${id}"></i></span><span data-meter-label="${id}"></span></div>`;
-    case "db":
-      return `${head}<div class="tx-row"><span class="tx-meter"><i data-meter="${id}"></i></span><span data-meter-label="${id}"></span></div>
-        <div class="tx-row tx-spread"><span>queue</span><span data-queue></span></div><div class="tx-lane"></div>`;
-    default:
-      return head;
-  }
 }
 
 /** Builds the stage: back canvas, HTML boxes, front canvas and the overlays. */
-export function buildStage(host: HTMLElement, scene: SceneSpec, legend: [string, string][]): StageDom {
+export function buildStage(host: HTMLElement, scene: SceneSpec, opts: StageOptions): StageDom {
   host.innerHTML = `<div class="tx-stage">
     <canvas class="tx-back" aria-hidden="true"></canvas>
     <div class="tx-world" style="width:${scene.world.w}px;height:${scene.world.h}px"></div>
     <canvas class="tx-front" aria-hidden="true"></canvas>
     <div class="tx-ov tx-tagline"><span class="tx-live"></span><span class="tx-tagtext"></span></div>
-    <div class="tx-ov tx-legend" aria-hidden="true">${legend.map(([c, l]) => `<span><i style="background:var(--${c})"></i>${esc(l)}</span>`).join("")}</div>
-    <div class="tx-ov tx-chartbox" aria-hidden="true"><div class="tx-ch"><span>DB LOAD · LAST 30 S</span><b class="tx-chartv"></b></div><canvas class="tx-chart"></canvas></div>
+    <div class="tx-ov tx-legend" aria-hidden="true">${opts.legend.map(([c, l]) => `<span><i style="background:var(--${esc(c)})"></i>${esc(l)}</span>`).join("")}</div>
+    <div class="tx-ov tx-chartbox" aria-hidden="true"><div class="tx-ch"><span>${esc(opts.chartLabel)}</span><b class="tx-chartv"></b></div><canvas class="tx-chart"></canvas></div>
   </div>`;
   const root = host.querySelector<HTMLElement>(".tx-stage")!;
   const world = root.querySelector<HTMLElement>(".tx-world")!;
@@ -59,16 +56,10 @@ export function buildStage(host: HTMLElement, scene: SceneSpec, legend: [string,
     el.className = `tx-node k-${n.kind}`;
     el.dataset.node = id;
     Object.assign(el.style, { left: `${n.x}px`, top: `${n.y}px`, width: `${n.w}px`, height: `${n.h}px` });
-    el.innerHTML = nodeHtml(id, n);
+    el.innerHTML = opts.nodeBody(id, n);
     world.appendChild(el);
     nodes[id] = el;
   }
-  const meters: StageDom["meters"] = {};
-  for (const bar of world.querySelectorAll<HTMLElement>("[data-meter]")) {
-    const id = bar.dataset.meter!;
-    meters[id] = { bar, label: world.querySelector<HTMLElement>(`[data-meter-label="${id}"]`) };
-  }
-  const ttlBox = world.querySelector<HTMLElement>("[data-ttl]");
   return {
     root,
     world,
@@ -78,11 +69,6 @@ export function buildStage(host: HTMLElement, scene: SceneSpec, legend: [string,
     chartValue: root.querySelector(".tx-chartv")!,
     tagText: root.querySelector(".tx-tagtext")!,
     nodes,
-    keys: [...world.querySelectorAll<HTMLElement>(".tx-keys i")],
-    ttl: ttlBox ? { box: ttlBox, text: ttlBox.querySelector("[data-ttl-text]")!, ring: ttlBox.querySelector("[data-ttl-ring]")! } : null,
-    meters,
-    queueLabel: world.querySelector("[data-queue]"),
-    newBadge: world.querySelector("[data-new]"),
   };
 }
 

@@ -1,4 +1,4 @@
-import type { Inputs, Lesson, Outputs, Step } from "@tintelix/schema";
+import type { Inputs, Lesson, Outputs, SceneKind, Step } from "@tintelix/schema";
 import { formatOutput } from "@tintelix/schema/format";
 import { fitView, type View } from "./camera";
 import { Effects } from "./effects";
@@ -7,8 +7,8 @@ import { startLoop } from "./loop";
 import { readPalette, type Palette } from "./palette";
 import { drawBack, drawChart, drawFront, type Surface } from "./render/canvas";
 import { buildStage, renderTiles, type StageDom } from "./render/dom";
-import { createCacheAsideScene, type CacheAsideScene } from "./scenes/cache-aside";
-import type { StepContext } from "./scenes/types";
+import { scenes } from "./scenes";
+import type { SceneRuntime, StepContext } from "./scenes/types";
 import { Sim } from "./sim";
 
 export type Speed = 0.5 | 1 | 2;
@@ -49,12 +49,8 @@ export interface PlayerOptions {
   hud?: HTMLElement;
 }
 
-/** Visual requests per second at 1×; the database serves a little slower than 6.5/0.92 so its queue shows. */
-const R_VIS = 6.5;
-const MU_VIS = R_VIS / 0.96;
 const SPEED = 400;
 const INSETS = { top: 50, side: 14, bottom: 56 };
-const LEGEND: [string, string][] = [["cyan", "request"], ["green", "cache hit"], ["amber", "from database"], ["violet", "stored in cache"]];
 
 const editableTarget = (t: EventTarget | null) => {
   const el = t as HTMLElement | null;
@@ -81,8 +77,10 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
 
   const wires: Record<string, Wire> = Object.fromEntries(Object.entries(lesson.scene.wires).map(([k, w]) => [k, makeWire(w.from, w.to)]));
   const fx = new Effects({ reducedMotion, rand });
-  const scene: CacheAsideScene = createCacheAsideScene({ fx, rand, scene: lesson.scene });
-  const sim = new Sim({ wires, router: scene.router, rand, ratePerSec: R_VIS, speed: SPEED, queues: { db: MU_VIS }, trailLimit: fx.trailLimit });
+  const factory = scenes[lesson.scene.kind as SceneKind] as (typeof scenes)[SceneKind] | undefined;
+  if (!factory) throw new Error(`no scene runtime for "${lesson.scene.kind}"`);
+  const scene: SceneRuntime = factory({ fx, rand, scene: lesson.scene });
+  const sim = new Sim({ wires, router: scene.router, rand, ratePerSec: scene.sim.ratePerSec, speed: SPEED, queues: scene.sim.queues ?? {}, trailLimit: fx.trailLimit });
 
   const step = (): Step => lesson.steps[state.stepIndex]!;
   const visibleAt = (i: number) => {
@@ -103,6 +101,8 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     overridden: Object.keys(state.overrides).length > 0,
     visible,
     model: lesson.model,
+    playing: state.playing,
+    reducedMotion,
   });
   const live = () => lesson.model.run(scene.liveInputs(ctx()));
 
@@ -115,7 +115,6 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   const hist: number[] = new Array(300).fill(0);
   let histClock = 0;
   let display: Outputs = {};
-  const wobble = [0, 1, 2].map(() => 30 + rand() * 10);
   let stopLoop: (() => void) | null = null;
   let ro: ResizeObserver | null = null;
   let mo: MutationObserver | null = null;
@@ -159,53 +158,19 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     for (const [name, value] of Object.entries(target)) display[name] = (display[name] ?? value) + (value - (display[name] ?? value)) * k;
     const c = ctx();
     if (opts.hud) renderTiles(opts.hud, scene.tiles(display, c));
-    const st = scene.state;
-    const hit = scene.cacheReady() ? display.hitRatePct ?? 0 : 0;
-    const load = display.dbBusyPct ?? 0;
-    const cacheMeter = dom.meters.cache;
-    if (cacheMeter) {
-      cacheMeter.bar.style.width = `${Math.round(hit)}%`;
-      if (cacheMeter.label) cacheMeter.label.textContent = `hit ${formatOutput("hitRatePct", hit)}`;
-    }
-    const dbMeter = dom.meters.db;
-    if (dbMeter) {
-      dbMeter.bar.style.width = `${Math.min(100, load)}%`;
-      dbMeter.bar.dataset.level = load > 85 ? "high" : load > 50 ? "mid" : "low";
-      if (dbMeter.label) dbMeter.label.textContent = `load ${formatOutput("dbBusyPct", load)}`;
-    }
-    if (dom.queueLabel) dom.queueLabel.textContent = `${sim.queues.db?.waiting ?? 0} waiting`;
-    ["a0", "a1", "a2"].forEach((id, i) => {
-      wobble[i] = wobble[i]! + (26 + rand() * 18 - wobble[i]!) * Math.min(1, rdt * 1.5);
-      const m = dom!.meters[id];
-      if (m) m.bar.style.width = `${wobble[i]}%`;
-    });
-    dom.keys.forEach((el, i) => {
-      const key = st.keys[i]!;
-      const cls = key.flash ? `on ${key.flash}` : key.on ? "on" : "";
-      if (el.className !== cls) el.className = cls;
-    });
-    if (dom.ttl) {
-      dom.ttl.box.classList.toggle("show", st.ttl.show);
-      dom.ttl.box.dataset.tone = st.ttl.tone;
-      dom.ttl.text.textContent = st.ttl.text;
-      dom.ttl.ring.style.strokeDashoffset = String(62.83 * (1 - st.ttl.progress));
-    }
-    for (const [id, el] of Object.entries(dom.nodes)) {
-      const ping = st.pings[id] ?? 0;
-      el.style.setProperty("--ping", ping.toFixed(2));
-      el.classList.toggle("hot", id === "db" && load > 85 && state.playing && !reducedMotion);
-      if (id === "db") el.style.setProperty("--heat", Math.max(0, (load - 40) / 60).toFixed(2));
-    }
+    scene.paintWidgets(display, c, rdt, sim);
     // The label states the model's number; only the line carries the noise.
-    dom.chartValue.textContent = formatOutput("dbBusyPct", load);
+    const out = scene.chart.output;
+    dom.chartValue.textContent = formatOutput(out, display[out] ?? 0);
   }
 
   function paintCanvas() {
     if (!surfaces || !palette) return;
     drawBack(surfaces.back, view, wires, scene.wireStyles(), fx.ripples, palette, fx.flow);
     const lane = scene.lane;
-    const q = sim.queues.db;
-    drawFront(surfaces.front, view, sim.packets, q ? { at: lane, waiting: q.waiting, serving: q.serving !== null, simTime } : null, fx.particles, fx.floats, palette);
+    const qName = Object.keys(scene.sim.queues ?? {})[0];
+    const q = qName ? sim.queues[qName] : undefined;
+    drawFront(surfaces.front, view, sim.packets, q && lane ? { at: lane, waiting: q.waiting, serving: q.serving !== null, simTime } : null, fx.particles, fx.floats, palette);
   }
 
   function update(dt: number) {
@@ -220,8 +185,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     histClock += dt;
     while (histClock >= 0.1) {
       histClock -= 0.1;
-      const l = live().dbBusyPct ?? 0;
-      hist.push(Math.min(100, l + (rand() * 3 - 1.5) + ((sim.queues.db?.waiting ?? 0) > 4 ? 2 : 0)));
+      hist.push(scene.chartSample(live(), sim));
       hist.shift();
     }
   }
@@ -232,7 +196,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     update(dt);
     paintCanvas();
     if ((frameN++ & 1) === 0) {
-      if (surfaces && palette) drawChart(surfaces.chart, hist, palette);
+      if (surfaces && palette) drawChart(surfaces.chart, hist, palette, scene.chart);
       paintDom(rdt * 2);
     }
   }
@@ -244,7 +208,6 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
       el.classList.toggle("hidden", !visible.has(id));
       el.classList.toggle("dim", !!s.scene?.focus && !s.scene.focus.includes(id));
     }
-    if (dom.newBadge) dom.newBadge.hidden = !(s.scene?.add ?? []).includes("cache");
     dom.tagText.textContent = state.playing ? s.live : "PAUSED";
     dom.root.classList.toggle("paused", !state.playing);
   }
@@ -338,7 +301,8 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   };
 
   if (render) {
-    dom = buildStage(host, lesson.scene, LEGEND);
+    dom = buildStage(host, lesson.scene, { legend: scene.legend, chartLabel: scene.chart.label, nodeBody: (id, n) => scene.nodeBody(id, n) });
+    scene.mount(dom.world);
     const surface = (c: HTMLCanvasElement): Surface => ({ ctx: c.getContext("2d")!, dpr: 1, w: 0, h: 0 });
     surfaces = { back: surface(dom.back), front: surface(dom.front), chart: surface(dom.chart) };
     palette = readPalette(dom.root);
@@ -351,7 +315,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   }
 
   enter(clampStep(opts.startStep ?? 0));
-  hist.fill(live().dbBusyPct ?? 0);
+  hist.fill(live()[scene.chart.output] ?? 0);
   if (state.stepIndex === last) completed = true;
   if (render && dom) {
     // Warm start: the first frame already shows a working system.

@@ -2,6 +2,8 @@
 import { caching } from "../../../content/system-design/caching/lesson";
 import { createPlayer, type Player } from "./player";
 import { rng } from "./rng";
+import { SCENE_KINDS } from "@tintelix/schema";
+import { scenes } from "./scenes";
 
 const ids = caching.steps.map((s) => s.id);
 const make = (): Player => createPlayer(caching, document.createElement("div"), { render: false, rand: rng(5) });
@@ -122,5 +124,14 @@ describe("createPlayer", () => {
     p.destroy();
     p.next();
     expect(n).toBe(0);
+  });
+
+  it("refuses a lesson whose scene kind has no runtime", () => {
+    const odd = { ...caching, scene: { ...caching.scene, kind: "nope" } } as unknown as typeof caching;
+    expect(() => createPlayer(odd, document.createElement("div"), { render: false })).toThrow(/no scene runtime for "nope"/);
+  });
+
+  it("finds a runtime for every scene kind", () => {
+    for (const kind of SCENE_KINDS) expect(typeof scenes[kind]).toBe("function");
   });
 });
