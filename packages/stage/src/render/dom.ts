@@ -3,7 +3,7 @@ import { iconSvg, type IconName } from "../icons";
 import { KEY_COUNT } from "../scenes/cache-aside";
 import type { Tile } from "../scenes/types";
 
-const KIND_ICON: Record<SceneSpec["nodes"][string]["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db" };
+const KIND_ICON: Record<SceneSpec["nodes"][string]["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db", edge: "blocks", origin: "server" };
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 export interface StageDom {

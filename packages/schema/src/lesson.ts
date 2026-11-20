@@ -5,19 +5,42 @@ import { SubjectId } from "./subject";
 const Point = z.tuple([z.number(), z.number()]);
 const Rect = z.object({ x: z.number(), y: z.number(), w: z.number().positive(), h: z.number().positive() });
 
+/** Each kind of diagram the stage can play. A lesson's scene names one. */
+export const SCENE_KINDS = ["cache-aside", "cdn"] as const;
+export type SceneKind = (typeof SCENE_KINDS)[number];
+
+/** The `sim.mode` values each scene kind understands. */
+export const SCENE_MODES: Record<SceneKind, readonly string[]> = {
+  "cache-aside": ["none", "warm", "steady", "storm", "jitter"],
+  cdn: ["none", "direct", "warm", "steady", "stale", "purge"],
+};
+
+export const SceneNode = Rect.extend({
+  kind: z.enum(["users", "lb", "app", "cache", "db", "edge", "origin"]),
+  label: z.string(),
+  sub: z.string(),
+  hidden: z.boolean().optional(),
+});
+export type SceneNode = z.infer<typeof SceneNode>;
+
 export const SceneSpec = z.object({
+  kind: z.enum(SCENE_KINDS),
   world: z.object({ w: z.number().positive(), h: z.number().positive() }),
   bounds: Rect,
-  nodes: z.record(
+  /** Labelled background boxes, such as "Mumbai" and "Virginia, USA". */
+  regions: z.array(Rect.extend({ id: z.string(), label: z.string() })).optional(),
+  nodes: z.record(z.string(), SceneNode),
+  wires: z.record(
     z.string(),
-    Rect.extend({
-      kind: z.enum(["users", "lb", "app", "cache", "db"]),
-      label: z.string(),
-      sub: z.string(),
-      hidden: z.boolean().optional(),
+    z.object({
+      from: Point,
+      to: Point,
+      /** Packet speed multiplier on this wire; below 1 makes a long-haul link visibly slower. */
+      pace: z.number().positive().optional(),
+      /** Text drawn at the wire's midpoint, such as "13,000 km". */
+      label: z.string().optional(),
     }),
   ),
-  wires: z.record(z.string(), z.object({ from: Point, to: Point })),
 });
 export type SceneSpec = z.infer<typeof SceneSpec>;
 
@@ -42,7 +65,8 @@ export const Step = z.object({
   note: z.object({ kind: z.enum(["watch", "idea", "turn", "tip", "next"]), text: z.string() }).optional(),
   changed: z.array(z.object({ kind: z.enum(["add", "mod", "del"]), label: z.string(), value: z.string().optional() })).optional(),
   scene: z.object({ add: z.array(z.string()).optional(), remove: z.array(z.string()).optional(), focus: z.array(z.string()).optional() }).optional(),
-  sim: z.object({ mode: z.enum(["none", "warm", "steady", "storm", "jitter"]), speed: z.number().positive() }).optional(),
+  /** `mode` must be one of SCENE_MODES for the lesson's scene kind (checked by checkContent). */
+  sim: z.object({ mode: z.string(), speed: z.number().positive() }).optional(),
   model: z.record(z.string(), z.number()).optional(),
   controls: z.array(z.string()).optional(),
   live: z.string(),
