@@ -45,6 +45,7 @@ describe("formatOutput for the CDN lesson", () => {
     expect(formatOutput("edgeHitPct", 99.45)).toBe("99.4%");
     expect(formatOutput("edgeHitPct", 96.77)).toBe("97%");
     expect(formatOutput("edgeHitPct", 100)).toBe("100%");
+    expect(formatOutput("hitRatePct", 99.04)).toBe("99%");
   });
   it("keeps one decimal for small numbers that aren't whole", () => {
     expect(formatOutput("originReqs", 0.56)).toBe("0.6");

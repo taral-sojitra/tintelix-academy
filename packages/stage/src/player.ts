@@ -10,6 +10,7 @@ import { buildStage, renderTiles, type StageDom } from "./render/dom";
 import { scenes } from "./scenes";
 import type { SceneRuntime, StepContext } from "./scenes/types";
 import { Sim } from "./sim";
+import { smoothToward } from "./smooth";
 
 export type Speed = 0.5 | 1 | 2;
 
@@ -155,7 +156,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     if (!dom) return;
     const target = live();
     const k = 1 - Math.exp(-rdt * 5);
-    for (const [name, value] of Object.entries(target)) display[name] = (display[name] ?? value) + (value - (display[name] ?? value)) * k;
+    smoothToward(display, target, k);
     const c = ctx();
     if (opts.hud) renderTiles(opts.hud, scene.tiles(display, c));
     scene.paintWidgets(display, c, rdt, sim);
@@ -319,7 +320,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   if (state.stepIndex === last) completed = true;
   if (render && dom) {
     // Warm start: the first frame already shows a working system.
-    for (let i = 0; i < 90; i++) update(1 / 30);
+    if (scene.warmStart?.(ctx()) !== false) for (let i = 0; i < 90; i++) update(1 / 30);
     display = live();
     resize();
     stopLoop = startLoop(dom.root, frame);

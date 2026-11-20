@@ -90,6 +90,13 @@ async def cdn_flow(page):
     await page.keyboard.press("ArrowRight")
     await expect(page.locator(".narr h2")).to_have_text("Hit or miss, in slow motion")
     await expect(page.locator("#ctl-originKm")).to_be_enabled()
+    await page.locator("#ctl-originKm").focus()
+    await page.keyboard.press("End")
+    km_panel = page.locator("section.try", has=page.locator("#ctl-originKm"))
+    await expect(km_panel.locator(".try-readout")).to_contain_text("250 ms")
+    await expect(page.locator("[data-tile='rtt'] .tx-v")).to_have_text("250 ms", timeout=6000)
+    await page.keyboard.press("Home")
+    await page.locator("body").click(position={"x": 5, "y": 5})
     await page.keyboard.press("ArrowRight")
     await page.keyboard.press("ArrowRight")
     await expect(page.locator(".narr h2")).to_have_text("Purge on change, keep pages short")
@@ -98,6 +105,29 @@ async def cdn_flow(page):
     await expect(ttl_panel.locator(".try-readout")).to_contain_text("97%")
     await expect(page.locator("[data-tile='hits'] .tx-v")).to_have_text("97%", timeout=25000)
     return "CDN lesson: 787 ms with no edge, chart agrees, sliders unlock, a 10 s TTL keeps 97% at the edge"
+
+
+async def cdn_resume_old_price(page):
+    await page.goto(BASE + "/system-design/cdn", wait_until="load")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("The old price won't go away")
+    await page.wait_for_timeout(600)  # the step is saved to IndexedDB asynchronously
+    await page.reload(wait_until="load")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator(".narr h2")).to_have_text("The old price won't go away")
+    await page.evaluate("document.querySelector('.stage-host').scrollIntoView()")
+    await expect(page.locator("[data-price='origin']")).to_have_text("₹999", timeout=1500)
+    await expect(page.locator("[data-price='origin']")).to_have_text("₹799", timeout=8000)
+    return "resuming on the old-price step plays the price change instead of skipping it"
+
+
+async def cdn_cheatsheet(page):
+    res = await page.goto(BASE + "/system-design/cdn/cheatsheet", wait_until="load")
+    assert res is not None and res.status == 200
+    await expect(page.get_by_text("From Virginia a page takes 787 ms; from a Mumbai edge, 42 ms.")).to_be_visible()
+    return "CDN cheatsheet quotes the model's numbers"
 
 
 async def lesson_switch(page):
@@ -127,7 +157,7 @@ async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, lesson_switch, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

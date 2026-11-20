@@ -50,16 +50,48 @@ function setup(seed = 1) {
       scene.update(dt, ctx());
     }
   };
-  return { scene, ctx, enter, advance };
+  const fill = (n: number) => {
+    for (let i = 0; i < n; i++) scene.onEvent({ kind: "fill", node: "edge", at: [0, 0] }, ctx());
+  };
+  return { scene, ctx, enter, advance, fill, fx };
 }
 
 describe("CDN scene", () => {
-  it("warms the edge from empty", () => {
-    const { scene, ctx, enter, advance } = setup();
+  it("the edge holds nothing until a copy comes back from the origin", () => {
+    const { scene, ctx, enter, advance, fill } = setup();
     enter(steps.warm);
+    advance(6);
     expect(scene.liveInputs(ctx()).filled).toBe(0);
-    advance(12);
-    expect(scene.liveInputs(ctx()).filled).toBeGreaterThan(0.95);
+    expect(scene.state.copies.some((c) => c.on)).toBe(false);
+    fill(COPY_COUNT / 2);
+    expect(scene.liveInputs(ctx()).filled).toBeCloseTo(0.5, 5);
+    fill(COPY_COUNT / 2);
+    expect(scene.liveInputs(ctx()).filled).toBe(1);
+  });
+
+  it("a step can say how much of the catalogue the edge holds, so misses show", () => {
+    const { scene, ctx, enter } = setup();
+    enter(step("slow-mo", "steady", { edge: 1, filled: 0.9 }, 0.35));
+    expect(scene.liveInputs(ctx()).filled).toBeCloseTo(0.9, 5);
+    expect(scene.state.copies.filter((c) => c.on)).toHaveLength(Math.round(COPY_COUNT * 0.9));
+    const hits = scene.tiles(cdnModel.run(scene.liveInputs(ctx())), ctx()).find((t) => t.id === "hits")!;
+    expect(hits.note).toBe("served in Mumbai");
+  });
+
+  it("skips the warm start on steps whose story is scripted from their first second", () => {
+    const { scene, ctx, enter } = setup();
+    for (const [s, want] of [[steps.stale, false], [steps.purge, false], [steps.warm, true], [steps.direct, true], [steps.recap, true]] as const) {
+      enter(s);
+      expect(scene.warmStart?.(ctx())).toBe(want);
+    }
+  });
+
+  it("draws latency labels below Users, clear of the trip label above", () => {
+    const { scene, ctx, enter, fx } = setup();
+    enter(step("slow-mo", "steady", { edge: 1 }, 0.35));
+    scene.onEvent({ kind: "reply", node: "users", at: [0, 0], hit: true }, ctx());
+    const users = cdnScene.nodes.users!;
+    expect(fx.floats.at(-1)!.y).toBeGreaterThan(users.y + users.h);
   });
 
   it("in the stale step the edge keeps the old price after the origin changes", () => {
@@ -71,18 +103,21 @@ describe("CDN scene", () => {
     expect(scene.state.copies.every((c) => c.on && c.stale)).toBe(true);
   });
 
-  it("the purge step clears every copy, then serves the new price", () => {
-    const { scene, ctx, enter, advance } = setup();
+  it("the purge step clears every copy, then refills only from the origin, with the new price", () => {
+    const { scene, ctx, enter, advance, fill } = setup();
     enter(steps.purge);
     expect(scene.state.price.edge).toBe(999);
     advance(1.6);
     expect(scene.state.copies.every((c) => !c.on)).toBe(true);
     expect(scene.liveInputs(ctx()).filled).toBe(0);
-    scene.onEvent({ kind: "fill", node: "edge", at: [0, 0] }, ctx());
-    expect(scene.state.price).toEqual({ origin: 799, edge: 799 });
     advance(10);
-    expect(scene.state.copies.filter((c) => c.on).length).toBeGreaterThan(COPY_COUNT * 0.9);
-    expect(scene.state.copies.some((c) => c.stale)).toBe(false);
+    expect(scene.state.copies.some((c) => c.on)).toBe(false);
+    expect(scene.state.price.edge).toBeNull();
+    fill(1);
+    expect(scene.state.price).toEqual({ origin: 799, edge: 799 });
+    fill(COPY_COUNT - 1);
+    expect(scene.state.copies.every((c) => c.on && !c.stale)).toBe(true);
+    expect(scene.liveInputs(ctx()).filled).toBe(1);
   });
 
   it("re-entering the stale step resets prices and copies", () => {

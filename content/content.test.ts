@@ -43,4 +43,13 @@ describe("content", () => {
       expect(h).toBeLessThanOrEqual(1);
     }
   });
+
+  it("the CDN slow-motion step has misses a learner can see", () => {
+    const cdn = getLesson("system-design", "cdn")!;
+    const slow = cdn.steps.find((s) => s.id === "slow-mo")!;
+    const out = cdn.model.run({ ...cdn.model.defaults, ...slow.model });
+    expect(out.edgeHitPct).toBeLessThan(95);
+    expect(out.edgeHitPct).toBeGreaterThan(80);
+    expect(slow.text.join(" ")).toContain("{edgeHitPct}");
+  });
 });

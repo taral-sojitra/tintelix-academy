@@ -67,6 +67,11 @@ export interface SceneRuntime {
   mount(world: HTMLElement): void;
   /** Updates the widgets; called every other frame with the smoothed outputs. */
   paintWidgets(display: Outputs, ctx: StepContext, rdt: number, sim: Sim): void;
+  /**
+   * Whether the player may pre-run this step for a few seconds before the first frame, so a resumed
+   * lesson opens on a working system. Leave out, or return true, unless the step is scripted from t = 0.
+   */
+  warmStart?(ctx: StepContext): boolean;
   /** One chart sample, every 0.1 s of simulated time. Only the line carries noise. */
   chartSample(live: Outputs, sim: Sim): number;
   /** Inputs as animated right now (for example, the hit rate while the cache warms up). */

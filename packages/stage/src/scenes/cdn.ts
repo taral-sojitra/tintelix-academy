@@ -81,7 +81,6 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
   } = { nodes: {}, copies: [], badge: null, prices: {}, priceRows: [], meter: null, labels: {} };
   let ctxRef: StepContext | null = null;
   let revealTarget = 0;
-  let copyClock = 0;
   let changed = false;
   let purged = false;
 
@@ -89,20 +88,14 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
   const prices = (ctx: StepContext) => ({ old: ctx.inputs.oldPrice ?? 999, now: ctx.inputs.newPrice ?? 799 });
   const afterChange = (ctx: StepContext) => (ctx.inputs.purge ?? 0) >= 0.5;
   const showPrices = (ctx: StepContext) => mode(ctx) === "stale" || mode(ctx) === "purge" || afterChange(ctx);
-  const curve = (s: number) => 1 - Math.exp(-Math.max(0, s - 0.4) / 2.8);
+  const held = () => state.copies.filter((c) => c.on).length / COPY_COUNT;
+  /** While the edge fills, from empty or after a purge, it holds exactly the copies that came back from the origin. */
+  const filling = (ctx: StepContext) => mode(ctx) === "warm" || (mode(ctx) === "purge" && purged);
 
   /** Share of pages the edge holds right now. */
   function filled(ctx: StepContext): number {
     if (!state.hasEdge) return 0;
-    const t = ctx.stepTime;
-    switch (mode(ctx)) {
-      case "warm":
-        return curve(t);
-      case "purge":
-        return t < PURGE_AT ? 1 : curve(t - PURGE_AT);
-      default:
-        return 1;
-    }
+    return filling(ctx) ? held() : Math.max(0, Math.min(1, ctx.inputs.filled ?? 1));
   }
 
   const liveInputs = (ctx: StepContext): Inputs => ({ ...ctx.inputs, edge: state.hasEdge ? 1 : 0, filled: filled(ctx) });
@@ -151,14 +144,26 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
         const shown = afterChange(ctx) ? p.now : p.old;
         state.price = { origin: shown, edge: state.hasEdge ? shown : null };
       }
-      const full = state.hasEdge && m !== "warm";
       for (const c of state.copies) {
-        c.on = full;
-        // The purge step opens with the edge still holding the old version.
-        c.stale = full && m === "purge";
+        c.on = false;
+        c.stale = false;
         c.flash = "";
         c.t = 0;
       }
+      if (state.hasEdge && m !== "warm") {
+        const count = Math.round(COPY_COUNT * Math.max(0, Math.min(1, ctx.inputs.filled ?? 1)));
+        for (let i = 0; i < count; i++) {
+          const c = pick(false)!;
+          c.on = true;
+          // The purge step opens with the edge still holding the old version.
+          c.stale = m === "purge";
+        }
+      }
+    },
+
+    warmStart(ctx) {
+      // These steps are scripted from their first second (the price change, the purge): play them, don't pre-run them.
+      return !(mode(ctx) === "stale" || mode(ctx) === "purge");
     },
 
     update(dt, ctx) {
@@ -188,19 +193,6 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
         fx.float(edge.x + 4, edge.y - 16, "PURGED", "violet", true);
         fx.ripple(ex, ey, "violet", 90, 0.9);
         fx.burst(ex, ey, 40, ["violet", "white"]);
-      }
-      copyClock -= dt;
-      if (copyClock <= 0 && state.hasEdge) {
-        const want = Math.round(COPY_COUNT * filled(ctx));
-        if (state.copies.filter((c) => c.on).length < want) {
-          const c = pick(false);
-          if (c) {
-            c.on = true;
-            c.stale = false;
-            flash(c, "fill");
-          }
-        }
-        copyClock = 0.1;
       }
       for (const c of state.copies) if (c.t > 0 && (c.t -= dt) <= 0) c.flash = "";
       for (const n in state.pings) state.pings[n] = Math.max(0, state.pings[n]! - dt * 5);
@@ -245,7 +237,8 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
           fx.ripple(usersEdge[0], usersEdge[1], path === "hit" ? "green" : "amber", 20, 0.5);
           if (slow || rand() < 0.28) {
             const ms = cdnLatencyMs(path, ctx.model.run(liveInputs(ctx)), rand);
-            fx.float(users.x + 36 + rand() * 70, users.y - 16, formatOutput("pageMs", ms), path === "hit" ? "green" : ms > 300 ? "red" : "amber");
+            // Below Users: above it sits the label for the trip across town.
+            fx.float(users.x + 36 + rand() * 70, users.y + users.h + 16, formatOutput("pageMs", ms), path === "hit" ? "green" : ms > 300 ? "red" : "amber");
           }
           break;
         }
@@ -311,7 +304,7 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
           icon: "bolt",
           hue: "green",
           value: has ? formatOutput("edgeHitPct", hit) : "—",
-          note: !has ? "no edge" : filled(ctx) < 0.99 ? "edge warming up" : "served in Mumbai",
+          note: !has ? "no edge" : filling(ctx) && held() < 0.99 ? "edge warming up" : "served in Mumbai",
           mood: has && hit > 90 ? "good" : "",
         },
         {

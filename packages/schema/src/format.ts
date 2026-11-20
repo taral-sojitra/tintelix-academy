@@ -15,7 +15,10 @@ function duration(sec: number): string {
 export function formatOutput(name: string, value: number): string {
   if (name.endsWith("Pct")) {
     // Just under 100% keeps one decimal, rounded down, so 99.99% never reads as a perfect 100%.
-    if (value > 99 && value < 100) return `${(Math.floor(value * 10) / 10).toFixed(1)}%`;
+    if (value > 99 && value < 100) {
+      const tenth = Math.floor(value * 10) / 10;
+      return Number.isInteger(tenth) ? `${tenth}%` : `${tenth.toFixed(1)}%`;
+    }
     return `${Math.round(value)}%`;
   }
   if (name === "p95" || name.endsWith("Ms")) {
