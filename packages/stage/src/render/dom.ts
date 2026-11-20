@@ -3,7 +3,7 @@ import { makeWire } from "../geometry";
 import { iconSvg, type IconName } from "../icons";
 import type { Tile } from "../scenes/types";
 
-const KIND_ICON: Record<SceneNode["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db", edge: "edge", origin: "origin", services: "stack", histogram: "bars" };
+const KIND_ICON: Record<SceneNode["kind"], IconName> = { users: "users", lb: "lb", app: "server", cache: "bolt", db: "db", edge: "edge", origin: "origin", services: "stack", histogram: "bars", curve: "activity" };
 
 /** Escapes text for HTML. Every content string that reaches the stage goes through this. */
 export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);

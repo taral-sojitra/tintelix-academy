@@ -157,6 +157,7 @@
 .tx-tile.k-origin { background: var(--amber); }
 .tx-tile.k-services { background: var(--cyan); }
 .tx-tile.k-histogram { background: var(--blue); }
+.tx-tile.k-curve { background: var(--blue); }
 .tx-node.k-edge { border-color: color-mix(in srgb, var(--green) 75%, transparent); }
 .tx-node.k-origin .tx-meter i { background: var(--amber); }
 .tx-keys i.stale { background: var(--amber); }
@@ -194,4 +195,27 @@
 .tx-h-dot.slow { fill: var(--red); }
 @media (prefers-reduced-motion: reduce) {
   .tx-cells i, .tx-h-bar { transition: none; }
+}
+
+/* Queueing lesson: the line, the workers and the curve panel. */
+.tx-qrow { margin-top: 8px; gap: 8px; font-size: 12px; color: var(--node-sub); }
+.tx-qrow > span { min-width: 54px; font-family: var(--mono); }
+.tx-line { flex: 1; display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; }
+.tx-line i { height: 11px; border-radius: 50%; background: color-mix(in srgb, var(--amber) 12%, transparent); transition: background .2s; }
+.tx-line i.on { background: var(--amber); }
+.tx-line i.on.long { background: var(--red); }
+.tx-qrow b[data-line-more] { min-width: 28px; text-align: right; font-family: var(--mono); color: var(--red); }
+.tx-workers { flex: 1; display: flex; gap: 6px; }
+.tx-workers b { flex: 0 0 34px; height: 18px; border-radius: 5px; border: 1.5px solid var(--node-stroke); background: transparent; transition: background .2s; }
+.tx-workers b.on { background: var(--green); border-color: var(--green); }
+.tx-workers b[hidden] { display: none; }
+.tx-node.k-curve { padding: 10px 12px 6px; }
+.tx-curve { display: block; margin-top: 4px; overflow: visible; }
+.tx-curve text { font-family: var(--mono); font-size: 12px; fill: var(--node-sub); }
+.tx-c-grid { stroke: var(--node-stroke); stroke-width: 1; stroke-dasharray: 3 4; }
+.tx-c-line { fill: none; stroke: var(--cyan); stroke-width: 2.4; }
+.tx-c-dot { fill: var(--amber); stroke: var(--node-bg); stroke-width: 2; transition: cx .3s, cy .3s; }
+.tx-curve text.tx-c-label { fill: var(--node-ink); font-weight: 650; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) {
+  .tx-line i, .tx-workers b, .tx-c-dot { transition: none; }
 }

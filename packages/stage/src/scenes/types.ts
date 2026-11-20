@@ -57,7 +57,7 @@ export interface SceneRuntime {
   readonly router: Router;
   readonly legend: [PaletteKey, string][];
   /** Visual request rate at 1×, and the service rate of each queue. */
-  readonly sim: { ratePerSec: number; queues?: Record<string, number> };
+  readonly sim: { ratePerSec: number; queues?: Record<string, number>; exponential?: boolean };
   readonly chart: SceneChart;
   /** Where waiting requests line up, for the queue drawing; null when the scene has no queue. */
   readonly lane: [number, number] | null;
@@ -77,7 +77,8 @@ export interface SceneRuntime {
   /** Inputs as animated right now (for example, the hit rate while the cache warms up). */
   liveInputs(ctx: StepContext): Inputs;
   enterStep(ctx: StepContext): void;
-  update(dt: number, ctx: StepContext): void;
+  /** `sim` lets a scene set its arrival and work rates as the step's inputs change. */
+  update(dt: number, ctx: StepContext, sim?: Sim): void;
   onEvent(e: SimEvent, ctx: StepContext): void;
   wireStyles(): WireStyle[];
   tiles(display: Outputs, ctx: StepContext): Tile[];
