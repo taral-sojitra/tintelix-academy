@@ -6,10 +6,27 @@ describe("content", () => {
     expect(checkContent({ subjects, lessons, components })).toEqual([]);
   });
 
-  it("lists 20 System Design lessons in 6 modules", () => {
+  it("lists 30 System Design lessons in 8 modules, opening with Measuring systems and closing with Staying up", () => {
     const sd = subjects.find((s) => s.id === "system-design")!;
-    expect(sd.modules).toHaveLength(6);
-    expect(sd.modules.flatMap((m) => m.lessons)).toHaveLength(20);
+    expect(sd.modules.map((m) => m.title)).toEqual([
+      "Measuring systems",
+      "Scaling out",
+      "Speed",
+      "Data storage",
+      "Consistency",
+      "Messaging and reliability",
+      "Services",
+      "Staying up",
+    ]);
+    expect(sd.modules.flatMap((m) => m.lessons)).toHaveLength(30);
+  });
+
+  it("only builds on lessons that come earlier", () => {
+    const order = lessonSummaries("system-design").map((l) => l.id);
+    const sd = subjects.find((s) => s.id === "system-design")!;
+    for (const stub of sd.modules.flatMap((m) => m.lessons)) {
+      for (const b of stub.buildsOn) expect(order.indexOf(b), `${stub.id} builds on ${b}`).toBeLessThan(order.indexOf(stub.id));
+    }
   });
 
   it("covers all seven subjects", () => {
@@ -27,11 +44,11 @@ describe("content", () => {
   it("marks Caching and CDN as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
     expect(open.map((l) => l.id)).toEqual(["caching", "cdn"]);
-    expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 5 });
+    expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
   it("lists the CDN lesson as written and in order", () => {
-    expect(lessonSummaries("system-design").find((l) => l.id === "cdn")).toMatchObject({ module: "Speed", order: 6, available: true });
+    expect(lessonSummaries("system-design").find((l) => l.id === "cdn")).toMatchObject({ module: "Speed", order: 11, available: true });
     expect(getLesson("system-design", "cdn")?.title).toBe("Serve Mumbai from Mumbai");
   });
 
