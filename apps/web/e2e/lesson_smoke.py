@@ -149,7 +149,7 @@ async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
     await expect(page.get_by_text("2 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("2 of 20 open")).to_be_visible()
+    await expect(page.get_by_text("2 of 30 open")).to_be_visible()
     return "System Design shows 2 lessons open"
 
 
