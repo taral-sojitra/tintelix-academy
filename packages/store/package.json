@@ -1,0 +1,9 @@
+{
+  "name": "@tintelix/store",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "idb": "^8.0.4" },
+  "devDependencies": { "fake-indexeddb": "^6.2.8" }
+}
