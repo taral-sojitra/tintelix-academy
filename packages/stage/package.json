@@ -1,0 +1,14 @@
+{
+  "name": "@tintelix/stage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./stage.css": "./src/stage.css",
+    "./icons": "./src/icons.ts"
+  },
+  "dependencies": {
+    "@tintelix/schema": "workspace:*"
+  }
+}

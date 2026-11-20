@@ -1,0 +1,11 @@
+{
+  "id": "users",
+  "name": "Users",
+  "icon": "users",
+  "category": "traffic",
+  "oneLine": "The people and devices sending requests: browsers, phones and other services.",
+  "useWhen": ["Every diagram starts here: who sends traffic, how much, and how spiky it is."],
+  "watchOut": ["Traffic is rarely flat. Sales, launches and news can multiply it in minutes.", "Retries from impatient clients add load exactly when the system is slowest."],
+  "numbers": [{ "label": "Typical peak vs average", "value": "3–10×" }],
+  "tools": ["Browsers", "Mobile apps", "Other services"]
+}

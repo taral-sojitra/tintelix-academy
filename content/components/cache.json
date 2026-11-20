@@ -1,0 +1,11 @@
+{
+  "id": "cache",
+  "name": "Cache",
+  "icon": "bolt",
+  "category": "storage",
+  "oneLine": "Keeps recent answers in memory so repeated reads skip the database.",
+  "useWhen": ["Reads far outnumber writes.", "The same answers are asked for again and again.", "A slightly stale answer is fine for a short time."],
+  "watchOut": ["Keys that expire together cause a storm of misses.", "A cold or failed cache sends every read to the database."],
+  "numbers": [{ "label": "Read from memory", "value": "about 0.5 ms" }, { "label": "Good hit rate", "value": "80–99%" }],
+  "tools": ["Redis", "Memcached", "Valkey"]
+}

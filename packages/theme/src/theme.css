@@ -1,0 +1,93 @@
+/* Tintelix design tokens. Generated from tokens.ts; tokens.test.ts keeps them in step. */
+:root {
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --radius: 12px;
+  color-scheme: light;
+}
+
+:root {
+  --bg: #f6efe3;
+  --surface: #fffcf6;
+  --surface-2: #fbf5eb;
+  --border: #ecdfcb;
+  --border-strong: #dccab0;
+  --ink: #2b2118;
+  --ink-2: #44372a;
+  --muted: #7a6956;
+  --faint: #a8957c;
+  --primary: #e0602f;
+  --primary-soft: #fde8dc;
+  --primary-ink: #b2441a;
+  --stage: #fbf6ec;
+  --stage-2: #f4ecdd;
+  --stage-mode: light;
+  --grid: rgba(150, 115, 70, 0.10);
+  --cyan: #1d9a94;
+  --green: #2f9e6e;
+  --green-ink: #1f7a52;
+  --green-soft: #e3f4ea;
+  --amber: #e5a131;
+  --amber-ink: #9a6208;
+  --amber-soft: #fcefd5;
+  --red: #e0564f;
+  --red-ink: #b53530;
+  --red-soft: #fbe4e1;
+  --violet: #8a6fd6;
+  --violet-soft: #efe9fb;
+  --blue: #b49a74;
+  --shadow: 0 1px 2px rgba(60, 40, 15, 0.06), 0 6px 18px rgba(60, 40, 15, 0.06);
+  --head: "Bricolage Grotesque", var(--sans);
+  --node-bg: #ffffff;
+  --node-stroke: #d9c7aa;
+  --node-ink: #2b2118;
+  --node-sub: #8a775f;
+  --node-shadow: 0 6px 16px rgba(90, 60, 20, 0.10);
+  --label: #8a775f;
+  --hud-bg: rgba(255, 252, 246, 0.92);
+  --hud-ink: #2b2118;
+  --brand-mark: linear-gradient(140deg, #e0602f, #f2a65a);
+}
+
+[data-theme="blueprint"] {
+  --bg: #f3f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --border: #e2e7f0;
+  --border-strong: #cfd6e3;
+  --ink: #0d1626;
+  --ink-2: #2a3446;
+  --muted: #5a6577;
+  --faint: #8b95a7;
+  --primary: #2563ff;
+  --primary-soft: #e8efff;
+  --primary-ink: #1546c9;
+  --stage: #0a1a33;
+  --stage-2: #0f2444;
+  --stage-mode: dark;
+  --grid: rgba(120, 165, 255, 0.075);
+  --cyan: #38d4f0;
+  --green: #2fcf8f;
+  --green-ink: #0f8a57;
+  --green-soft: #e4f8ef;
+  --amber: #f6b93b;
+  --amber-ink: #a2650a;
+  --amber-soft: #fff4dc;
+  --red: #f26d6d;
+  --red-ink: #c23434;
+  --red-soft: #fdeaea;
+  --violet: #9b87f5;
+  --violet-soft: #efebff;
+  --blue: #5b8ce0;
+  --shadow: 0 1px 2px rgba(13, 22, 38, 0.05), 0 4px 16px rgba(13, 22, 38, 0.05);
+  --head: var(--sans);
+  --node-bg: #12284b;
+  --node-stroke: rgba(140, 180, 255, 0.35);
+  --node-ink: #e6eeff;
+  --node-sub: #8fa8d6;
+  --node-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  --label: #9db3db;
+  --hud-bg: rgba(8, 20, 42, 0.72);
+  --hud-ink: #e6eeff;
+  --brand-mark: #0a1a33;
+}

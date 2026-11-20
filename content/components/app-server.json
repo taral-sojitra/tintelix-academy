@@ -1,0 +1,11 @@
+{
+  "id": "app-server",
+  "name": "App server",
+  "icon": "server",
+  "category": "compute",
+  "oneLine": "Runs your code: takes a request, reads or writes data, and builds the reply.",
+  "useWhen": ["Always. Keep it stateless so you can add or remove copies freely."],
+  "watchOut": ["State kept in memory is lost when the server is replaced.", "Slow downstream calls tie up its workers."],
+  "numbers": [{ "label": "Requests per second per core", "value": "hundreds to thousands" }],
+  "tools": ["Node.js", "Go", "Java", "Python"]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "tintelix",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @tintelix/web dev",
+    "build": "pnpm --filter @tintelix/web build",
+    "start": "pnpm --filter @tintelix/web start",
+    "test": "vitest run",
+    "test:content": "vitest run content packages/schema",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @tintelix/web typecheck",
+    "lint": "eslint .",
+    "check": "pnpm typecheck && pnpm lint && pnpm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.5",
+    "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^9.39.5",
+    "globals": "^16.4.0",
+    "jsdom": "^27.4.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.73.0",
+    "vitest": "^5.1.1"
+  }
+}

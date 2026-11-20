@@ -1,0 +1,11 @@
+{
+  "id": "database",
+  "name": "Database",
+  "icon": "db",
+  "category": "storage",
+  "oneLine": "The source of truth: stores data durably and answers queries about it.",
+  "useWhen": ["Data must survive restarts and be queried in flexible ways."],
+  "watchOut": ["Near full capacity, queueing makes response times shoot up.", "It is the hardest part of the system to scale out."],
+  "numbers": [{ "label": "Simple indexed read", "value": "1–10 ms" }],
+  "tools": ["PostgreSQL", "MySQL", "MongoDB", "DynamoDB"]
+}
