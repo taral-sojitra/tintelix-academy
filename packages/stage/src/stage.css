@@ -149,3 +149,15 @@
   background: var(--node-bg); border: 1px solid var(--node-stroke);
   border-radius: 999px; padding: 2px 9px;
 }
+.tx-wlabel[hidden] { display: none; }
+.tx-wlabel-short { transform: translate(-115%, -50%); }
+
+/* CDN: edge and origin boxes, page copies, price tags. */
+.tx-tile.k-edge { background: var(--green); }
+.tx-tile.k-origin { background: var(--amber); }
+.tx-node.k-edge { border-color: color-mix(in srgb, var(--green) 75%, transparent); }
+.tx-node.k-origin .tx-meter i { background: var(--amber); }
+.tx-keys i.stale { background: var(--amber); }
+.tx-row[data-price-row][hidden] { display: none; }
+.tx-price { font-weight: 650; color: var(--node-ink); }
+.tx-price.stale { color: var(--amber); }
