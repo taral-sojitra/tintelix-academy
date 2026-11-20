@@ -4,7 +4,7 @@ import type { Effects } from "../effects";
 import { makeWire } from "../geometry";
 import { nodeHead } from "../render/dom";
 import { cdn } from "../routers/cdn";
-import type { Sim, SimEvent } from "../sim";
+import type { SimEvent } from "../sim";
 import type { SceneChart, SceneRuntime, StepContext, Tile, WireStyle } from "./types";
 
 export const COPY_COUNT = 24;
