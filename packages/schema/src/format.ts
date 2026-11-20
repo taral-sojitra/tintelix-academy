@@ -19,6 +19,9 @@ export function formatOutput(name: string, value: number): string {
       const tenth = Math.floor(value * 10) / 10;
       return Number.isInteger(tenth) ? `${tenth}%` : `${tenth.toFixed(1)}%`;
     }
+    // Small shares keep one decimal, so 9.6% doesn't read as 10% and 0.1% doesn't read as none.
+    const tenth = Math.round(value * 10) / 10;
+    if (Math.abs(tenth) < 10 && !Number.isInteger(tenth)) return `${tenth.toFixed(1)}%`;
     return `${Math.round(value)}%`;
   }
   if (name === "p95" || name.endsWith("Ms")) {
