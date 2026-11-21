@@ -176,10 +176,11 @@ async def latency_flow(page):
     await expect(page.locator(".narr h2")).to_have_text("Watch p99, not the average")
     await expect(page.locator("#ctl-slowPct")).to_be_enabled()
     panel = page.locator("section.try", has=page.locator("#ctl-slowPct"))
-    # The slider works in hundredths of a percent (0.9% is 90), so its steps stay whole numbers.
-    await set_range(page, "#ctl-slowPct", 90)
+    # A *Pct slider holds the percentage itself: 0.9 is 0.9%, and the label says so.
+    await set_range(page, "#ctl-slowPct", 0.9)
+    await expect(panel.locator(".try-val")).to_have_text("0.9%")
     await expect(panel.locator(".try-readout")).to_contain_text("the average is 4 ms and p99 is 2 ms")
-    await set_range(page, "#ctl-slowPct", 110)
+    await set_range(page, "#ctl-slowPct", 1.1)
     await expect(panel.locator(".try-readout")).to_contain_text("the average is 4 ms and p99 is 200 ms")
     await expect(page.locator("[data-tile='p99'] .tx-v")).to_have_text("200 ms", timeout=6000)
     await page.locator("body").click(position={"x": 5, "y": 5})

@@ -3,6 +3,8 @@ import { formatOutput } from "@tintelix/schema/format";
 import { Icon } from "../Icon";
 import { RichText } from "./StepNarrative";
 
+const OWN_UNIT = ["Pct", "Ms", "Sec", "Avail", "Downtime", "Price"];
+
 /** One control from the lesson, unlocked only on the steps that allow it. */
 export function TryIt({ name, control, value, enabled, lockedText, outputs, onChange, onReset, changed }: {
   name: string;
@@ -15,10 +17,14 @@ export function TryIt({ name, control, value, enabled, lockedText, outputs, onCh
   onReset: () => void;
   changed: boolean;
 }) {
-  const pct = control.unit === "%";
+  // A *Pct control already holds a percentage (30 is 30%); a fraction with a % unit (a 0.8 hit rate)
+  // is shown and dragged in whole percents.
+  const pct = control.unit === "%" && !name.endsWith("Pct");
   const shown = pct ? Math.round(value * 100) : value;
-  // Durations read the way the model's numbers do ("60 s", "60 min"); other values are grouped, then the unit.
-  const text = pct ? `${shown}%` : name.endsWith("Sec") ? formatOutput(name, value) : `${formatOutput(name, value)}${control.unit ? ` ${control.unit}` : ""}`;
+  // Names that format with their own unit ("30%", "50 ms", "60 min") read the way the model's numbers
+  // do; other values are grouped, then the unit.
+  const ownUnit = OWN_UNIT.some((suffix) => name.endsWith(suffix));
+  const text = pct ? `${shown}%` : ownUnit ? formatOutput(name, value) : `${formatOutput(name, value)}${control.unit ? ` ${control.unit}` : ""}`;
   const id = `ctl-${name}`;
   return (
     <section className={`try${enabled ? "" : " off"}`} aria-labelledby={`${id}-label`}>
