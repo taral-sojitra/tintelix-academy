@@ -268,19 +268,42 @@ async def queueing_cheatsheet(page):
     return "Queueing cheatsheet quotes the model's numbers"
 
 
+async def availability_flow(page):
+    await page.goto(BASE + "/system-design/availability", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Nobody broke their promise")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='path'] .tx-v")).to_have_text("99.5%")
+    await expect(page.locator("[data-tile='down'] .tx-v")).to_have_text("3 h 39 min")
+    await expect(page.locator("[data-math-sum]")).to_have_text("99.9% × 5 services in a row = 99.5%")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Every hop costs you")
+    await page.locator("#ctl-services").focus()
+    await page.keyboard.press("End")
+    panel = page.locator("section.try", has=page.locator("#ctl-services"))
+    await expect(panel.locator(".try-readout")).to_contain_text("With 6 services in a row, checkout is up 99.4%")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Two copies of everything")
+    await expect(page.locator("[data-tile='down'] .tx-v")).to_have_text("13 s", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Copies that fail together")
+    await expect(page.locator("[data-tile='down'] .tx-v")).to_have_text("1 h 50 min", timeout=8000)
+    return "Availability lesson: 99.5% and 3 h 39 min for five services, 6 services read 99.4%, two copies 13 s, shared failure 1 h 50 min"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("4 open now")).to_be_visible()
+    await expect(page.get_by_text("5 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("4 of 30 open")).to_be_visible()
-    return "System Design shows 4 lessons open"
+    await expect(page.get_by_text("5 of 30 open")).to_be_visible()
+    return "System Design shows 5 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

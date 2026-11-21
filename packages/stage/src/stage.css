@@ -219,3 +219,17 @@
 @media (prefers-reduced-motion: reduce) {
   .tx-line i, .tx-workers b, .tx-c-dot { transition: none; }
 }
+
+/* Availability lesson: copies inside each service, switched-off services, the arithmetic panel. */
+.tx-copies { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.tx-copies b { height: 12px; border-radius: 3px; background: var(--green); transition: background .2s; }
+.tx-copies b.down { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.tx-copies b[hidden] { display: none; }
+.tx-node.tx-off { opacity: .28; filter: grayscale(.8); }
+.tx-math { margin-top: 6px; }
+.tx-math p { margin: 0; }
+.tx-math-sum { font-family: var(--mono); font-size: 20px; font-weight: 650; color: var(--node-ink); }
+.tx-math-sub { margin-top: 6px; font-family: var(--mono); font-size: 13px; color: var(--node-sub); }
+@media (prefers-reduced-motion: reduce) {
+  .tx-copies b { transition: none; }
+}
