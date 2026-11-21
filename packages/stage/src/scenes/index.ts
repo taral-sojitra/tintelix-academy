@@ -12,6 +12,7 @@ import { createCapScene } from "./cap";
 import { createDataScene } from "./data";
 import { createHealthScene } from "./health";
 import { createIndexScene } from "./index-lookup";
+import { createMqScene } from "./mq";
 import { createProxyScene } from "./proxy";
 import { createReplScene } from "./repl";
 import { createRingScene } from "./ring";
@@ -45,4 +46,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   cap: createCapScene,
   timeline: createTimelineScene,
   txn: createTxnScene,
+  mq: createMqScene,
 };

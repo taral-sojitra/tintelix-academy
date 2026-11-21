@@ -60,7 +60,7 @@ export const systemDesign: Subject = {
     {
       title: "Messaging and reliability",
       lessons: [
-        l("message-queues", "Message queues", "A queue absorbs a traffic spike; workers drain it at their own pace; failures go to a dead-letter queue.", ["load-balancing"]),
+        l("message-queues", "Message queues", "A queue absorbs a traffic spike; workers drain it at their own pace; failures go to a dead-letter queue.", ["load-balancing"], "Absorb the spike"),
         l("idempotency", "Idempotency", "A retried payment charges twice; an idempotency key makes the second call return the first result.", ["message-queues"]),
         l("rate-limiting", "Rate limiting", "One client floods the API; a token bucket lets short bursts through and refuses the rest with 429.", ["load-balancing"]),
         l("fan-out", "Fan-out and the news feed", "A celebrity posts: copy it into every follower's feed at write time, or merge feeds at read time.", ["message-queues"]),

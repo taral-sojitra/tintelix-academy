@@ -583,19 +583,40 @@ async def txn_flow(page):
     return "Distributed transactions lesson: 2 broken orders a second; 2PC locks 40 ms; a dead coordinator blocks 900 orders; a saga compensates"
 
 
+async def mq_flow(page):
+    await page.goto(BASE + "/system-design/message-queues", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Absorb the spike")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("45,000")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("75%", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Put a queue in between")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("0")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("90 s")
+    panel = page.locator("section.try", has=page.locator("#ctl-workers"))
+    await set_range(page, "#ctl-workers", 8)
+    await expect(panel.locator(".try-readout")).to_contain_text("drains 38 s after the sale")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Dead-letter after a few tries")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("1.2%", timeout=6000)
+    return "Message queue lesson: direct calls lose 45,000 jobs; a queue loses none (90 s longest wait); dead letters cap retry waste at 1.2%"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("21 open now")).to_be_visible()
+    await expect(page.get_by_text("22 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("21 of 30 open")).to_be_visible()
-    return "System Design shows 21 lessons open"
+    await expect(page.get_by_text("22 of 30 open")).to_be_visible()
+    return "System Design shows 22 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []
