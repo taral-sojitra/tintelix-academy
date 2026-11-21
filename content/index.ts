@@ -12,13 +12,14 @@ import { loadBalancing } from "./system-design/load-balancing/lesson";
 import { healthChecks } from "./system-design/health-checks/lesson";
 import { proxies } from "./system-design/proxies/lesson";
 import { indexing } from "./system-design/indexing/lesson";
+import { replication } from "./system-design/replication/lesson";
 import { sqlVsNosql } from "./system-design/sql-vs-nosql/lesson";
 import { statelessServices } from "./system-design/stateless-services/lesson";
 
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);

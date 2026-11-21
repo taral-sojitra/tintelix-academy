@@ -42,7 +42,7 @@ export const systemDesign: Subject = {
       lessons: [
         l("sql-vs-nosql", "SQL vs NoSQL", "The same orders stored as joined tables and as documents, and which questions each answers cheaply.", [], "Tables or documents?"),
         l("indexing", "Indexing", "A full table scan touches every row; a B-tree index jumps straight to it; every extra index slows writes.", ["sql-vs-nosql"], "Stop reading every row"),
-        l("replication", "Replication", "A primary copies writes to replicas; replica lag shows a stale read; failover promotes a replica.", ["sql-vs-nosql"]),
+        l("replication", "Replication", "A primary copies writes to replicas; replica lag shows a stale read; failover promotes a replica.", ["sql-vs-nosql"], "Copies that fall behind"),
         l("sharding", "Database sharding", "Splitting by key range creates a hot spot; splitting by hash evens it out.", ["replication"], "Too big for one database"),
         l("consistent-hashing", "Consistent hashing", "Adding a server with hash mod N moves almost every key; a hash ring moves only one slice.", ["sharding"]),
         l("bloom-filters", "Bloom filters", "A small bit array answers \"definitely not here\" or \"maybe here\" without touching the disk.", ["indexing"]),

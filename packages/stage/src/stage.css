@@ -309,3 +309,7 @@
 .tx-chips span.pulse { background: color-mix(in srgb, var(--violet) 40%, transparent); }
 .tx-bt-lines { position: absolute; inset: 0; width: 100%; height: 180px; overflow: visible; }
 .tx-bt-lines line { stroke: var(--node-stroke); stroke-width: 1.2; }
+.tx-node.tx-off { opacity: 0; pointer-events: none; transform: scale(0.9); }
+.tx-node.tx-down { border-color: var(--red); background: color-mix(in srgb, var(--red) 10%, var(--node-bg)); }
+.tx-role:empty { display: none; }
+.tx-role { color: var(--green); }
