@@ -233,3 +233,8 @@
 @media (prefers-reduced-motion: reduce) {
   .tx-copies b { transition: none; }
 }
+
+/* Estimation lesson: each box's value and the line under it. */
+.tx-calc-v { margin: 8px 0 0; font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--node-ink); line-height: 1.1; }
+.tx-calc-s { margin: 4px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--node-sub); }
+.tx-wlabel[hidden] { display: none; }
