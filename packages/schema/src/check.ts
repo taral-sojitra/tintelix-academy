@@ -69,6 +69,7 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
       }
     }
     const board = lesson.scene.board;
+    if (lesson.scene.kind === "board" && !board) problems.push(`${id}: scene kind board needs scene.board`);
     if (board) {
       for (const [fid, f] of Object.entries(board.flows)) {
         for (const hop of f.path) {

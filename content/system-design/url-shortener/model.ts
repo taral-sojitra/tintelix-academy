@@ -45,6 +45,7 @@ export const urlModel: Model = {
       readRate,
       linksB: links / 1e9,
       storageTb: (links * recordBytes) / 1e12,
+      codeSpaceB: codeSpace / 1e9,
       codeSpaceT: codeSpace / 1e12,
       codesUsedPct: Math.min(100, (links / codeSpace) * 100),
       /** Clicks arriving now: the launch trickle in mode 0, full traffic after. */

@@ -12,7 +12,7 @@ export const urlScene: SceneSpec = {
   nodes: {
     users: { x: 24, y: 196, w: 182, h: 84, kind: "users", label: "Users", sub: "clicking links" },
     app: { x: 300, y: 196, w: 170, h: 84, kind: "app", label: "App servers", sub: "redirect" },
-    cache: { x: 630, y: 46, w: 230, h: 100, kind: "cache", label: "Cache", sub: "popular codes in memory", hidden: true },
+    cache: { x: 630, y: 46, w: 230, h: 100, kind: "cache", label: "Cache", sub: "hot codes in memory", hidden: true },
     db: { x: 630, y: 280, w: 250, h: 130, kind: "db", label: "Database", sub: "code → long URL" },
     ids: { x: 270, y: 326, w: 230, h: 118, kind: "services", label: "Code maker", sub: "counter → base 62", hidden: true },
     api: { x: 540, y: 34, w: 444, h: 232, kind: "curve", label: "API and data", sub: "", hidden: true },
@@ -78,7 +78,7 @@ export const urlScene: SceneSpec = {
         flows: [{ flow: "readHit", weight: "cacheHitPct" }, { flow: "readMiss", weight: "cacheMissPct" }, { flow: "write", weight: 20 }],
         rate: 6,
         tiles: [
-          { id: "a", label: "Possible codes", icon: "blocks", hue: "violet", value: "{codeSpaceT} trillion", note: "62 symbols, {codeLength} characters" },
+          { id: "a", label: "Code length", icon: "blocks", hue: "violet", value: "{codeLength} characters", note: "{codeSpaceB} billion possible codes" },
           { id: "b", label: "Used in 5 years", icon: "hourglass", hue: "amber", value: "{codesUsedPct}", note: "{linksB} billion links", mood: "good", moodIf: { output: "codesUsedPct", above: 50, mood: "bad" } },
           { id: "c", label: "Database busy", icon: "db", hue: "cyan", value: "{dbBusyPct}", note: "{dbReadRate} reads a second", mood: "good", moodIf: { output: "dbBusyPct", above: 100, mood: "bad" } },
         ],
@@ -96,7 +96,7 @@ export const urlScene: SceneSpec = {
           kind: "log",
           lines: [
             { text: "POST /links · long URL → 201 + short code" },
-            { text: "GET /aZ3x9Qb → 302, Location: the long URL" },
+            { text: "GET /aZ3k9Qb → 302, Location: the long URL" },
             { text: "links: code · long URL · created · expires" },
             { text: "{linksB} billion rows, {storageTb} TB in 5 years" },
           ],

@@ -30,7 +30,7 @@ export const urlShortener: Lesson = {
       max: 8,
       step: 1,
       unit: "characters",
-      readout: "**{codeSpaceT} trillion** possible codes; 5 years of links use **{codesUsedPct}** of them.",
+      readout: "**{codeSpaceB} billion** possible codes; 5 years of links use **{codesUsedPct}** of them.",
     },
   },
   steps: urlSteps,

@@ -184,6 +184,11 @@ describe("board scenes", () => {
   it("a valid board passes", () => {
     expect(check(boardLesson())).toEqual([]);
   });
+  it("a board scene without a board is reported", () => {
+    const lesson = boardLesson();
+    delete (lesson.scene as { board?: unknown }).board;
+    expect(check(lesson)).toContain("caching: scene kind board needs scene.board");
+  });
   it("a flow that names an unknown wire is reported", () => {
     const problems = check(boardLesson({ flows: { read: { path: [{ wire: "nope", dir: 1, at: "app" }], color: "cyan" } } }));
     expect(problems).toContain("caching: board flow read uses unknown wire nope");

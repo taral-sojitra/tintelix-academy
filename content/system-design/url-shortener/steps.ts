@@ -7,7 +7,7 @@ export const urlSteps: Step[] = [
     title: "Shorten a link, then send people to it",
     short: "The ask",
     text: [
-      "Build a service that turns a long web address into a short one, like **tx.io/aZ3x9Qb**, and sends anyone who opens the short one on to the long one. Before drawing anything, ask: how many new links, how often is each opened, how long do they live, and can people pick their own codes?",
+      "Build a service that turns a long web address into a short one, like **tx.io/aZ3k9Qb**, and sends anyone who opens the short one on to the long one. Before drawing anything, ask: how many new links, how often is each opened, how long do they live, and can people pick their own codes?",
       "Our answers, all assumptions: **30 million** new links a day, each opened about {readRatio} times, kept for 5 years. That is **{writeRate}** new links a second and **{readRate}** clicks a second: far more reads than writes.",
     ],
     note: { kind: "idea", text: "Spend the first few minutes on questions and numbers. They decide the design, and they are what an interviewer is listening for." },
@@ -82,7 +82,7 @@ export const urlSteps: Step[] = [
     short: "Codes",
     text: [
       "Random codes can clash: two links get the same code, so every new link must check first. Instead, a **counter** gives each new link the next number, and the app writes that number in **base 62** (0–9, a–z, A–Z). Numbers never repeat, so codes never clash.",
-      "Seven base-62 characters give **{codeSpaceT} trillion** codes, and 5 years of links use **{codesUsedPct}** of them. Try it: with six characters the codes nearly run out.",
+      "With **{codeLength}** characters there are **{codeSpaceB} billion** possible codes, and 5 years of links use **{codesUsedPct}** of them. Try it: with six characters the codes nearly run out.",
     ],
     note: { kind: "tip", text: "Counting up makes codes easy to guess one after another. If that matters, scramble the number with a fixed secret mapping before writing it in base 62." },
     scene: { add: ["ids"] },

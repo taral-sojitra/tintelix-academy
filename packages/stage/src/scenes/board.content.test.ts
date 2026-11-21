@@ -18,4 +18,9 @@ describe("board lessons", () => {
     );
     expect(bad).toEqual([]);
   });
+  it("colour their legend with palette colours", () => {
+    const keys = new Set(["cyan", "green", "amber", "violet", "red", "blue", "white"]);
+    const bad = boards.flatMap(({ id, board }) => board.legend.filter(([c]) => !keys.has(c)).map(([c]) => `${id}: ${c}`));
+    expect(bad).toEqual([]);
+  });
 });

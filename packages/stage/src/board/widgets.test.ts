@@ -57,4 +57,9 @@ describe("board widgets", () => {
     paintWidget(root, w, d, 2);
     expect(root.textContent).toContain(`#62,000,000,693 → ${toBase62(62_000_000_693, 7)}`);
   });
+  it("base62 widget says when the number no longer fits the code length", () => {
+    const root = mount({ kind: "custom", name: "base62" }, { idStart: 10_950_000_000, writeRate: 347, codeLength: 5 }, 0);
+    expect(root.textContent).toContain("#10,950,000,000 → needs 6 characters");
+    expect(root.textContent).toContain("5 characters: out of codes");
+  });
 });

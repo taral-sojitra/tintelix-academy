@@ -16,6 +16,10 @@ describe("URL shortener model", () => {
     expect(show({}, "codeSpaceT")).toBe("3.5");
     expect(show({}, "codesUsedPct")).toBe("1.6%");
     expect(show({ codeLength: 6 }, "codesUsedPct")).toBe("96%");
+    expect(show({}, "codeSpaceB")).toBe("3,522");
+    expect(show({ codeLength: 6 }, "codeSpaceB")).toBe("57");
+    expect(show({ codeLength: 5 }, "codeSpaceB")).toBe("0.9");
+    expect(show({ codeLength: 5 }, "codesUsedPct")).toBe("100%");
   });
 
   it("one database copes at launch and drowns at full traffic", () => {

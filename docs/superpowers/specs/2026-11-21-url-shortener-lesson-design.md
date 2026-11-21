@@ -18,7 +18,7 @@ second at launch; 30% of clicks are repeats.
 | writeRate | 347 a second | 30e6 ÷ 86,400 |
 | readRate | 13,889 a second | writeRate × 40 |
 | linksB / storageTb | 55 billion / 22 TB | 30e6 × 365 × 5; × 400 B |
-| codeSpaceT / codesUsedPct | 3.5 trillion / 1.6% (96% at 6 chars) | 62^7; links ÷ 62^len |
+| codeSpaceB / codesUsedPct | 3,522 billion / 1.6% (96% at 6, 100% at 5) | 62^len; links ÷ 62^len |
 | dbBusyPct | 2% launch, 278% full, 28% cached | db reads ÷ 5,000 |
 | dbFailPct | 64% at full traffic | 1 − 100 ÷ busy |
 
@@ -42,3 +42,5 @@ meter + failure line, cache meter, the base-62 counter, the API log.
 - `writeDirect` added beside the plan's `write`, so writes still flow before the code maker exists.
 - `clickRate` and `cacheMissPct` added to the model for the users subtitle and the miss flow's weight.
 - The counter's sample id is a year's worth of links (newPerDay × 365), not an arbitrary number.
+- Live text and the Try it readout use billions (`codeSpaceB`) so they stay right at 5–8 characters; the
+  counter widget says "out of codes" when the number needs more characters than allowed.

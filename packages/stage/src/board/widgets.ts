@@ -16,8 +16,10 @@ export const CUSTOM: Record<string, Custom> = {
     paint(root, d, clock) {
       const len = Math.max(1, Math.round(d.codeLength ?? 7));
       const id = Math.floor((d.idStart ?? 0) + Math.max(0, clock) * (d.writeRate ?? 0));
-      root.querySelector(".tx-b62-id")!.textContent = `#${group(id)} → ${toBase62(id, len)}`;
-      root.querySelector(".tx-calc-s")!.textContent = `${len} characters`;
+      const code = toBase62(id, len);
+      const fits = code.length <= len;
+      root.querySelector(".tx-b62-id")!.textContent = `#${group(id)} → ${fits ? code : `needs ${code.length} characters`}`;
+      root.querySelector(".tx-calc-s")!.textContent = fits ? `${len} characters` : `${len} characters: out of codes`;
     },
   },
 };
