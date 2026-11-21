@@ -41,9 +41,9 @@ describe("content", () => {
     expect(getLesson("system-design", "nope")).toBeUndefined();
   });
 
-  it("marks Latency percentiles, Queueing, Caching and CDN as available, in teaching order", () => {
+  it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "caching", "cdn"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "caching", "cdn"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -54,6 +54,10 @@ describe("content", () => {
 
   it("lists lesson 2, Busy, then suddenly slow", () => {
     expect(lessonSummaries("system-design")[1]).toMatchObject({ id: "queueing", module: "Measuring systems", order: 2, available: true, title: "Busy, then suddenly slow" });
+  });
+
+  it("lists lesson 3, Nobody broke their promise", () => {
+    expect(lessonSummaries("system-design")[2]).toMatchObject({ id: "availability", order: 3, available: true, title: "Nobody broke their promise" });
   });
 
   it("lists the CDN lesson as written and in order", () => {
