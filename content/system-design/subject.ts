@@ -78,7 +78,7 @@ export const systemDesign: Subject = {
       lessons: [
         l("retries-and-circuit-breakers", "Timeouts, retries and circuit breakers", "A retry storm buries a slow service; jittered backoff spreads it out; a circuit breaker trips and lets it recover; a timeout stops a call from waiting forever.", ["idempotency"], "Don't kick a slow service"),
         l("leader-election", "Leader election and consensus", "The leader dies, the rest elect a new one, and a fencing token stops the old leader's stale write.", ["replication", "cap-theorem"], "Who's in charge now?"),
-        l("multi-region", "Multi-region and failover", "A region goes down: active-passive fails over, active-active keeps serving, and replication lag crosses oceans.", ["cdn", "replication"]),
+        l("multi-region", "Multi-region and failover", "A region goes down: active-passive fails over, active-active keeps serving, and replication lag crosses oceans.", ["cdn", "replication"], "A whole region goes dark"),
       ],
     },
   ],

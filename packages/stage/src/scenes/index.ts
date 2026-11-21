@@ -20,6 +20,7 @@ import { createLimitScene } from "./limit";
 import { createMicroScene } from "./micro";
 import { createMqScene } from "./mq";
 import { createProxyScene } from "./proxy";
+import { createRegionScene } from "./region";
 import { createReplScene } from "./repl";
 import { createRetryScene } from "./retry";
 import { createRingScene } from "./ring";
@@ -61,4 +62,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   micro: createMicroScene,
   retry: createRetryScene,
   leader: createLeaderScene,
+  region: createRegionScene,
 };

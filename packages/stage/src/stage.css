@@ -417,3 +417,13 @@
 .tx-srow { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); white-space: nowrap; }
 .tx-srow .tx-timer { flex: 1; margin-top: 0; }
 .tx-node[data-node="storage"] .tx-log { gap: 6px; margin-top: 8px; }
+.tx-line { margin-top: 6px; white-space: nowrap; }
+.tx-fobar { position: relative; display: flex; height: 18px; margin-top: 8px; border-radius: 5px; overflow: visible; background: color-mix(in srgb, var(--node-stroke) 30%, transparent); }
+.tx-fobar[hidden] { display: none; }
+.tx-fobar i { font-style: normal; font-family: var(--mono); font-size: 10px; line-height: 18px; padding-left: 6px; color: var(--node-ink); overflow: hidden; white-space: nowrap; }
+.tx-fobar .seg-detect { background: color-mix(in srgb, var(--red) 30%, transparent); border-radius: 5px 0 0 5px; }
+.tx-fobar .seg-promote { background: color-mix(in srgb, var(--amber) 32%, transparent); }
+.tx-fobar .seg-dns { background: color-mix(in srgb, var(--violet) 28%, transparent); }
+.tx-fohead { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--node-ink); border-radius: 1px; transition: left .1s linear; }
+.tx-fobar + .tx-calc-s { margin-top: 8px; }
+.tx-fobar i[hidden] { display: none; }
