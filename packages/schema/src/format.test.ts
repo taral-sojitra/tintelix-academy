@@ -20,6 +20,7 @@ describe("formatOutput keeps Caching as it reads today", () => {
 describe("formatOutput", () => {
   it("shows percentages for names ending in Pct", () => {
     expect(formatOutput("dbBusyPct", 92.3)).toBe("92%");
+    expect(formatOutput("dbBusyPct", 1333.4)).toBe("1,333%");
   });
   it("shows milliseconds for p95 and names ending in Ms", () => {
     expect(formatOutput("p95", 179.9)).toBe("180 ms");

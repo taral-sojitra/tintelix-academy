@@ -8,6 +8,7 @@ import { createEstimateScene } from "./estimate";
 import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
 import { createBloomScene } from "./bloom";
+import { createBoardScene } from "./board";
 import { createCapScene } from "./cap";
 import { createDataScene } from "./data";
 import { createFanoutScene } from "./fanout";
@@ -33,6 +34,7 @@ import type { SceneFactory } from "./types";
 
 /** The runtime for each scene kind; the player picks one by `lesson.scene.kind`. */
 export const scenes: Record<SceneKind, SceneFactory> = {
+  board: createBoardScene,
   "cache-aside": createCacheAsideScene,
   cdn: createCdnScene,
   latency: createLatencyScene,
