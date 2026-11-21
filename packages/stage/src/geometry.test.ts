@@ -5,6 +5,13 @@ describe("makeWire", () => {
     expect(makeWire([0, 0], [100, 0]).len).toBeCloseTo(100, 6);
   });
 
+  it("a wire marked straight runs in a line even when it isn't level", () => {
+    const w = makeWire([0, 0], [60, 80], 48, 1, true);
+    expect(w.len).toBeCloseTo(100, 6);
+    expect(w.pts[24]![0]).toBeCloseTo(30, 6);
+    expect(w.pts[24]![1]).toBeCloseTo(40, 6);
+  });
+
   it("samples 49 points by default and its cumulative length ends at len", () => {
     const w = makeWire([386, 281], [446, 146]);
     expect(w.pts).toHaveLength(49);

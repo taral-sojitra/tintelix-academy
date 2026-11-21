@@ -62,7 +62,7 @@ export function buildStage(host: HTMLElement, scene: SceneSpec, opts: StageOptio
   }
   for (const [id, w] of Object.entries(scene.wires)) {
     if (!w.label) continue;
-    const mid = makeWire(w.from, w.to).pts[24]!;
+    const mid = makeWire(w.from, w.to, 48, 1, w.straight ?? false).pts[24]!;
     const el = document.createElement("div");
     el.className = "tx-wlabel";
     el.dataset.wire = id;

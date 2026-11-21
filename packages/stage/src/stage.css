@@ -398,3 +398,22 @@
 .tx-wavebox[hidden] { display: none; }
 .tx-wavebox .tx-calc-s { margin-top: 4px; }
 .tx-wave i { flex: 1; background: var(--amber); border-radius: 3px 3px 0 0; transition: height .3s; }
+.tx-node.tx-lead { border-color: var(--green); box-shadow: var(--node-shadow), 0 0 14px color-mix(in srgb, var(--green) 40%, transparent); }
+.tx-node.tx-cand { border-color: var(--amber); box-shadow: var(--node-shadow), 0 0 14px color-mix(in srgb, var(--amber) 40%, transparent); }
+.tx-node.tx-ghost { border-color: var(--amber); border-style: dashed; }
+.tx-timer { flex: none; }
+.tx-timer[hidden] { display: none; }
+.tx-timer i { background: var(--amber); transition: none; }
+.tx-votes { margin-top: 12px; }
+.tx-votes i.v-yes { background: var(--green); }
+.tx-votes i.v-no { background: transparent; border: 1.5px solid var(--node-stroke); }
+.tx-votes i.v-cand { background: var(--amber); }
+.tx-votes i.v-down { background: var(--red); opacity: .7; }
+.tx-votes + .tx-calc-s { margin-top: 12px; line-height: 1.5; }
+.tx-cutline { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.tx-cutline[hidden] { display: none; }
+.tx-cutline polyline { fill: none; stroke: var(--red); stroke-width: 2.5; stroke-dasharray: 8 7; opacity: .75; }
+.tx-cutline text { font-family: var(--mono); font-size: 11px; fill: var(--red); }
+.tx-srow { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); white-space: nowrap; }
+.tx-srow .tx-timer { flex: 1; margin-top: 0; }
+.tx-node[data-node="storage"] .tx-log { gap: 6px; margin-top: 8px; }

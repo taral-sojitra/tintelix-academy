@@ -1,0 +1,78 @@
+import type { Step } from "@tintelix/schema";
+
+export const leaderSteps: Step[] = [
+  {
+    id: "one-leader",
+    tag: "technique",
+    title: "One leader, and a heartbeat",
+    short: "Leader",
+    text: [
+      "Five servers keep copies of the same data. One of them, the **leader**, takes every write and copies it to the others; a write counts once a majority, **{majority} of {nodes}**, has it. So the group keeps working with {canLose} servers down.",
+      "The leader also sends a heartbeat every {heartbeatMs}: {heartbeatRate} small messages a second that say \"I'm still here\". Each stretch of leadership has a number, the **term**: n1 leads term {oldTerm}.",
+    ],
+    note: { kind: "idea", text: "One leader means one place that decides the order of writes, so the copies can't disagree." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · one leader",
+  },
+  {
+    id: "election",
+    tag: "problem",
+    title: "The leader dies: an election",
+    short: "Election",
+    text: [
+      "n1 stops. The followers hear nothing for {electionTimeoutMs}, so n2 starts term {newTerm} and asks for votes. Each server votes once per term; with {majority} votes, n2 leads. Writes wait about **{failoverMs}**: {waitingWrites} of them at {writeRate} a second.",
+      "Each follower adds a random extra to its wait, so one usually asks first; if two ask at once and split the votes, both wait a random time and try again. Try it: a shorter timeout fails over sooner, but network blips longer than it start needless elections.",
+    ],
+    note: { kind: "watch", text: "The amber bars are the followers' timers. Real speed, except the vote: it takes about {rttMs} and is slowed down here so you can see it." },
+    changed: [{ kind: "mod", label: "n1", value: "down" }],
+    sim: { mode: "steady", speed: 1 },
+    controls: ["electionTimeoutMs"],
+    model: { mode: 1 },
+    live: "LIVE · election",
+  },
+  {
+    id: "partition",
+    tag: "technique",
+    title: "Split in two, only the majority leads",
+    short: "Partition",
+    text: [
+      "Now the network splits n1 and n5 from the other three. n2, n3 and n4 still make **{majoritySize} of {nodes}**, a majority, so they elect n2 in term {newTerm} and keep taking writes.",
+      "n1 still thinks it leads, but it can reach only **{minoritySize} of {nodes}**, short of {majority}, so none of its writes count. Two majorities of the same five always share a server, and that server votes once per term: there's never more than one leader in a term.",
+    ],
+    note: { kind: "idea", text: "The cut-off side stops taking writes rather than letting the copies drift apart: the CAP theorem's choice of consistency." },
+    changed: [{ kind: "mod", label: "Network", value: "split 3–2" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · partition",
+  },
+  {
+    id: "fencing",
+    tag: "solution",
+    title: "A fencing token stops a stale write",
+    short: "Fencing",
+    text: [
+      "Every write carries the leader's term as a **fencing token**, and storage remembers the highest it has seen. n1 freezes for {pauseSec} in a long garbage-collection pause, longer than the timeout, so n2 is elected and writes with token {newTerm}.",
+      "n1 wakes up still believing it leads and sends the write it was holding, with token {oldTerm}. Storage has seen {newTerm}, so it refuses, and n1 learns it's out of date and steps down. Without the token, that late write would overwrite n2's newer data.",
+    ],
+    note: { kind: "tip", text: "The check happens where the write lands. What the old leader believes doesn't matter." },
+    changed: [{ kind: "add", label: "Storage", value: "checks tokens" }],
+    scene: { add: ["storage"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · fencing token",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What leader election taught us",
+    short: "Recap",
+    text: [
+      "A leader sends heartbeats; when they stop for the election timeout, a follower raises the term and needs a majority of votes. Only a majority can elect, so a split leaves at most one side working.",
+      "The timeout trades fast failover for false alarms. And a deposed leader can still wake up and act, so the place it writes to must check a fencing token.",
+    ],
+    note: { kind: "next", text: "Coming up in Multi-region and failover: keeping a service up when a whole region goes down." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · recap",
+  },
+];
