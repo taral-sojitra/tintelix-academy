@@ -43,7 +43,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "caching", "cdn"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "caching", "cdn"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -62,6 +62,10 @@ describe("content", () => {
 
   it("lists lesson 4, From users to servers", () => {
     expect(lessonSummaries("system-design")[3]).toMatchObject({ id: "estimation", order: 4, available: true, title: "From users to servers" });
+  });
+
+  it("lists lesson 5, Bigger box or more boxes?", () => {
+    expect(lessonSummaries("system-design")[4]).toMatchObject({ id: "vertical-horizontal-scaling", order: 5, available: true, title: "Bigger box or more boxes?" });
   });
 
   it("lists the CDN lesson as written and in order", () => {
