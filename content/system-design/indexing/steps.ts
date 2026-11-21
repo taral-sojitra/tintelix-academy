@@ -1,0 +1,76 @@
+import type { Step } from "@tintelix/schema";
+
+export const indexSteps: Step[] = [
+  {
+    id: "full-scan",
+    tag: "problem",
+    title: "Every query reads every row",
+    short: "Full scan",
+    text: [
+      "Find one customer's orders in a table of {rows} rows. With no index on customer_id, the database has nowhere to start, so it reads all **{scanPages}** pages and tests every row.",
+      "That is about **{scanSec}** for a single customer, and it grows with the table. Try it: grow the table.",
+    ],
+    note: { kind: "watch", text: "The amber cursor visits every page for every query." },
+    sim: { mode: "scan", speed: 1 },
+    controls: ["rows"],
+    live: "LIVE · full table scan",
+  },
+  {
+    id: "b-tree",
+    tag: "technique",
+    title: "A B+ tree jumps straight there",
+    short: "B+ tree",
+    text: [
+      "Add an index on customer_id: a B+ tree. Its upper levels only route, saying which child holds which keys, and with about {fanout} keys per page, {rows} rows need just {depth} levels.",
+      "A lookup reads **{indexPages}** pages, {depth} down the tree and one for the row: **{indexMs}**, about {speedup}× faster than the scan.",
+    ],
+    note: { kind: "idea", text: "Each extra level multiplies capacity by the fanout: a billion rows is rarely more than five levels." },
+    changed: [{ kind: "add", label: "Index", value: "customer_id" }],
+    scene: { add: ["tree"] },
+    sim: { mode: "seek", speed: 1 },
+    controls: ["rows"],
+    live: "LIVE · index lookup",
+  },
+  {
+    id: "range",
+    tag: "technique",
+    title: "Ranges walk the linked leaves",
+    short: "Ranges",
+    text: [
+      "Orders from the last hour: the tree descends once to the first match, then follows the links between leaves, {depth} pages down and {rangeLeaves} leaves along for {matches} orders.",
+      "Fetching each of those orders from the table adds {matches} reads, about **{rangeMs}** in all. A covering index, which also stores the columns the query needs, skips those fetches: **{coverMs}**.",
+    ],
+    note: { kind: "watch", text: "Several neighbouring leaves light up, then a run of pages." },
+    sim: { mode: "range", speed: 1 },
+    live: "LIVE · range query",
+  },
+  {
+    id: "write-tax",
+    tag: "problem",
+    title: "Every index taxes every write",
+    short: "Write cost",
+    text: [
+      "Each insert has to update every index on the table. At {treeUs} microseconds per tree, the table alone takes {baseRate} inserts a second.",
+      "With {secondary} extra indexes, each insert updates {trees} trees: **{insertRate}** inserts a second, **{insertsDropPct}** less. Nothing looks slow; throughput just quietly drops. Try it: add or drop indexes.",
+    ],
+    note: { kind: "tip", text: "Ask the database which indexes its plans actually use (pg_stat_user_indexes in PostgreSQL) and drop the idle ones." },
+    changed: [{ kind: "mod", label: "Indexes", value: "{trees}" }],
+    sim: { mode: "write", speed: 1 },
+    controls: ["secondary"],
+    model: { secondary: 4 },
+    live: "LIVE · inserts",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What indexes taught us",
+    short: "Recap",
+    text: [
+      "A full scan reads every page; a B+ tree reads {indexPages}. Ranges descend once and walk the leaves, and a covering index skips the trip back to the table.",
+      "An index trades write speed and space for read speed. Index the columns your real queries filter and sort by, and drop the ones no query uses.",
+    ],
+    note: { kind: "next", text: "Coming up in Replication: copying the database so one machine isn't the only one that has it." },
+    sim: { mode: "seek", speed: 1 },
+    live: "LIVE · recap",
+  },
+];
