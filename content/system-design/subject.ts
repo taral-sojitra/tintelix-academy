@@ -70,7 +70,7 @@ export const systemDesign: Subject = {
       title: "Services",
       lessons: [
         l("api-gateway", "API gateway", "A gateway becomes one front door for sign-in checks, routing and rate limits.", ["proxies", "rate-limiting"], "One front door"),
-        l("monolith-vs-microservices", "Monolith vs microservices", "One deploy for everything vs many small deploys, and where network calls start to cost.", ["distributed-transactions", "api-gateway"]),
+        l("monolith-vs-microservices", "Monolith vs microservices", "One deploy for everything vs many small deploys, and where network calls start to cost.", ["distributed-transactions", "api-gateway"], "Split it, or keep it whole?"),
       ],
     },
     {

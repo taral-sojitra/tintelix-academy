@@ -21,6 +21,7 @@ import { fanOut } from "./system-design/fan-out/lesson";
 import { idempotency } from "./system-design/idempotency/lesson";
 import { indexing } from "./system-design/indexing/lesson";
 import { messageQueues } from "./system-design/message-queues/lesson";
+import { monolithVsMicroservices } from "./system-design/monolith-vs-microservices/lesson";
 import { objectStorage } from "./system-design/object-storage/lesson";
 import { rateLimiting } from "./system-design/rate-limiting/lesson";
 import { replication } from "./system-design/replication/lesson";
@@ -31,7 +32,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);
