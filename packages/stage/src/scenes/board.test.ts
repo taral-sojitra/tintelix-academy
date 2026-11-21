@@ -122,4 +122,35 @@ describe("board scene", () => {
     advance(0.2);
     expect(host.querySelector<HTMLElement>(".tx-chartbox")!.hidden).toBe(true);
   });
+  it("a flow's float fires when a request passes its node, not when it fails there", () => {
+    const withFloat = (failPct: number) => {
+      const sc = spec({
+        flows: {
+          read: { path: [{ wire: "u_a", dir: 1, at: "app" }, { wire: "a_d", dir: 1, at: "db" }], color: "cyan", back: "green", fail: { at: "db", share: "failPct" }, float: { at: "db", text: "found it", color: "green", chance: 1 } },
+          readCached: { path: [{ wire: "u_a", dir: 1, at: "app" }, { wire: "a_c", dir: 1, at: "cache" }], color: "cyan" },
+        },
+      });
+      const m: Model = { defaults: { mode: 0, load: 50, failPct }, run: (i) => ({ ...model.run(i), failPct: i.failPct ?? 0 }) };
+      const fx = new Effects({ reducedMotion: false, rand: rng(30) });
+      const scene = createBoardScene({ fx, rand: rng(131), scene: sc });
+      const ctx: StepContext = { step, stepIndex: 0, stepTime: 0, simTime: 0, inputs: { ...m.defaults }, overridden: false, visible: new Set(Object.keys(sc.nodes)), model: m, playing: true, reducedMotion: false };
+      scene.enterStep(ctx);
+      const wires = Object.fromEntries(Object.entries(sc.wires).map(([k, w]) => [k, makeWire(w.from, w.to)]));
+      const sim = new Sim({ wires, router: scene.router, rand: rng(7), ratePerSec: 3, speed: 600 });
+      const texts: string[] = [];
+      const float = fx.float.bind(fx);
+      fx.float = (x, y, t, c, big) => {
+        texts.push(t);
+        float(x, y, t, c, big);
+      };
+      for (let k = 0; k < 100; k++) {
+        scene.update(0.1, ctx, sim);
+        sim.step(0.1);
+        for (const e of sim.drain()) scene.onEvent(e, ctx);
+      }
+      return texts.filter((t) => t === "found it").length;
+    };
+    expect(withFloat(0)).toBeGreaterThan(5);
+    expect(withFloat(100)).toBe(0);
+  });
 });

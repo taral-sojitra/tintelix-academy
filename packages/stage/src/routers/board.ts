@@ -16,13 +16,23 @@ interface Trip {
 
 const START = "users";
 
-/** Legs from hop `from` back to the start, reversed, in one colour. */
+/**
+ * Legs from hop `from` back to the start, reversed, in one colour. An out-and-back detour (a wire
+ * travelled out then straight back, such as asking the cache) is skipped on the way home.
+ */
 function homeward(flow: BoardFlow, from: number, color: Leg["color"]): Leg[] {
   const legs: Leg[] = [];
   for (let j = from; j >= 0; j--) {
     const hop = flow.path[j]!;
-    legs.push({ wire: hop.wire, dir: hop.dir === 1 ? -1 : 1, color, ...(j === 0 ? { end: "ret:0" } : {}) });
+    const prev = flow.path[j - 1];
+    if (prev && prev.wire === hop.wire && prev.dir !== hop.dir) {
+      j--;
+      continue;
+    }
+    legs.push({ wire: hop.wire, dir: hop.dir === 1 ? -1 : 1, color });
   }
+  const last = legs[legs.length - 1];
+  if (last) last.end = "ret:0";
   return legs;
 }
 
@@ -50,6 +60,15 @@ export function board(state: BoardRouterState): Router {
   const finish = (p: Packet) => {
     p.dead = true;
     trips.delete(p.id);
+  };
+  /** Sends a packet home, or replies at once when it is already there. */
+  const goHome = (p: Packet, legs: Leg[], sim: Sim, at: Point) => {
+    if (legs.length > 0) {
+      p.route.push(...legs);
+      return;
+    }
+    sim.emit({ kind: "reply", node: START, at, hit: p.kind !== "miss" });
+    finish(p);
   };
   return {
     spawn(p: Packet, sim: Sim) {
@@ -80,7 +99,7 @@ export function board(state: BoardRouterState): Router {
       if (flow.fail && flow.fail.at === hop.at && sim.rand() < state.failShare(flow.fail.share)) {
         sim.emit({ kind: "miss", node: hop.at, at });
         p.kind = "miss";
-        p.route.push(...homeward(flow, i, "red"));
+        goHome(p, homeward(flow, i, "red"), sim, at);
         return;
       }
       sim.emit({ kind: "pass", node: hop.at, at });
@@ -89,7 +108,7 @@ export function board(state: BoardRouterState): Router {
         p.route.push({ wire: next.wire, dir: next.dir, color: flow.color, end: `hop:${i + 1}` });
       } else if (flow.back) {
         p.kind = "hit";
-        p.route.push(...homeward(flow, i, flow.back));
+        goHome(p, homeward(flow, i, flow.back), sim, at);
       } else {
         finish(p);
       }

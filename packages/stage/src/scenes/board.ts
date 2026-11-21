@@ -89,6 +89,7 @@ export function createBoardScene(o: { fx: Effects; rand: () => number; scene: Sc
       if (e.kind === "reply") pings.users = 1;
       if (e.kind !== "pass" && e.kind !== "miss") return;
       pings[e.node] = 1;
+      if (e.kind !== "pass") return;
       const flows = running().filter((f) => f.flow.path.some((h) => h.at === e.node) && f.weight > 0);
       const total = flows.reduce((a, f) => a + f.weight, 0);
       if (total <= 0) return;

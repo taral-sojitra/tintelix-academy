@@ -55,4 +55,18 @@ describe("board router", () => {
     expect(replies(sim, true) + replies(sim, false)).toBe(0);
     expect(sim.packets).toHaveLength(0);
   });
+  it("an out-and-back detour is not repeated on the way home", () => {
+    const miss: BoardFlow = { path: [{ wire: "u_a", dir: 1, at: "app" }, { wire: "a_c", dir: 1, at: "cache" }, { wire: "a_c", dir: -1, at: "app" }, { wire: "a_d", dir: 1, at: "db" }], color: "cyan", back: "green" };
+    const sim = run({ flows: () => [{ id: "miss", flow: miss, weight: 1 }] }, 5);
+    const legs = sim.events.filter((e) => e.kind === "leg" && e.wire === "a_c").length;
+    expect(spawns(sim)).toBeGreaterThan(10);
+    expect(legs).toBe(2 * spawns(sim));
+    expect(replies(sim, true)).toBe(spawns(sim));
+  });
+  it("a flow that ends where it started replies at once", () => {
+    const peek: BoardFlow = { path: [{ wire: "u_a", dir: 1, at: "app" }, { wire: "u_a", dir: -1, at: "users" }], color: "cyan", back: "green" };
+    const sim = run({ flows: () => [{ id: "peek", flow: peek, weight: 1 }] }, 5);
+    expect(replies(sim, true)).toBe(spawns(sim));
+    expect(sim.packets).toHaveLength(0);
+  });
 });
