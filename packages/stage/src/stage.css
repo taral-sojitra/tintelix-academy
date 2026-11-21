@@ -472,3 +472,13 @@
 .tx-sclock-bar span.done i { background: var(--green); }
 .tx-sclock-bar span.now i { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
 .tx-sclock-bar span.now em { color: var(--node-ink); }
+.tx-idbits { margin-top: 8px; }
+.tx-idbits-bar { display: grid; gap: 3px; }
+.tx-idbits-bar span { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tx-idbits-bar i { height: 14px; border-radius: 3px; }
+.tx-idbits-bar em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-idbits-bar .b-sign i { background: color-mix(in srgb, var(--node-stroke) 80%, transparent); }
+.tx-idbits-bar .b-time i { background: color-mix(in srgb, var(--violet) 70%, transparent); }
+.tx-idbits-bar .b-machine i { background: color-mix(in srgb, var(--amber) 80%, transparent); }
+.tx-idbits-bar .b-seq i { background: color-mix(in srgb, var(--green) 75%, transparent); }
+.tx-idbits .tx-b62-id { margin-top: 4px; }
