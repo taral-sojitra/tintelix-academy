@@ -13,6 +13,7 @@ import { createDataScene } from "./data";
 import { createHealthScene } from "./health";
 import { createIdemScene } from "./idem";
 import { createIndexScene } from "./index-lookup";
+import { createLimitScene } from "./limit";
 import { createMqScene } from "./mq";
 import { createProxyScene } from "./proxy";
 import { createReplScene } from "./repl";
@@ -49,4 +50,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   txn: createTxnScene,
   mq: createMqScene,
   idem: createIdemScene,
+  limit: createLimitScene,
 };

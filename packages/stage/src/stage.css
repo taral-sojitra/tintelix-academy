@@ -373,3 +373,5 @@
 .tx-node.tx-locked { border-color: var(--violet); box-shadow: var(--node-shadow), 0 0 14px color-mix(in srgb, var(--violet) 45%, transparent); }
 .tx-fleet4 { grid-template-columns: repeat(4, 1fr); }
 .tx-fleet4 i { height: 54px; }
+.tx-bucket { height: 14px; border-radius: 7px; }
+.tx-bucket i { background: var(--green); border-radius: 7px; transition: width .15s linear; }

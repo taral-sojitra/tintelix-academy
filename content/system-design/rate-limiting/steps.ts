@@ -1,0 +1,76 @@
+import type { Step } from "@tintelix/schema";
+
+export const limitSteps: Step[] = [
+  {
+    id: "flood",
+    tag: "problem",
+    title: "One client floods the API",
+    short: "Flood",
+    text: [
+      "{normalClients} normal clients send {normalRps} requests a second, well within the API's {capacity}. Then one client's buggy script sends {flooderRate} a second.",
+      "The API is asked for **{loadPct}** of what it can do, so it drops requests from everyone: normal users get only **{successPct}** of theirs through.",
+    ],
+    note: { kind: "watch", text: "Purple is the flooding client; red replies are dropped by the overloaded API." },
+    sim: { mode: "flood", speed: 1 },
+    live: "LIVE · no rate limit",
+  },
+  {
+    id: "token-bucket",
+    tag: "solution",
+    title: "A token bucket for each client",
+    short: "Token bucket",
+    text: [
+      "Give each client a bucket of tokens, refilled at {limit} a second and holding at most {bucket}. Each request spends a token; with none left, the answer is 429 Too Many Requests.",
+      "The flooding client now gets **{flooderAllowed}** requests a second and **{refusedRps}** are refused, so normal users get **{successPct}** through.",
+    ],
+    note: { kind: "tip", text: "Send a Retry-After header with the 429 so well-behaved clients know when to come back." },
+    changed: [{ kind: "add", label: "Limit", value: "{limit} a second per client" }],
+    sim: { mode: "flood", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · token bucket",
+  },
+  {
+    id: "bursts",
+    tag: "technique",
+    title: "Short bursts are allowed",
+    short: "Bursts",
+    text: [
+      "Opening a page fires {burst} requests at once. The bucket holds {bucket} tokens, so **{burstAllowed}** of them go straight through, and the bucket refills in {refillSec}.",
+      "A strict limit of {limit} per second would let only **{windowAllowed}** through and break the page. Try it: change the bucket size.",
+    ],
+    note: { kind: "watch", text: "The green bar is the page's bucket: it drops when the page loads and refills at the limit." },
+    sim: { mode: "burst", speed: 1 },
+    controls: ["bucket"],
+    model: { mode: 1 },
+    live: "LIVE · bursts",
+  },
+  {
+    id: "shared-count",
+    tag: "problem",
+    title: "Four servers, four buckets",
+    short: "Shared count",
+    text: [
+      "The API runs on {servers} servers, and each kept its own buckets. The balancer spreads the flooding client's requests across all of them, so it gets **{flooderAllowed}** a second, not {limit}.",
+      "Keep the count in one shared place, such as Redis, that every server updates atomically: the client then gets **{sharedAllowed}** a second.",
+    ],
+    note: { kind: "idea", text: "A shared counter adds a fast network call to each request; some systems accept slightly loose limits to avoid it." },
+    changed: [{ kind: "mod", label: "Servers", value: "{servers}" }],
+    sim: { mode: "flood", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · a bucket on each server",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What rate limiting taught us",
+    short: "Recap",
+    text: [
+      "A token bucket per client caps the steady rate ({limit} a second) and still allows short bursts (up to {bucket}). Over the limit, answer 429 with Retry-After.",
+      "Count in one shared place, or each server multiplies the limit.",
+    ],
+    note: { kind: "next", text: "Coming up in Fan-out and the news feed: what happens when a celebrity posts." },
+    sim: { mode: "flood", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · recap",
+  },
+];
