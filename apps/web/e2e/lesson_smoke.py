@@ -480,19 +480,36 @@ async def shard_flow(page):
     return "Sharding lesson: one primary 400% busy; range burns the last shard (25% stored); hash evens to 80%; a hot key 176% until split"
 
 
+async def ring_flow(page):
+    await page.goto(BASE + "/system-design/consistent-hashing", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Add a server, move few keys")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("80%")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("80%", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Put keys and servers on a ring")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("19%", timeout=6000)
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Virtual nodes even it out")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("22%", timeout=6000)
+    await expect(page.locator(".tx-ring circle.srv")).to_have_count(500)
+    return "Consistent hashing lesson: mod N moves 80% of keys; a ring moves 19%; 100 virtual nodes bring the largest share to 22%"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("15 open now")).to_be_visible()
+    await expect(page.get_by_text("16 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("15 of 30 open")).to_be_visible()
-    return "System Design shows 15 lessons open"
+    await expect(page.get_by_text("16 of 30 open")).to_be_visible()
+    return "System Design shows 16 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

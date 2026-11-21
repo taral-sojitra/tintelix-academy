@@ -12,6 +12,7 @@ import { createHealthScene } from "./health";
 import { createIndexScene } from "./index-lookup";
 import { createProxyScene } from "./proxy";
 import { createReplScene } from "./repl";
+import { createRingScene } from "./ring";
 import { createSessionScene } from "./session";
 import { createShardScene } from "./shard";
 import type { SceneFactory } from "./types";
@@ -33,4 +34,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   index: createIndexScene,
   repl: createReplScene,
   shard: createShardScene,
+  ring: createRingScene,
 };
