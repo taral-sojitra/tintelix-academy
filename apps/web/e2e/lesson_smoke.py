@@ -207,9 +207,9 @@ async def latency_cheatsheet(page):
 
 async def home_start_here(page):
     await page.goto(BASE + "/", wait_until="load")
-    await expect(page.get_by_text("Start here · System Design · Lesson 1 of 30")).to_be_visible()
+    await expect(page.get_by_text("Start here · System Design · Lesson 1 of 59")).to_be_visible()
     await expect(page.get_by_text("The average is lying").first).to_be_visible()
-    return "a new learner's Home card starts at Lesson 1 of 30, The average is lying"
+    return "a new learner's Home card starts at Lesson 1 of 59, The average is lying"
 
 
 async def lesson_switch_latency(page):
@@ -756,10 +756,10 @@ async def region_flow(page):
 
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("30 open now")).to_be_visible()
+    await expect(page.get_by_text("59 lessons in 13 modules · 31 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("30 of 30 open")).to_be_visible()
-    return "System Design shows all 30 lessons open"
+    await expect(page.get_by_text("31 of 59 open")).to_be_visible()
+    return "System Design lists 59 lessons in 13 modules, 31 open"
 
 
 async def main() -> None:

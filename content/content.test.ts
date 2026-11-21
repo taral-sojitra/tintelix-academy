@@ -6,7 +6,7 @@ describe("content", () => {
     expect(checkContent({ subjects, lessons, components })).toEqual([]);
   });
 
-  it("lists 30 System Design lessons in 8 modules, opening with Measuring systems and closing with Staying up", () => {
+  it("lists 59 System Design lessons in 13 modules: eight of concepts, then five of case studies", () => {
     const sd = subjects.find((s) => s.id === "system-design")!;
     expect(sd.modules.map((m) => m.title)).toEqual([
       "Measuring systems",
@@ -17,8 +17,14 @@ describe("content", () => {
       "Messaging and reliability",
       "Services",
       "Staying up",
+      "Case studies: the method and the classics",
+      "Case studies: social and real time",
+      "Case studies: media and files",
+      "Case studies: data pipelines",
+      "Case studies: money and orders",
     ]);
-    expect(sd.modules.flatMap((m) => m.lessons)).toHaveLength(30);
+    expect(sd.modules.flatMap((m) => m.lessons)).toHaveLength(59);
+    expect(sd.modules[8]!.lessons.slice(0, 2).map((l) => l.id)).toEqual(["design-method", "url-shortener"]);
   });
 
   it("only builds on lessons that come earlier", () => {
