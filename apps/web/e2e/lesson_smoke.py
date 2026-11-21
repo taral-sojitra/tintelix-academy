@@ -535,19 +535,35 @@ async def upload_flow(page):
     return "Object storage lesson: relaying uploads needs 16 servers; signed URLs need 1; multipart redoes one 100 MB part"
 
 
+async def cap_flow(page):
+    await page.goto(BASE + "/system-design/cap-theorem", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("When the network splits")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("2 ms")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("The link fails: refuse to stay correct")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("30%")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("30%", timeout=6000)
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("54,000")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("66 ms", timeout=6000)
+    return "CAP lesson: CP refuses 30% during a split; AP answers all with 30% maybe stale and 54,000 writes to merge; cross-region writes take 66 ms"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("18 open now")).to_be_visible()
+    await expect(page.get_by_text("19 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("18 of 30 open")).to_be_visible()
-    return "System Design shows 18 lessons open"
+    await expect(page.get_by_text("19 of 30 open")).to_be_visible()
+    return "System Design shows 19 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

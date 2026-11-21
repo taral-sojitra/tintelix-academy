@@ -345,3 +345,6 @@
 .tx-parts i.done { background: color-mix(in srgb, var(--green) 55%, transparent); border-color: var(--green); }
 .tx-parts i.failed { background: var(--red); border-color: var(--red); }
 [data-partbox][hidden], [data-arriving]:empty { display: none; }
+.tx-rules { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; flex: 1; font-size: 13px; line-height: 1.45; }
+.tx-rules p { margin: 0; }
+.tx-node.tx-stale { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, var(--node-bg)); }

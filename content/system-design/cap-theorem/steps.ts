@@ -1,0 +1,76 @@
+import type { Step } from "@tintelix/schema";
+
+export const capSteps: Step[] = [
+  {
+    id: "three-copies",
+    tag: "technique",
+    title: "Three copies, one network",
+    short: "Copies",
+    text: [
+      "The database keeps {replicas} copies: two at site A and one at site B. Each write waits until {majority} copies have it, so every copy agrees and any of them can answer.",
+      "{sideBPct} of users reach site B. With every copy in one region, a write takes {commitMs}.",
+    ],
+    note: { kind: "idea", text: "The C in CAP means every read sees the latest write, as if there were one copy. It isn't the C in ACID." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · healthy",
+  },
+  {
+    id: "choose-consistency",
+    tag: "problem",
+    title: "The link fails: refuse to stay correct",
+    short: "Consistent",
+    text: [
+      "The network between the sites fails. Site B can't hear site A, so it can't tell whether its copy is current. The system has to choose.",
+      "Choosing consistency: only the side with a majority ({majority} of {replicas}) answers. Site B refuses its users: **{errorPct}** of requests fail, {errorRps} a second, until the link heals. Nobody reads old data.",
+    ],
+    note: { kind: "watch", text: "Requests to Copy 3 turn back red." },
+    changed: [{ kind: "mod", label: "Network link", value: "cut" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · split, consistency first",
+  },
+  {
+    id: "choose-availability",
+    tag: "problem",
+    title: "Or answer, and risk old data",
+    short: "Available",
+    text: [
+      "Choosing availability: site B keeps answering from its own copy. Nobody is refused, but **{stalePct}** of answers may be missing site A's latest writes.",
+      "Site B also accepts writes. When the link heals, **{reconcile}** writes from a {partitionSec} split must be merged, and two writes to the same item conflict.",
+    ],
+    note: { kind: "watch", text: "\"Last write wins\" is a simple merge, but it silently throws one of the two writes away." },
+    changed: [{ kind: "mod", label: "Site B", value: "answers anyway" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · split, availability first",
+  },
+  {
+    id: "pacelc",
+    tag: "problem",
+    title: "Without a split, consistency costs time",
+    short: "PACELC",
+    text: [
+      "Splits are rare; the round trip is not. To survive losing a whole region, put the copies in different regions. Now every write waits for the nearest other region: **{commitMs}**, with **{inFlight}** writes in flight at {writeRps} a second.",
+      "That is PACELC: during a Partition, choose Availability or Consistency; Else, choose Latency or Consistency. Try it: change the round trip between copies.",
+    ],
+    note: { kind: "tip", text: "\"Is it CP or AP?\" is often the wrong question: many databases let you choose per request." },
+    changed: [{ kind: "mod", label: "Copies", value: "in different regions" }],
+    sim: { mode: "steady", speed: 1 },
+    controls: ["rttMs"],
+    model: { rttMs: 65 },
+    live: "LIVE · cross-region copies",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What CAP taught us",
+    short: "Recap",
+    text: [
+      "Networks do split, so partition tolerance isn't optional. During a split, choose: refuse on the minority side (consistent) or answer from what you have (available).",
+      "When the network is healthy, consistency still costs a round trip on every write: {commitMs} in one region.",
+    ],
+    note: { kind: "next", text: "Coming up in Consistency models: the guarantees between \"always current\" and \"eventually\"." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · recap",
+  },
+];
