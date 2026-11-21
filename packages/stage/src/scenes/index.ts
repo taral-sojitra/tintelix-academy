@@ -7,6 +7,7 @@ import { createChainScene } from "./chain";
 import { createEstimateScene } from "./estimate";
 import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
+import { createBloomScene } from "./bloom";
 import { createDataScene } from "./data";
 import { createHealthScene } from "./health";
 import { createIndexScene } from "./index-lookup";
@@ -35,4 +36,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   repl: createReplScene,
   shard: createShardScene,
   ring: createRingScene,
+  bloom: createBloomScene,
 };
