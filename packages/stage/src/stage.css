@@ -313,3 +313,9 @@
 .tx-node.tx-down { border-color: var(--red); background: color-mix(in srgb, var(--red) 10%, var(--node-bg)); }
 .tx-role:empty { display: none; }
 .tx-role { color: var(--green); }
+.tx-node:has(.tx-shardrow) { justify-content: center; padding: 8px 14px; }
+.tx-shardrow { display: grid; grid-template-columns: 64px 1fr 70px 64px; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; color: var(--node-sub); }
+.tx-shardrow b { font-size: 13px; }
+.tx-shardrow em { font-style: normal; text-align: right; color: var(--node-ink); }
+.tx-node.tx-hot { border-color: var(--red); box-shadow: var(--node-shadow), 0 0 14px color-mix(in srgb, var(--red) 40%, transparent); }
+.tx-node.tx-hot .tx-meter i { background: var(--red); }
