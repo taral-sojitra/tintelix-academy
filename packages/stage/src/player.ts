@@ -76,7 +76,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   let stepTime = 0;
   let simTime = 0;
 
-  const wires: Record<string, Wire> = Object.fromEntries(Object.entries(lesson.scene.wires).map(([k, w]) => [k, makeWire(w.from, w.to, 48, w.pace ?? 1)]));
+  const wires: Record<string, Wire> = Object.fromEntries(Object.entries(lesson.scene.wires).map(([k, w]) => [k, makeWire(w.from, w.to, 48, w.pace ?? 1, w.straight ?? false)]));
   const fx = new Effects({ reducedMotion, rand });
   const factory = scenes[lesson.scene.kind as SceneKind] as (typeof scenes)[SceneKind] | undefined;
   if (!factory) throw new Error(`no scene runtime for "${lesson.scene.kind}"`);

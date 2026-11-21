@@ -13,6 +13,7 @@ import { createDataScene } from "./data";
 import { createFanoutScene } from "./fanout";
 import { createGatewayScene } from "./gateway";
 import { createHealthScene } from "./health";
+import { createLeaderScene } from "./leader";
 import { createIdemScene } from "./idem";
 import { createIndexScene } from "./index-lookup";
 import { createLimitScene } from "./limit";
@@ -59,4 +60,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   gateway: createGatewayScene,
   micro: createMicroScene,
   retry: createRetryScene,
+  leader: createLeaderScene,
 };

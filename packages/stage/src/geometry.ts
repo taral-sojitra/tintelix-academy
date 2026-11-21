@@ -10,10 +10,11 @@ export interface Wire {
 }
 
 /** Control points sit at half the horizontal distance, so wires leave and enter boxes level. */
-export function makeWire(from: Point, to: Point, samples = 48, pace = 1): Wire {
+export function makeWire(from: Point, to: Point, samples = 48, pace = 1, straight = false): Wire {
   const k = (to[0] - from[0]) * 0.5;
-  const p1: Point = [from[0] + k, from[1]];
-  const p2: Point = [to[0] - k, to[1]];
+  // A straight wire puts both control points on the line itself.
+  const p1: Point = straight ? [from[0] + (to[0] - from[0]) / 3, from[1] + (to[1] - from[1]) / 3] : [from[0] + k, from[1]];
+  const p2: Point = straight ? [from[0] + (2 * (to[0] - from[0])) / 3, from[1] + (2 * (to[1] - from[1])) / 3] : [to[0] - k, to[1]];
   const pts: Point[] = [];
   const cum = [0];
   for (let i = 0; i <= samples; i++) {

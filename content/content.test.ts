@@ -43,7 +43,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -150,6 +150,10 @@ describe("content", () => {
 
   it("lists lesson 28, Don't kick a slow service", () => {
     expect(lessonSummaries("system-design")[27]).toMatchObject({ id: "retries-and-circuit-breakers", order: 28, available: true, title: "Don't kick a slow service" });
+  });
+
+  it("lists lesson 29, Who's in charge now?", () => {
+    expect(lessonSummaries("system-design")[28]).toMatchObject({ id: "leader-election", order: 29, available: true, title: "Who's in charge now?" });
   });
 
   it("lists the CDN lesson as written and in order", () => {
