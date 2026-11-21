@@ -230,3 +230,32 @@ describe("formatOutput for the latency lesson", () => {
     expect(formatOutput("slowPct", 9.96)).toBe("10%");
   });
 });
+
+describe("formatOutput for the availability lesson", () => {
+  it("shows availability down to its first non-nine digit, never rounding up", () => {
+    expect(formatOutput("pathAvail", 99.501)).toBe("99.5%");
+    expect(formatOutput("perAvail", 99.9)).toBe("99.9%");
+    expect(formatOutput("tierAvail", 99.95)).toBe("99.95%");
+    expect(formatOutput("tierAvail", 99.9499)).toBe("99.94%");
+    expect(formatOutput("pathAvail", 99.999500001)).toBe("99.9995%");
+    expect(formatOutput("pathAvail", 99.99)).toBe("99.99%");
+    expect(formatOutput("pathAvail", 99)).toBe("99%");
+    expect(formatOutput("pathAvail", 98.5)).toBe("98.5%");
+    expect(formatOutput("pathAvail", 100)).toBe("100%");
+  });
+
+  it("reads downtime in seconds, minutes, hours and minutes, or days", () => {
+    expect(formatOutput("pathDowntime", 13.1)).toBe("13 s");
+    expect(formatOutput("perDowntime", 2629.8)).toBe("43.8 min");
+    expect(formatOutput("perDowntime", 1560)).toBe("26 min");
+    expect(formatOutput("pathDowntime", 13122.7)).toBe("3 h 39 min");
+    expect(formatOutput("pathDowntime", 7200)).toBe("2 h");
+    expect(formatOutput("pathDowntime", 3.65 * 86400)).toBe("3.7 days");
+  });
+
+  it("keeps two decimals for shares under 1%", () => {
+    expect(formatOutput("sharedPct", 0.05)).toBe("0.05%");
+    expect(formatOutput("sharedPct", 0.1)).toBe("0.1%");
+    expect(formatOutput("pageSlowPct", 0.09996)).toBe("0.1%");
+  });
+});
