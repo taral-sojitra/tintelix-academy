@@ -1,5 +1,5 @@
 import { cdnScene } from "../../../content/system-design/cdn/scene";
-import { fitView } from "./camera";
+import { fitView, panView } from "./camera";
 
 const bounds = { x: 8, y: 62, w: 896, h: 422 };
 const insets = { top: 50, side: 14, bottom: 56 };
@@ -49,5 +49,32 @@ describe("fitView", () => {
 
   it("never returns a zero or negative scale on a tiny stage", () => {
     expect(fitView({ w: 40, h: 40 }, bounds, insets).s).toBeGreaterThan(0);
+  });
+});
+
+describe("panView", () => {
+  const bounds = { x: 0, y: 0, w: 1000, h: 400 };
+  const insets = { top: 50, side: 14, bottom: 56 };
+  const phone = { w: 366, h: 400 };
+
+  it("never shrinks below the minimum scale on a narrow stage", () => {
+    expect(panView(phone, bounds, insets, 0.7, [500, 200]).s).toBe(0.7);
+  });
+
+  it("puts the requested point in the middle of the stage", () => {
+    const v = panView(phone, bounds, insets, 0.7, [500, 200]);
+    expect(500 * v.s + v.ox).toBeCloseTo(14 + (366 - 28) / 2, 6);
+  });
+
+  it("stops at the diagram's edges instead of showing empty space", () => {
+    const left = panView(phone, bounds, insets, 0.7, [0, 200]);
+    expect(left.ox).toBeCloseTo(14, 6);
+    const right = panView(phone, bounds, insets, 0.7, [1000, 200]);
+    expect(1000 * right.s + right.ox).toBeCloseTo(366 - 14, 6);
+  });
+
+  it("is the plain fit when the diagram already fits at a readable size", () => {
+    const wide = { w: 1400, h: 700 };
+    expect(panView(wide, bounds, insets, 0.7, [0, 0])).toEqual(fitView(wide, bounds, insets));
   });
 });

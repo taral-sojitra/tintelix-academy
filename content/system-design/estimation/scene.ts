@@ -9,7 +9,8 @@ const TOP = 64;
 const BOT = 282;
 const H = 118;
 const W = 150;
-const X = [16, 212, 408, 604, 800];
+// Wide gaps between boxes leave room for the arrow labels (× 20%, ÷ 120…).
+const X = [8, 215, 422, 629, 836];
 const box = (x: number, y: number, kind: "users" | "app" | "services" | "db" | "curve", label: string, sub: string) => ({ x, y, w: W, h: H, kind, label, sub });
 
 export const estimationScene: SceneSpec = {

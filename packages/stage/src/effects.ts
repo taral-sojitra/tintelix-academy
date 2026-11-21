@@ -2,7 +2,25 @@ import type { Hue } from "./sim";
 
 export interface Ripple { x: number; y: number; color: Hue; r: number; maxR: number; life: number; max: number }
 export interface Particle { x: number; y: number; vx: number; vy: number; life: number; max: number; color: Hue | "white"; size: number }
-export interface Float { x: number; y: number; text: string; color: Hue; big: boolean; life: number; max: number }
+export interface Float {
+  x: number;
+  y: number;
+  text: string;
+  color: Hue;
+  big: boolean;
+  life: number;
+  max: number;
+  /** Set by the renderer: the screen offset that keeps the label clear of boxes and other labels. */
+  dx?: number;
+  dy?: number;
+  /** The view scale the offset was worked out for; a resize places the label again. */
+  placedAt?: number;
+  /** No clear spot nearby: the label isn't drawn. */
+  dropped?: boolean;
+}
+
+/** How fast a label drifts up, in world units a second. */
+export const floatRise = (f: { big: boolean }) => (f.big ? 10 : 22);
 
 /** Short-lived decorations: rings where requests land, bursts, and floating labels. */
 export class Effects {
@@ -59,7 +77,7 @@ export class Effects {
     this.particles = this.particles.filter((q) => q.life > 0);
     for (const f of this.floats) {
       f.life -= dt;
-      if (!this.reducedMotion) f.y -= dt * (f.big ? 10 : 22);
+      if (!this.reducedMotion) f.y -= dt * floatRise(f);
     }
     this.floats = this.floats.filter((f) => f.life > 0);
   }

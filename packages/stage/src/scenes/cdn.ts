@@ -335,6 +335,8 @@ export function createCdnScene(o: { fx: Effects; rand: () => number; scene: Scen
 
     mount(world: HTMLElement) {
       for (const el of world.querySelectorAll<HTMLElement>("[data-node]")) els.nodes[el.dataset.node!] = el;
+      // "CDN edge" plus its NEW badge needs the room a smaller icon leaves.
+      els.nodes.edge?.classList.add("tx-compact");
       els.copies = [...world.querySelectorAll<HTMLElement>("[data-copies] i")];
       els.badge = world.querySelector("[data-new]");
       for (const el of world.querySelectorAll<HTMLElement>("[data-price]")) els.prices[el.dataset.price!] = el;

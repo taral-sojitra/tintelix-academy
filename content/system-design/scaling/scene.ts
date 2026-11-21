@@ -10,15 +10,15 @@ export const scalingScene: SceneSpec = {
   world: { w: 1000, h: 470 },
   bounds: { x: 8, y: 50, w: 984, h: 362 },
   nodes: {
-    users: { x: 16, y: 160, w: 150, h: 74, kind: "users", label: "Shoppers", sub: "every page view" },
+    users: { x: 16, y: 160, w: 150, h: 74, kind: "users", label: "Shoppers", sub: "page views" },
     big: { x: 300, y: 80, w: 300, h: 252, kind: "app", label: "One big server", sub: "scale up" },
-    lb: { x: 206, y: 160, w: 120, h: 74, kind: "lb", label: "Balancer", sub: "spreads load", hidden: true },
-    fleet: { x: 366, y: 80, w: 290, h: 252, kind: "services", label: "Many servers", sub: "scale out", hidden: true },
+    lb: { x: 194, y: 160, w: 166, h: 74, kind: "lb", label: "Balancer", sub: "spreads load", hidden: true },
+    fleet: { x: 392, y: 80, w: 274, h: 252, kind: "services", label: "Many servers", sub: "scale out", hidden: true },
     curve: { x: 690, y: 56, w: 290, h: 344, kind: "curve", label: "Throughput vs servers", sub: "from the model", hidden: true },
   },
   wires: {
     u_big: { from: [166, 197], to: [300, 197] },
-    u_lb: { from: [166, 197], to: [206, 197] },
-    lb_fleet: { from: [326, 197], to: [366, 197] },
+    u_lb: { from: [166, 197], to: [194, 197] },
+    lb_fleet: { from: [360, 197], to: [392, 197] },
   },
 };

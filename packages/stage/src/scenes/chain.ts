@@ -147,7 +147,11 @@ export function createChainScene(o: { fx: Effects; rand: () => number; scene: Sc
     },
 
     mount(world: HTMLElement) {
-      for (const el of world.querySelectorAll<HTMLElement>("[data-node]")) els.nodes[el.dataset.node!] = el;
+      for (const el of world.querySelectorAll<HTMLElement>("[data-node]")) {
+        els.nodes[el.dataset.node!] = el;
+        // Six services share one row: a smaller icon leaves room for names like "Payments".
+        if (/^t\d$/.test(el.dataset.node!)) el.classList.add("tx-compact");
+      }
       els.copies = Array.from({ length: CHAIN_MAX }, (_, i) => [...world.querySelectorAll<HTMLElement>(`[data-copies="${i}"] b`)]);
       els.sum = world.querySelector("[data-math-sum]");
       els.down = world.querySelector("[data-math-down]");

@@ -1,6 +1,7 @@
 import type { Inputs, Lesson, Outputs, SceneKind, Step } from "@tintelix/schema";
 import { formatOutput } from "@tintelix/schema/format";
-import { fitView, type View } from "./camera";
+import { fitView, panView, type View } from "./camera";
+import type { Box } from "./render/labels";
 import { Effects } from "./effects";
 import { makeWire, type Wire } from "./geometry";
 import { startLoop } from "./loop";
@@ -52,6 +53,9 @@ export interface PlayerOptions {
 
 const SPEED = 400;
 const INSETS = { top: 50, side: 14, bottom: 56 };
+/** Below this stage width the diagram would shrink past reading size, so it stays zoomed and pans. */
+const NARROW = 600;
+const PHONE_MIN_SCALE = 0.7;
 
 const editableTarget = (t: EventTarget | null) => {
   const el = t as HTMLElement | null;
@@ -119,6 +123,68 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   let stopLoop: (() => void) | null = null;
   let ro: ResizeObserver | null = null;
   let mo: MutationObserver | null = null;
+  /** On a narrow stage: zoomed to a readable size (true) or the whole diagram (false). */
+  let zoomed = true;
+  /** The world point at the middle of a zoomed stage; null follows the step's focus. */
+  let panCenter: [number, number] | null = null;
+  let chartWasShown: boolean | null = null;
+  let drag: { id: number; x: number; y: number; from: [number, number] } | null = null;
+
+  /** Where a zoomed stage looks first: the nodes the step adds or focuses on, else the diagram's left edge. */
+  function focusCenter(): [number, number] {
+    const s = step();
+    const ns = (s.scene?.focus ?? s.scene?.add ?? []).map((id) => lesson.scene.nodes[id]).filter((n) => !!n);
+    if (ns.length > 0) {
+      const x0 = Math.min(...ns.map((n) => n.x));
+      const x1 = Math.max(...ns.map((n) => n.x + n.w));
+      const y0 = Math.min(...ns.map((n) => n.y));
+      const y1 = Math.max(...ns.map((n) => n.y + n.h));
+      return [(x0 + x1) / 2, (y0 + y1) / 2];
+    }
+    const b = lesson.scene.bounds;
+    return [b.x, b.y + b.h / 2];
+  }
+
+  /** Works out the view for the stage's current size and applies it to the boxes and the grid. */
+  function refit() {
+    if (!dom) return;
+    const r = dom.root.getBoundingClientRect();
+    const stage = { w: r.width, h: r.height };
+    const fit = fitView(stage, lesson.scene.bounds, INSETS);
+    const narrow = r.width < NARROW;
+    const pans = narrow && zoomed && fit.s < PHONE_MIN_SCALE;
+    dom.root.classList.toggle("tx-narrow", narrow && fit.s < PHONE_MIN_SCALE);
+    dom.root.classList.toggle("tx-zoomed", pans);
+    dom.zoom.textContent = zoomed ? "Whole diagram" : "Zoom in";
+    dom.zoom.setAttribute("aria-pressed", String(!zoomed));
+    let v = fit;
+    if (pans) {
+      v = panView(stage, lesson.scene.bounds, INSETS, PHONE_MIN_SCALE, panCenter ?? focusCenter());
+    } else {
+      const box = dom.chart.parentElement;
+      if (box && box.offsetParent !== null) {
+        // Make room above the chart when a box would sit behind it.
+        const cb = box.getBoundingClientRect();
+        const top = cb.top - r.top - 8;
+        const right = cb.right - r.left + 8;
+        const hits = Object.values(lesson.scene.nodes).some((n) => n.x * v.s + v.ox < right && (n.y + n.h) * v.s + v.oy > top);
+        if (hits) v = fitView(stage, lesson.scene.bounds, { ...INSETS, bottom: Math.max(INSETS.bottom, r.height - top) });
+      }
+    }
+    view = v;
+    dom.world.style.transform = `translate(${v.ox}px, ${v.oy}px) scale(${v.s})`;
+    const g = 24 * Math.max(0.6, v.s);
+    dom.root.style.backgroundSize = `${g}px ${g}px`;
+    dom.root.style.backgroundPosition = `${v.ox % g}px ${v.oy % g}px`;
+  }
+
+  /** The world point at the middle of the free space, for the current view. */
+  function viewCenter(): [number, number] {
+    const r = dom!.root.getBoundingClientRect();
+    const cx = INSETS.side + (r.width - INSETS.side * 2) / 2;
+    const cy = INSETS.top + (r.height - INSETS.top - INSETS.bottom) / 2;
+    return [(cx - view.ox) / view.s, (cy - view.oy) / view.s];
+  }
 
   function resize() {
     if (!dom || !surfaces) return;
@@ -138,18 +204,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     surfaces.chart.h = cr.height || 50;
     dom.chart.width = Math.round(surfaces.chart.w * dpr);
     dom.chart.height = Math.round(surfaces.chart.h * dpr);
-    const chartShown = dom.chart.offsetParent !== null;
-    let v = fitView({ w: r.width, h: r.height }, lesson.scene.bounds, INSETS);
-    if (chartShown) {
-      // Make room above the chart box when a box would sit behind it.
-      const hits = Object.values(lesson.scene.nodes).some((n) => n.x * v.s + v.ox < 14 + 236 && (n.y + n.h) * v.s + v.oy > r.height - 12 - 78);
-      if (hits) v = fitView({ w: r.width, h: r.height }, lesson.scene.bounds, { ...INSETS, bottom: 102 });
-    }
-    view = v;
-    dom.world.style.transform = `translate(${v.ox}px, ${v.oy}px) scale(${v.s})`;
-    const g = 24 * Math.max(0.6, v.s);
-    dom.root.style.backgroundSize = `${g}px ${g}px`;
-    dom.root.style.backgroundPosition = `${v.ox % g}px ${v.oy % g}px`;
+    refit();
   }
 
   function paintDom(rdt: number) {
@@ -160,18 +215,46 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     const c = ctx();
     if (opts.hud) renderTiles(opts.hud, scene.tiles(display, c));
     scene.paintWidgets(display, c, rdt, sim);
+    // Scenes show and hide the chart from step to step: re-check what it would cover.
+    const chartShown = dom.chart.offsetParent !== null;
+    if (chartShown !== chartWasShown) {
+      chartWasShown = chartShown;
+      refit();
+    }
     // The label states the model's number; only the line carries the noise.
     const out = scene.chart.output;
     dom.chartValue.textContent = formatOutput(out, display[out] ?? 0);
   }
 
+  /** Everything a floating label must not cover, in stage pixels: shown boxes, wire and region labels, overlays, controls. */
+  function labelObstacles(): Box[] {
+    if (!dom) return [];
+    const out: Box[] = [];
+    for (const [id, el] of Object.entries(dom.nodes)) {
+      const n = lesson.scene.nodes[id];
+      // Go by the box's state, not its opacity: a box still fading in will be there in a moment.
+      if (!n || el.classList.contains("hidden") || el.classList.contains("tx-off") || el.offsetParent === null) continue;
+      out.push({ x: n.x * view.s + view.ox, y: n.y * view.s + view.oy, w: n.w * view.s, h: n.h * view.s });
+    }
+    const root = dom.root.getBoundingClientRect();
+    const extra = [...dom.root.querySelectorAll<HTMLElement>(".tx-ov, .tx-wlabel, .tx-region span")];
+    const ctrls = dom.root.closest(".stage-wrap")?.querySelector<HTMLElement>(".stage-ctrls");
+    if (ctrls) extra.push(ctrls);
+    for (const el of extra) {
+      if (el.offsetParent === null && getComputedStyle(el).position !== "fixed") continue;
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) out.push({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height });
+    }
+    return out;
+  }
+
   function paintCanvas() {
     if (!surfaces || !palette) return;
-    drawBack(surfaces.back, view, wires, scene.wireStyles(), fx.ripples, palette, fx.flow);
+    drawBack(surfaces.back, view, wires, scene.wireStyles(), fx.ripples, palette, fx.flow, sim.packets, fx.particles);
     const lane = scene.lane;
     const qName = Object.keys(scene.sim.queues ?? {})[0];
     const q = qName ? sim.queues[qName] : undefined;
-    drawFront(surfaces.front, view, sim.packets, q && lane ? { at: lane, waiting: q.waiting, serving: q.serving !== null, simTime } : null, fx.particles, fx.floats, palette);
+    drawFront(surfaces.front, view, q && lane ? { at: lane, waiting: q.waiting, serving: q.serving !== null, simTime } : null, fx.floats, palette, labelObstacles);
   }
 
   function update(dt: number) {
@@ -223,6 +306,9 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     fx.clear();
     scene.enterStep(ctx());
     applyStepToDom();
+    const s = lesson.steps[i]!;
+    if (s.scene?.focus || s.scene?.add) panCenter = null;
+    refit();
   }
 
   const api: Player = {
@@ -313,6 +399,29 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
       if (dom) palette = readPalette(dom.root);
     });
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    const root = dom.root;
+    dom.zoom.addEventListener("click", () => {
+      zoomed = !zoomed;
+      refit();
+    });
+    // Drag to look around a zoomed stage. Vertical swipes still scroll the page (touch-action: pan-y).
+    root.addEventListener("pointerdown", (e) => {
+      if (!root.classList.contains("tx-zoomed") || (e.target as HTMLElement).closest("button")) return;
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, from: viewCenter() };
+      root.setPointerCapture?.(e.pointerId);
+    });
+    root.addEventListener("pointermove", (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      panCenter = [drag.from[0] - (e.clientX - drag.x) / view.s, drag.from[1] - (e.clientY - drag.y) / view.s];
+      root.classList.add("tx-dragged");
+      refit();
+      panCenter = viewCenter();
+    });
+    const endDrag = () => {
+      drag = null;
+    };
+    root.addEventListener("pointerup", endDrag);
+    root.addEventListener("pointercancel", endDrag);
   }
 
   enter(clampStep(opts.startStep ?? 0));

@@ -26,7 +26,7 @@ const f = (name: string, d: Outputs) => formatOutput(name, d[name] ?? 0);
 function boxText(id: string, d: Outputs): [string, string] {
   switch (id) {
     case "mau":
-      return [f("mau", d), "use it in a month"];
+      return [f("mau", d), "use it monthly"];
     case "dau":
       return [f("dau", d), "on a given day"];
     case "avg":
@@ -147,7 +147,11 @@ export function createEstimateScene(o: { fx: Effects; rand: () => number; scene:
     },
 
     mount(world: HTMLElement) {
-      for (const el of world.querySelectorAll<HTMLElement>("[data-node]")) els.nodes[el.dataset.node!] = el;
+      for (const el of world.querySelectorAll<HTMLElement>("[data-node]")) {
+        els.nodes[el.dataset.node!] = el;
+        // Calculator cells: no icon, so names like "Monthly users" fit the narrow boxes.
+        el.classList.add("tx-noicon");
+      }
       for (const el of world.querySelectorAll<HTMLElement>("[data-value]")) els.value[el.dataset.value!] = el;
       for (const el of world.querySelectorAll<HTMLElement>("[data-sub]")) els.sub[el.dataset.sub!] = el;
       for (const el of world.querySelectorAll<HTMLElement>(".tx-wlabel")) els.labels[el.dataset.wire!] = el;

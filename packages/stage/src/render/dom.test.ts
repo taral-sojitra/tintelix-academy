@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { SceneSpec } from "@tintelix/schema";
-import { buildStage } from "./dom";
+import { buildStage, renderTiles } from "./dom";
 
 const spec: SceneSpec = {
   kind: "cdn",
@@ -41,5 +41,26 @@ describe("buildStage", () => {
     expect(label.textContent).toBe("13,000 km");
     const firstNode = host.querySelector(".tx-node")!;
     for (const el of [region, label]) expect(el.compareDocumentPosition(firstNode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("renderTiles", () => {
+  it("marks long values so they take a smaller size and break between words", () => {
+    const hud = document.createElement("div");
+    const tile = (value: string) => ({ id: "p", label: "Policy", icon: "shuffle" as const, hue: "blue" as const, value, note: "", mood: "" as const });
+    renderTiles(hud, [tile("Least connections")]);
+    expect(hud.querySelector(".tx-v")!.classList.contains("long")).toBe(true);
+    renderTiles(hud, [tile("27 ms")]);
+    expect(hud.querySelector(".tx-v")!.classList.contains("long")).toBe(false);
+  });
+});
+
+describe("renderTiles labels", () => {
+  it("updates a tile's label, icon and colour when a step reuses its id for something else", () => {
+    const hud = document.createElement("div");
+    renderTiles(hud, [{ id: "b", label: "A write needs", icon: "check", hue: "cyan", value: "3 of 5", note: "", mood: "" }]);
+    renderTiles(hud, [{ id: "b", label: "Storage's highest token", icon: "stack", hue: "violet", value: "34", note: "", mood: "" }]);
+    expect(hud.querySelector(".tx-k")!.textContent).toBe("Storage's highest token");
+    expect(hud.querySelector(".tx-mi")!.classList.contains("h-violet")).toBe(true);
   });
 });
