@@ -16,6 +16,7 @@ import { capTheorem } from "./system-design/cap-theorem/lesson";
 import { consistencyModels } from "./system-design/consistency-models/lesson";
 import { distributedTransactions } from "./system-design/distributed-transactions/lesson";
 import { consistentHashing } from "./system-design/consistent-hashing/lesson";
+import { idempotency } from "./system-design/idempotency/lesson";
 import { indexing } from "./system-design/indexing/lesson";
 import { messageQueues } from "./system-design/message-queues/lesson";
 import { objectStorage } from "./system-design/object-storage/lesson";
@@ -27,7 +28,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);
