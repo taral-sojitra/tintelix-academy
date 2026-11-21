@@ -4,6 +4,7 @@ import { createCdnScene } from "./cdn";
 import { createLatencyScene } from "./latency";
 import { createQueueScene } from "./queue";
 import { createChainScene } from "./chain";
+import { createEstimateScene } from "./estimate";
 import type { SceneFactory } from "./types";
 
 /** The runtime for each scene kind; the player picks one by `lesson.scene.kind`. */
@@ -13,4 +14,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   latency: createLatencyScene,
   queue: createQueueScene,
   chain: createChainScene,
+  estimate: createEstimateScene,
 };

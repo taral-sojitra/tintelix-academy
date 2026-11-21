@@ -6,11 +6,12 @@ import { cdn } from "./system-design/cdn/lesson";
 import { latencyPercentiles } from "./system-design/latency-percentiles/lesson";
 import { queueing } from "./system-design/queueing/lesson";
 import { availability } from "./system-design/availability/lesson";
+import { estimation } from "./system-design/estimation/lesson";
 
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, caching, cdn];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, caching, cdn];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);

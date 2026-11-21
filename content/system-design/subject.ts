@@ -17,7 +17,7 @@ export const systemDesign: Subject = {
         l("latency-percentiles", "Latency percentiles", "Requests land on a histogram; the average stays calm while p99 explodes.", [], "The average is lying"),
         l("queueing", "Queueing and utilization", "Busyness slides from 50% to 95% and the wait time goes vertical, as Little's law predicts.", ["latency-percentiles"], "Busy, then suddenly slow"),
         l("availability", "Availability and the nines", "Three 99.9% services in a chain lower availability; two side by side raise it.", [], "Nobody broke their promise"),
-        l("estimation", "Back-of-envelope estimation", "Daily users become peak requests a second, then storage, in a live calculator.", ["queueing"]),
+        l("estimation", "Back-of-envelope estimation", "Daily users become peak requests a second, then storage, in a live calculator.", ["queueing"], "From users to servers"),
       ],
     },
     {
