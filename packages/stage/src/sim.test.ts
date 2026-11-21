@@ -100,3 +100,51 @@ describe("Sim", () => {
     expect(Math.max(...sim.packets.map((p) => p.trail.length))).toBeLessThanOrEqual(3);
   });
 });
+
+describe("Queue work times", () => {
+  it("draws each work time when given a sampler, averaging 1/mu", () => {
+    const r = rng(41);
+    const q = new Queue(10, () => -Math.log(1 - r()) / 10);
+    const n = 3000;
+    for (let i = 0; i < n; i++) q.push({ id: i } as never);
+    let t = 0;
+    let done = 0;
+    const times = new Set<number>();
+    let last = 0;
+    while (done < n) {
+      t += 0.01;
+      const out = q.tick(0.01);
+      if (out.length) {
+        times.add(Math.round((t - last) * 1000));
+        last = t;
+      }
+      done += out.length;
+    }
+    expect(t / n).toBeGreaterThan(0.095);
+    expect(t / n).toBeLessThan(0.105);
+    // Random work times: the gaps between finishes vary a lot, unlike a fixed 100 ms.
+    expect(times.size).toBeGreaterThan(20);
+  });
+
+  it("a Sim with exponential work gives every queue a random work time", () => {
+    const sim = new Sim({ wires: {}, router: { spawn() {}, arrive() {} }, rand: rng(42), ratePerSec: 0, speed: 100, queues: { a: 10 }, exponential: true });
+    const q = sim.queues.a!;
+    for (let i = 0; i < 2000; i++) q.push({ id: i } as never);
+    let t = 0;
+    let done = 0;
+    let last = 0;
+    const gaps = new Set<number>();
+    while (done < 2000) {
+      t += 0.01;
+      const out = q.tick(0.01).length;
+      if (out) {
+        gaps.add(Math.round((t - last) * 1000));
+        last = t;
+      }
+      done += out;
+    }
+    expect(gaps.size).toBeGreaterThan(20);
+    expect(t / 2000).toBeGreaterThan(0.094);
+    expect(t / 2000).toBeLessThan(0.106);
+  });
+});

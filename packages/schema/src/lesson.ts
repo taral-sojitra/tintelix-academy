@@ -6,7 +6,7 @@ const Point = z.tuple([z.number(), z.number()]);
 const Rect = z.object({ x: z.number(), y: z.number(), w: z.number().positive(), h: z.number().positive() });
 
 /** Each kind of diagram the stage can play. A lesson's scene names one. */
-export const SCENE_KINDS = ["cache-aside", "cdn", "latency"] as const;
+export const SCENE_KINDS = ["cache-aside", "cdn", "latency", "queue"] as const;
 export type SceneKind = (typeof SCENE_KINDS)[number];
 
 /** The `sim.mode` values each scene kind understands. */
@@ -14,10 +14,11 @@ export const SCENE_MODES: Record<SceneKind, readonly string[]> = {
   "cache-aside": ["none", "warm", "steady", "storm", "jitter"],
   cdn: ["none", "direct", "warm", "steady", "stale", "purge"],
   latency: ["none", "average", "histogram", "fanout", "hedge"],
+  queue: ["none", "steady"],
 };
 
 export const SceneNode = Rect.extend({
-  kind: z.enum(["users", "lb", "app", "cache", "db", "edge", "origin", "services", "histogram"]),
+  kind: z.enum(["users", "lb", "app", "cache", "db", "edge", "origin", "services", "histogram", "curve"]),
   label: z.string(),
   sub: z.string(),
   hidden: z.boolean().optional(),

@@ -57,7 +57,11 @@ export class Queue {
   private items: Packet[] = [];
   serving: Packet | null = null;
   private remain = 0;
-  constructor(public mu: number) {}
+  /** `draw` gives each request's work time in seconds; without it every request takes exactly 1/mu. */
+  constructor(
+    public mu: number,
+    private readonly draw?: () => number,
+  ) {}
   push(p: Packet): void {
     this.items.push(p);
   }
@@ -72,7 +76,7 @@ export class Queue {
       if (!this.serving) {
         if (!this.items.length) return done;
         this.serving = this.items.shift()!;
-        this.remain = 1 / this.mu;
+        this.remain = this.draw ? this.draw() : 1 / this.mu;
       }
       if (this.remain > left + 1e-9) {
         this.remain -= left;
@@ -100,6 +104,8 @@ export interface SimOptions {
   speed: number;
   /** Service rate per queue name. */
   queues?: Record<string, number>;
+  /** Random (exponential) work times with mean 1/mu, instead of exactly 1/mu. */
+  exponential?: boolean;
   trailLimit?: number;
 }
 
@@ -127,7 +133,10 @@ export class Sim {
     this.ratePerSec = o.ratePerSec;
     this.speed = o.speed;
     this.trailLimit = o.trailLimit ?? 13;
-    for (const [name, mu] of Object.entries(o.queues ?? {})) this.queues[name] = new Queue(mu);
+    for (const [name, mu] of Object.entries(o.queues ?? {})) {
+      const q: Queue = new Queue(mu, o.exponential ? () => -Math.log(1 - o.rand()) / q.mu : undefined);
+      this.queues[name] = q;
+    }
   }
 
   /** A packet with no legs yet; the router or caller adds them. */

@@ -81,7 +81,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
   const factory = scenes[lesson.scene.kind as SceneKind] as (typeof scenes)[SceneKind] | undefined;
   if (!factory) throw new Error(`no scene runtime for "${lesson.scene.kind}"`);
   const scene: SceneRuntime = factory({ fx, rand, scene: lesson.scene });
-  const sim = new Sim({ wires, router: scene.router, rand, ratePerSec: scene.sim.ratePerSec, speed: SPEED, queues: scene.sim.queues ?? {}, trailLimit: fx.trailLimit });
+  const sim = new Sim({ wires, router: scene.router, rand, ratePerSec: scene.sim.ratePerSec, speed: SPEED, queues: scene.sim.queues ?? {}, exponential: scene.sim.exponential, trailLimit: fx.trailLimit });
 
   const step = (): Step => lesson.steps[state.stepIndex]!;
   const visibleAt = (i: number) => {
@@ -179,7 +179,7 @@ export function createPlayer(lesson: Lesson, host: HTMLElement, opts: PlayerOpti
     simTime += dt;
     stepTime += dt;
     const c = ctx();
-    scene.update(dt, c);
+    scene.update(dt, c, sim);
     sim.step(dt);
     for (const e of sim.drain()) scene.onEvent(e, c);
     fx.step(dt);
