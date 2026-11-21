@@ -11,6 +11,7 @@ import { createBloomScene } from "./bloom";
 import { createCapScene } from "./cap";
 import { createDataScene } from "./data";
 import { createFanoutScene } from "./fanout";
+import { createGatewayScene } from "./gateway";
 import { createHealthScene } from "./health";
 import { createIdemScene } from "./idem";
 import { createIndexScene } from "./index-lookup";
@@ -53,4 +54,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   idem: createIdemScene,
   limit: createLimitScene,
   fanout: createFanoutScene,
+  gateway: createGatewayScene,
 };

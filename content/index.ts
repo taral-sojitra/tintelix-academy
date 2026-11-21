@@ -5,6 +5,7 @@ import { caching } from "./system-design/caching/lesson";
 import { cdn } from "./system-design/cdn/lesson";
 import { latencyPercentiles } from "./system-design/latency-percentiles/lesson";
 import { queueing } from "./system-design/queueing/lesson";
+import { apiGateway } from "./system-design/api-gateway/lesson";
 import { availability } from "./system-design/availability/lesson";
 import { estimation } from "./system-design/estimation/lesson";
 import { scaling } from "./system-design/scaling/lesson";
@@ -30,7 +31,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);
