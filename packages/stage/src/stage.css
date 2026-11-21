@@ -375,3 +375,8 @@
 .tx-fleet4 i { height: 54px; }
 .tx-bucket { height: 14px; border-radius: 7px; }
 .tx-bucket i { background: var(--green); border-radius: 7px; transition: width .15s linear; }
+.tx-feeds { display: grid; grid-template-columns: repeat(8, 1fr); gap: 7px; margin-top: 8px; }
+.tx-feeds i { height: 30px; border-radius: 6px; border: 1px solid var(--node-stroke); background: color-mix(in srgb, var(--cyan) 22%, transparent); transition: background .3s; position: relative; }
+.tx-feeds i.got { background: var(--amber); border-color: var(--amber); }
+.tx-feeds i.built { background: transparent; border: 1px dashed var(--violet); }
+.tx-feeds i.pulled::after { content: ""; position: absolute; right: 3px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--violet); }

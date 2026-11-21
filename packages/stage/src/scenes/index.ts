@@ -10,6 +10,7 @@ import { createBalanceScene } from "./balance";
 import { createBloomScene } from "./bloom";
 import { createCapScene } from "./cap";
 import { createDataScene } from "./data";
+import { createFanoutScene } from "./fanout";
 import { createHealthScene } from "./health";
 import { createIdemScene } from "./idem";
 import { createIndexScene } from "./index-lookup";
@@ -51,4 +52,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   mq: createMqScene,
   idem: createIdemScene,
   limit: createLimitScene,
+  fanout: createFanoutScene,
 };
