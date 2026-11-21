@@ -1,0 +1,76 @@
+import type { Step } from "@tintelix/schema";
+
+export const fanoutSteps: Step[] = [
+  {
+    id: "push",
+    tag: "technique",
+    title: "Copy each post into every feed",
+    short: "Push",
+    text: [
+      "Fan-out on write: when Asha posts, workers copy it into each of her {followers} followers' feeds. Opening the app is then **{perOpen}** read: the feed is ready-made.",
+      "At {posts} posts a second that is **{feedWrites}** feed writes a second, {writeLoadPct} of what the workers can do.",
+    ],
+    note: { kind: "idea", text: "Writes are cheap to queue and reads are what users wait for, so doing the work at write time usually pays." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · fan-out on write",
+  },
+  {
+    id: "celebrity",
+    tag: "problem",
+    title: "A celebrity posts",
+    short: "Celebrity",
+    text: [
+      "A celebrity with {celebFollowers} followers posts. That is one feed write per follower, and only {spare} writes a second are spare.",
+      "The last follower sees the post **{deliverSec}** after it was posted, and every post they make costs the same again.",
+    ],
+    note: { kind: "watch", text: "Amber fills the feeds one by one." },
+    changed: [{ kind: "add", label: "Celebrity post", value: "{celebFollowers} followers" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · celebrity post",
+  },
+  {
+    id: "pull",
+    tag: "technique",
+    title: "Or build the feed when it's opened",
+    short: "Pull",
+    text: [
+      "Fan-out on read: copy nothing. When someone opens the app, fetch the latest posts from all {follows} accounts they follow and merge them.",
+      "Celebrities cost nothing extra now, but every open does **{perOpen}** lookups: **{lookups}** a second, and feeds load slowly.",
+    ],
+    note: { kind: "watch", text: "Purple requests go back to the authors every time a feed is opened." },
+    changed: [{ kind: "mod", label: "Feeds", value: "built on read" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · fan-out on read",
+  },
+  {
+    id: "hybrid",
+    tag: "solution",
+    title: "Push most posts, pull celebrities",
+    short: "Hybrid",
+    text: [
+      "Mix them: push posts from normal accounts, and leave accounts with huge followings out of fan-out. Opening the app reads the ready-made feed plus the {celebsFollowed} celebrities you follow: **{perOpen}** lookups.",
+      "That is **{lookups}** lookups a second instead of millions, and a celebrity's post is visible to everyone at once.",
+    ],
+    note: { kind: "tip", text: "The cut-off is a follower count you tune, and it can change as an account grows." },
+    changed: [{ kind: "mod", label: "Feeds", value: "hybrid" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · hybrid",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What fan-out taught us",
+    short: "Recap",
+    text: [
+      "Fan-out on write makes reads cheap ({perOpen} lookups here) but a celebrity's post becomes millions of writes. Fan-out on read makes writes cheap but every open expensive.",
+      "Most large feeds do both: push for the many, pull for the few with huge followings.",
+    ],
+    note: { kind: "next", text: "Coming up in API gateway: one front door for many services." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · recap",
+  },
+];
