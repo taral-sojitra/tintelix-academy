@@ -458,3 +458,9 @@
 .tx-met { overflow-wrap: break-word; }
 @container (max-width: 500px) { .tx-v { font-size: 16px; } .tx-v.long { font-size: 13px; } .tx-k { font-size: 9.5px; letter-spacing: 0.04em; } .tx-d { font-size: 10.5px; } }
 .tx-node.tx-noicon .tx-tile { display: none; }
+
+/* Case-study boards: lit cells and the short-code counter. */
+.tx-cells i.on { background: var(--cyan); }
+.tx-b62 { margin-top: 8px; }
+.tx-b62-id { margin: 0; font-family: var(--mono); font-size: 13px; color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-log li[hidden], .tx-calc-s[hidden] { display: none; }

@@ -1,4 +1,4 @@
-import { checkContent, quotedOutputs, type Component, type Lesson, type Subject } from "./index";
+import { checkContent, quotedOutputs, testCond, type Component, type Lesson, type Subject } from "./index";
 
 const model = {
   defaults: { traffic: 6000, hitRate: 0.5 },
@@ -144,5 +144,79 @@ describe("checkContent", () => {
   it("rejects a lesson that differs from its subject entry", () => {
     expect(check(makeLesson({ title: "Something else" }))).toContain('caching: title "Something else" differs from its subject entry "Survive the flash sale"');
     expect(check(makeLesson({ topic: "Caches" }))).toContain('caching: topic "Caches" differs from its subject entry "Caching"');
+  });
+});
+
+describe("board scenes", () => {
+  const boardModel = {
+    defaults: { mode: 0, load: 100 },
+    run: ({ mode = 0, load = 0 }: Record<string, number>) => ({ mode, dbBusyPct: load * (mode + 1), failPct: mode * 10 }),
+  };
+  const boardLesson = (board: Record<string, unknown> = {}, over: Partial<Lesson> = {}): Lesson =>
+    makeLesson({
+      model: boardModel,
+      controls: {},
+      steps: [{ id: "s", tag: "problem", title: "S", short: "S", text: ["Busy {dbBusyPct}."], model: { mode: 1 }, live: "LIVE" }],
+      cheatsheet: [{ heading: "H", text: ["Busy {dbBusyPct}."] }],
+      scene: {
+        kind: "board",
+        world: { w: 1000, h: 470 },
+        bounds: { x: 8, y: 40, w: 984, h: 390 },
+        nodes: {
+          users: { x: 16, y: 190, w: 160, h: 80, kind: "users", label: "Users", sub: "clicking" },
+          app: { x: 300, y: 190, w: 160, h: 80, kind: "app", label: "App", sub: "serves" },
+          db: { x: 600, y: 190, w: 160, h: 80, kind: "db", label: "Database", sub: "stores" },
+        },
+        wires: { u_a: { from: [176, 230], to: [300, 230] }, a_d: { from: [460, 230], to: [600, 230] } },
+        board: {
+          legend: [["cyan", "request"]],
+          flows: { read: { path: [{ wire: "u_a", dir: 1, at: "app" }, { wire: "a_d", dir: 1, at: "db" }], color: "cyan", back: "green", fail: { at: "db", share: "failPct" } } },
+          modes: [
+            { flows: [{ flow: "read", weight: 1 }], tiles: [{ id: "a", label: "DB busy", icon: "db", hue: "cyan", value: "{dbBusyPct}", note: "" }] },
+            { flows: [{ flow: "read", weight: 1 }], tiles: [{ id: "a", label: "DB busy", icon: "db", hue: "cyan", value: "{dbBusyPct}", note: "fails {failPct}" }] },
+          ],
+          ...board,
+        },
+      } as Lesson["scene"],
+      ...over,
+    });
+
+  it("a valid board passes", () => {
+    expect(check(boardLesson())).toEqual([]);
+  });
+  it("a board scene without a board is reported", () => {
+    const lesson = boardLesson();
+    delete (lesson.scene as { board?: unknown }).board;
+    expect(check(lesson)).toContain("caching: scene kind board needs scene.board");
+  });
+  it("a flow that names an unknown wire is reported", () => {
+    const problems = check(boardLesson({ flows: { read: { path: [{ wire: "nope", dir: 1, at: "app" }], color: "cyan" } } }));
+    expect(problems).toContain("caching: board flow read uses unknown wire nope");
+  });
+  it("a flow that reaches an unknown node is reported", () => {
+    const problems = check(boardLesson({ flows: { read: { path: [{ wire: "u_a", dir: 1, at: "ghost" }], color: "cyan" } } }));
+    expect(problems).toContain("caching: board flow read reaches unknown node ghost");
+  });
+  it("a failure share must be a Pct output", () => {
+    const problems = check(boardLesson({ flows: { read: { path: [{ wire: "u_a", dir: 1, at: "app" }], color: "cyan", fail: { at: "app", share: "dbBusy" } } } }));
+    expect(problems).toContain("caching: board flow read fail share dbBusy must be a …Pct output");
+  });
+  it("a step whose mode has no board mode is reported", () => {
+    const lesson = boardLesson();
+    lesson.steps[0]!.model = { mode: 3 };
+    expect(check(lesson)).toContain("caching/step s sets mode 3; the board has 2 modes");
+  });
+  it("a board template quoting a missing output is reported", () => {
+    const problems = check(boardLesson({ modes: [{ flows: [], tiles: [{ id: "a", label: "X", icon: "db", hue: "cyan", value: "{nope}", note: "" }] }] }));
+    expect(problems).toContain("caching: board mode 0 quotes {nope}, which the model does not produce");
+  });
+});
+
+describe("testCond", () => {
+  it("compares an output with above and below", () => {
+    expect(testCond({ output: "x", above: 1 }, { x: 2 })).toBe(true);
+    expect(testCond({ output: "x", above: 1 }, { x: 1 })).toBe(false);
+    expect(testCond({ output: "x", below: 1 }, { x: 0 })).toBe(true);
+    expect(testCond({ output: "missing", above: 0 }, {})).toBe(false);
   });
 });
