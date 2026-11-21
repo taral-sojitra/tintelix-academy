@@ -20,6 +20,7 @@ import { createMicroScene } from "./micro";
 import { createMqScene } from "./mq";
 import { createProxyScene } from "./proxy";
 import { createReplScene } from "./repl";
+import { createRetryScene } from "./retry";
 import { createRingScene } from "./ring";
 import { createSessionScene } from "./session";
 import { createShardScene } from "./shard";
@@ -57,4 +58,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   fanout: createFanoutScene,
   gateway: createGatewayScene,
   micro: createMicroScene,
+  retry: createRetryScene,
 };

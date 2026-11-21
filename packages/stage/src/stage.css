@@ -384,3 +384,17 @@
 .tx-modules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; flex: 1; margin: 14px 0; }
 .tx-modules span { display: grid; place-items: center; border-radius: 10px; border: 1px solid var(--node-stroke); font-family: var(--mono); font-size: 13px; color: var(--node-ink); background: color-mix(in srgb, var(--cyan) 8%, transparent); transition: background .1s; }
 .tx-modules span.on { background: color-mix(in srgb, var(--cyan) 45%, transparent); border-color: var(--cyan); }
+.tx-budget { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.tx-brow { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 10px; }
+.tx-brow em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-btrack { display: flex; height: 12px; border-radius: 6px; background: color-mix(in srgb, var(--node-stroke) 35%, transparent); overflow: hidden; }
+.tx-btrack i { height: 100%; }
+.b-client { background: color-mix(in srgb, var(--cyan) 50%, transparent); }
+.b-gw { background: color-mix(in srgb, var(--violet) 55%, transparent); }
+.b-work { background: var(--node-sub); }
+.b-pricing { background: var(--amber); }
+.b-tax { background: color-mix(in srgb, var(--green) 70%, transparent); }
+.tx-wave { display: flex; align-items: flex-end; gap: 6px; height: 36px; margin-top: 6px; border-bottom: 1px solid var(--node-stroke); }
+.tx-wavebox[hidden] { display: none; }
+.tx-wavebox .tx-calc-s { margin-top: 4px; }
+.tx-wave i { flex: 1; background: var(--amber); border-radius: 3px 3px 0 0; transition: height .3s; }
