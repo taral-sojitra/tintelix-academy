@@ -1,0 +1,77 @@
+import type { Step } from "@tintelix/schema";
+
+export const ringSteps: Step[] = [
+  {
+    id: "mod-n",
+    tag: "problem",
+    title: "Hash mod N moves almost every key",
+    short: "Mod N",
+    text: [
+      "{servers} cache servers split {keys} product keys by hash(key) mod {servers}. Traffic grows, a new server joins, and the formula becomes mod {newServers}.",
+      "Almost every answer changes: **{movedPct}** of keys, {movedKeys}, now belong to a server that doesn't have them yet. They all miss at once and land on the database. Try it: change how many servers there were.",
+    ],
+    note: { kind: "watch", text: "When the new server joins, every outlined key has changed server." },
+    sim: { mode: "mod", speed: 1 },
+    controls: ["servers"],
+    live: "LIVE · hash mod N",
+  },
+  {
+    id: "ring",
+    tag: "technique",
+    title: "Put keys and servers on a ring",
+    short: "Ring",
+    text: [
+      "Hash the servers onto a circle as well. A key belongs to the first server clockwise from it.",
+      "When the new server joins, it takes over only the arc in front of it: **{movedPct}** of keys move, {movedKeys}, and every other server keeps all of its keys.",
+    ],
+    note: { kind: "idea", text: "Removing a server is just as gentle: only its arc passes to the next server along." },
+    changed: [{ kind: "mod", label: "Placement", value: "hash ring" }],
+    sim: { mode: "ring", speed: 1 },
+    model: { scheme: 1 },
+    live: "LIVE · consistent hashing",
+  },
+  {
+    id: "uneven",
+    tag: "problem",
+    title: "One point each makes uneven arcs",
+    short: "Uneven",
+    text: [
+      "Where each server lands on the ring is luck. With one point each, the arcs vary: the largest server owns **{maxSharePct}** of the keys, against a fair {fairPct}.",
+      "That server takes the most traffic and fills up first, with no hot key involved.",
+    ],
+    note: { kind: "watch", text: "Compare the gaps between the big dots on the ring." },
+    sim: { mode: "ring", speed: 1 },
+    model: { scheme: 1 },
+    live: "LIVE · one point per server",
+  },
+  {
+    id: "virtual-nodes",
+    tag: "solution",
+    title: "Virtual nodes even it out",
+    short: "Virtual nodes",
+    text: [
+      "Give each server {vnodes} points on the ring. Each now owns many small arcs, and the luck averages out: the largest server owns **{maxSharePct}**, close to a fair {fairPct}.",
+      "A bigger machine can simply get more points than a small one. Try it: change the points per server.",
+    ],
+    note: { kind: "tip", text: "Cassandra, DynamoDB and memcached clients all use rings with many points per server." },
+    changed: [{ kind: "add", label: "Virtual nodes", value: "{vnodes} per server" }],
+    sim: { mode: "ring", speed: 1 },
+    controls: ["vnodes"],
+    model: { scheme: 1, vnodes: 100 },
+    live: "LIVE · virtual nodes",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What the ring taught us",
+    short: "Recap",
+    text: [
+      "Adding a server under hash mod N moves {modMovedPct} of keys; on a ring the new server takes only its own share, {ringMovedPct} here.",
+      "Virtual nodes turn a few lucky arcs into many small ones, so every server's share is close to fair ({maxSharePct} at most, against {fairPct}).",
+    ],
+    note: { kind: "next", text: "Coming up in Bloom filters: saying \"definitely not here\" without touching the disk." },
+    sim: { mode: "ring", speed: 1 },
+    model: { scheme: 1, vnodes: 100 },
+    live: "LIVE · recap",
+  },
+];

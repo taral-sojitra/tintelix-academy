@@ -319,3 +319,14 @@
 .tx-shardrow em { font-style: normal; text-align: right; color: var(--node-ink); }
 .tx-node.tx-hot { border-color: var(--red); box-shadow: var(--node-shadow), 0 0 14px color-mix(in srgb, var(--red) 40%, transparent); }
 .tx-node.tx-hot .tx-meter i { background: var(--red); }
+.tx-ringbox { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+.tx-ring svg { width: 290px; height: 290px; display: block; }
+.tx-ring .track { fill: none; stroke: var(--node-stroke); stroke-width: 2; }
+.tx-ring .key.moved { stroke: var(--node-ink); stroke-width: 2; }
+.tx-ring[hidden], .tx-kgrid[hidden] { display: none; }
+.tx-kgrid { display: grid; grid-template-columns: repeat(8, 30px); gap: 10px; }
+.tx-kgrid i { width: 30px; height: 30px; border-radius: 8px; opacity: .85; transition: background .3s; }
+.tx-kgrid i.moved { outline: 2px solid var(--node-ink); outline-offset: 2px; }
+.tx-chipsrow { display: flex; flex-wrap: wrap; gap: 10px; font-family: var(--mono); font-size: 11px; color: var(--node-sub); }
+.tx-chipsrow span { display: flex; align-items: center; gap: 5px; }
+.tx-chipsrow i { width: 9px; height: 9px; border-radius: 50%; }
