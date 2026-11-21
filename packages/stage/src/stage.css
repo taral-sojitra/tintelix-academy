@@ -371,3 +371,5 @@
 .tx-playhead { position: absolute; top: 18px; bottom: 30px; width: 2px; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
 .tx-tev.below span { transform: translateY(16px); }
 .tx-node.tx-locked { border-color: var(--violet); box-shadow: var(--node-shadow), 0 0 14px color-mix(in srgb, var(--violet) 45%, transparent); }
+.tx-fleet4 { grid-template-columns: repeat(4, 1fr); }
+.tx-fleet4 i { height: 54px; }

@@ -43,7 +43,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -122,6 +122,10 @@ describe("content", () => {
 
   it("lists lesson 21, One order, three services", () => {
     expect(lessonSummaries("system-design")[20]).toMatchObject({ id: "distributed-transactions", order: 21, available: true, title: "One order, three services" });
+  });
+
+  it("lists lesson 22, Absorb the spike", () => {
+    expect(lessonSummaries("system-design")[21]).toMatchObject({ id: "message-queues", order: 22, available: true, title: "Absorb the spike" });
   });
 
   it("lists the CDN lesson as written and in order", () => {

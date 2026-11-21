@@ -1,0 +1,78 @@
+import type { Step } from "@tintelix/schema";
+
+export const mqSteps: Step[] = [
+  {
+    id: "direct",
+    tag: "problem",
+    title: "A spike overwhelms the workers",
+    short: "Spike",
+    text: [
+      "After each order the shop asks the workers to send the email and build the invoice. Normally that is {baseRps} jobs a second, and {workers} workers handle {capacity}.",
+      "Then a flash sale sends {spikeRps} a second for {spikeSec}. Called directly, the workers can't keep up: **{failingPct}** of jobs fail during the spike, **{failedTotal}** in all.",
+    ],
+    note: { kind: "watch", text: "Played at 4× speed so the whole spike fits in a few seconds." },
+    sim: { mode: "steady", speed: 4 },
+    live: "LIVE · direct calls · 4× speed",
+  },
+  {
+    id: "queue",
+    tag: "solution",
+    title: "Put a queue in between",
+    short: "Queue",
+    text: [
+      "Now the shop drops each job into a queue and moves on. The workers take jobs as fast as they can. Lost jobs: **{failedTotal}**.",
+      "The backlog peaks at **{peakBacklog}**, the last job of the spike waits **{maxWaitSec}**, and the queue is empty again **{drainSec}** after the sale. Try it: change the number of workers.",
+    ],
+    note: { kind: "idea", text: "The queue turns a spike the workers can't handle into a delay they can." },
+    changed: [{ kind: "add", label: "Queue" }],
+    scene: { add: ["queue"] },
+    sim: { mode: "steady", speed: 4 },
+    controls: ["workers"],
+    model: { mode: 1 },
+    live: "LIVE · queue · 4× speed",
+  },
+  {
+    id: "poison",
+    tag: "problem",
+    title: "A poison job comes back forever",
+    short: "Poison",
+    text: [
+      "{poisonPct} of jobs can never succeed: an address that doesn't exist, a malformed order. Each failure puts the job back in the queue to try again.",
+      "Retried without limit, they pile up: {poisonRps} new ones a second, and after {horizonSec} retries take **{wastedAtHorizonPct}** of the workers' time.",
+    ],
+    note: { kind: "watch", text: "Purple jobs bounce between the queue and the workers. They're shown more often than 1 in 100 so you can follow them." },
+    sim: { mode: "steady", speed: 4 },
+    model: { mode: 2, spikeRps: 200 },
+    live: "LIVE · endless retries · 4× speed",
+  },
+  {
+    id: "dead-letters",
+    tag: "solution",
+    title: "Dead-letter after a few tries",
+    short: "Dead letters",
+    text: [
+      "After {attempts} failed tries, a job moves to a dead-letter queue instead of going round again. Retries now take just **{wastedPct}** of the workers.",
+      "The bad jobs aren't lost: after {horizonSec}, **{dlqAtHorizon}** wait there for a person to inspect, fix and replay.",
+    ],
+    note: { kind: "tip", text: "Alert on the dead-letter queue's size. One nobody watches is a bin, not a safety net." },
+    changed: [{ kind: "add", label: "Dead-letter queue" }],
+    scene: { add: ["dlq"] },
+    sim: { mode: "steady", speed: 4 },
+    model: { mode: 3, spikeRps: 200 },
+    live: "LIVE · dead-letter queue · 4× speed",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What queues taught us",
+    short: "Recap",
+    text: [
+      "A queue lets the producer move on and the workers go at their own pace: a spike becomes a backlog ({peakBacklog} at most here) instead of failures.",
+      "Cap retries and park failures in a dead-letter queue, and watch it. Size the workers so the backlog drains in time ({drainSec} here).",
+    ],
+    note: { kind: "next", text: "Coming up in Idempotency: what happens when the same job runs twice." },
+    sim: { mode: "steady", speed: 4 },
+    model: { mode: 3 },
+    live: "LIVE · recap · 4× speed",
+  },
+];
