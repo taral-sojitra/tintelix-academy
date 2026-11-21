@@ -1,4 +1,5 @@
 import { Component } from "./component";
+import { boardOutputs, boardTexts } from "./board";
 import { Lesson, SCENE_MODES } from "./lesson";
 import { Subject } from "./subject";
 
@@ -65,6 +66,32 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
       const texts = [...step.text, step.note?.text ?? "", ...(step.changed ?? []).map((c) => `${c.label} ${c.value ?? ""}`)];
       for (const name of texts.flatMap(quotedOutputs)) {
         if (!(name in outputs)) problems.push(`${id}/step ${step.id} quotes {${name}}, which the model does not produce`);
+      }
+    }
+    const board = lesson.scene.board;
+    if (board) {
+      for (const [fid, f] of Object.entries(board.flows)) {
+        for (const hop of f.path) {
+          if (!(hop.wire in lesson.scene.wires)) problems.push(`${id}: board flow ${fid} uses unknown wire ${hop.wire}`);
+          if (!(hop.at in nodes)) problems.push(`${id}: board flow ${fid} reaches unknown node ${hop.at}`);
+        }
+        if (f.fail && !f.fail.share.endsWith("Pct")) problems.push(`${id}: board flow ${fid} fail share ${f.fail.share} must be a …Pct output`);
+        if (f.fail && !(f.fail.at in nodes)) problems.push(`${id}: board flow ${fid} fails at unknown node ${f.fail.at}`);
+      }
+      for (const [i, m] of board.modes.entries()) {
+        for (const f of m.flows) if (!(f.flow in board.flows)) problems.push(`${id}: board mode ${i} runs unknown flow ${f.flow}`);
+        const outputs = lesson.model.run({ ...lesson.model.defaults, mode: i });
+        for (const name of boardTexts(board, i).flatMap(quotedOutputs)) {
+          if (!(name in outputs)) problems.push(`${id}: board mode ${i} quotes {${name}}, which the model does not produce`);
+        }
+        for (const name of boardOutputs(board)) if (!(name in outputs)) problems.push(`${id}: board mode ${i} reads ${name}, which the model does not produce`);
+      }
+      for (const node of [...Object.keys(board.widgets ?? {}), ...Object.keys(board.subs ?? {}), ...(board.states ?? []).map((s) => s.node)]) {
+        if (!(node in nodes)) problems.push(`${id}: board names unknown node ${node}`);
+      }
+      for (const step of lesson.steps) {
+        const mode = step.model?.mode ?? lesson.model.defaults.mode ?? 0;
+        if (mode >= board.modes.length) problems.push(`${id}/step ${step.id} sets mode ${mode}; the board has ${board.modes.length} modes`);
       }
     }
     const defaults = lesson.model.run(lesson.model.defaults);
