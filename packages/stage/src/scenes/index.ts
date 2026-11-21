@@ -9,6 +9,7 @@ import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
 import { createHealthScene } from "./health";
 import { createProxyScene } from "./proxy";
+import { createSessionScene } from "./session";
 import type { SceneFactory } from "./types";
 
 /** The runtime for each scene kind; the player picks one by `lesson.scene.kind`. */
@@ -23,4 +24,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   balance: createBalanceScene,
   proxy: createProxyScene,
   health: createHealthScene,
+  session: createSessionScene,
 };

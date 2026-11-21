@@ -176,10 +176,11 @@ async def latency_flow(page):
     await expect(page.locator(".narr h2")).to_have_text("Watch p99, not the average")
     await expect(page.locator("#ctl-slowPct")).to_be_enabled()
     panel = page.locator("section.try", has=page.locator("#ctl-slowPct"))
-    # The slider works in hundredths of a percent (0.9% is 90), so its steps stay whole numbers.
-    await set_range(page, "#ctl-slowPct", 90)
+    # A *Pct slider holds the percentage itself: 0.9 is 0.9%, and the label says so.
+    await set_range(page, "#ctl-slowPct", 0.9)
+    await expect(panel.locator(".try-val")).to_have_text("0.9%")
     await expect(panel.locator(".try-readout")).to_contain_text("the average is 4 ms and p99 is 2 ms")
-    await set_range(page, "#ctl-slowPct", 110)
+    await set_range(page, "#ctl-slowPct", 1.1)
     await expect(panel.locator(".try-readout")).to_contain_text("the average is 4 ms and p99 is 200 ms")
     await expect(page.locator("[data-tile='p99'] .tx-v")).to_have_text("200 ms", timeout=6000)
     await page.locator("body").click(position={"x": 5, "y": 5})
@@ -387,19 +388,40 @@ async def health_flow(page):
     return "Health-check lesson: no checks fail 10%; checks eject the dead server (9 of 10, 0% failing); at the peak, ejection cascades to 0 of 10"
 
 
+async def session_flow(page):
+    await page.goto(BASE + "/system-design/stateless-services", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Where does my login live?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("67%")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("0%", timeout=6000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("A routine deploy logs users out")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("5,000")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Keep sessions in a shared store")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("0")
+    await expect(page.locator("[data-tile='d'] .tx-v")).to_have_text("151 ms")
+    panel = page.locator("section.try", has=page.locator("#ctl-baseMs"))
+    await set_range(page, "#ctl-baseMs", 10)
+    await expect(panel.locator(".try-val")).to_have_text("10 ms")
+    await expect(panel.locator(".try-readout")).to_contain_text("makes it 10% slower")
+    return "Stateless lesson: round robin loses 67% of logins; sticky 0%; a deploy logs out 5,000; a shared store logs out 0 for 1 ms (10% on a 10 ms request)"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("10 open now")).to_be_visible()
+    await expect(page.get_by_text("11 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("10 of 30 open")).to_be_visible()
-    return "System Design shows 10 lessons open"
+    await expect(page.get_by_text("11 of 30 open")).to_be_visible()
+    return "System Design shows 11 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

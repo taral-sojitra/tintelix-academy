@@ -27,7 +27,7 @@ export const systemDesign: Subject = {
         l("load-balancing", "Load balancing", "A load balancer spreads traffic; round robin struggles with heavy requests, least connections copes.", ["vertical-horizontal-scaling"], "Who gets the next request?"),
         l("proxies", "Forward and reverse proxy", "A forward proxy speaks for the clients; a reverse proxy speaks for the servers.", ["load-balancing"], "Who speaks for whom?"),
         l("health-checks", "Heartbeats and health checks", "A server dies silently, its heartbeats stop, and the load balancer stops sending it traffic.", ["load-balancing"], "Is anyone still there?"),
-        l("stateless-services", "Stateless services and sticky sessions", "A deploy kills a server holding 5,000 sessions; moving sessions to Redis lets any server answer.", ["load-balancing"]),
+        l("stateless-services", "Stateless services and sticky sessions", "A deploy kills a server holding 5,000 sessions; moving sessions to Redis lets any server answer.", ["load-balancing"], "Where does my login live?"),
       ],
     },
     {

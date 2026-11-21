@@ -1,0 +1,78 @@
+import type { Step } from "@tintelix/schema";
+
+export const sessionSteps: Step[] = [
+  {
+    id: "lost-login",
+    tag: "problem",
+    title: "Round robin loses your login",
+    short: "Lost login",
+    text: [
+      "{servers} servers each keep their logged-in users' sessions in their own memory: {perServer} each. Each colour is one group of users, and its sessions live on one server.",
+      "Round robin doesn't know that. A user's next request reaches the server holding their session only one time in {servers}, so **{lostPct}** of requests are sent back to log in.",
+    ],
+    note: { kind: "watch", text: "A request turns red whenever its colour lands on another group's server." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · sessions in memory",
+  },
+  {
+    id: "sticky",
+    tag: "technique",
+    title: "Sticky sessions pin each user",
+    short: "Sticky",
+    text: [
+      "Turn on sticky sessions: the balancer sets a cookie and sends each user back to the server that holds their session. Now **{lostPct}** of requests lose their login.",
+      "The catch: the balancer has stopped balancing. A few very busy users pinned to one server keep it hotter than the rest, and nothing can move them without logging them out.",
+    ],
+    note: { kind: "watch", text: "Each colour now always takes the same path." },
+    changed: [{ kind: "mod", label: "Balancer", value: "sticky cookie" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · sticky sessions",
+  },
+  {
+    id: "deploy",
+    tag: "problem",
+    title: "A routine deploy logs users out",
+    short: "Deploy",
+    text: [
+      "A rolling deploy replaces Server B. Its sessions lived only in its memory, so its **{loggedOut}** users reach a fresh instance that has never seen them, and all of them are sent to log in within {spikeSec}.",
+      "That is **{loginSpike}** logins a second. On a dashboard it looks exactly like a credential-stuffing attack, and on-call goes hunting for attackers who aren't there.",
+    ],
+    note: { kind: "watch", text: "Slowed to a quarter speed so you can see the burst. Every deploy, scale-in or crash does this." },
+    changed: [{ kind: "mod", label: "Server B", value: "replaced" }],
+    sim: { mode: "steady", speed: 0.25 },
+    model: { mode: 1, deploy: 1 },
+    live: "LIVE · deploy, ¼ speed",
+  },
+  {
+    id: "shared-store",
+    tag: "solution",
+    title: "Keep sessions in a shared store",
+    short: "Shared store",
+    text: [
+      "Move sessions into Redis. Every request reads its session from the store, so any server can answer any user, and the same deploy logs out **{loggedOut}**.",
+      "It costs a network hop: {lookupMs} a request. On a {baseMs} page that is only **{addedPct}** slower, but on a fast internal API it matters more. The store now takes **{storeOps}** operations a second. Try it: change the request time.",
+    ],
+    note: { kind: "tip", text: "Give each session an expiry that matches how long a login should last, and refresh it when the user is active." },
+    changed: [{ kind: "add", label: "Session store", value: "Redis" }],
+    scene: { add: ["store"] },
+    sim: { mode: "steady", speed: 1 },
+    controls: ["baseMs"],
+    model: { mode: 2, deploy: 1 },
+    live: "LIVE · shared session store",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What statelessness taught us",
+    short: "Recap",
+    text: [
+      "A stateless server keeps nothing a later request needs. Sessions go to a shared store, cached values to a shared cache, uploaded files to object storage.",
+      "Sticky sessions are a workaround: they unbalance the fleet and turn every deploy into a mass logout. A shared store costs {lookupMs} a request and lets any server be replaced at any time.",
+    ],
+    note: { kind: "next", text: "Coming up in Caching: what happens when the database can't keep up with the reads." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2, deploy: 1 },
+    live: "LIVE · recap",
+  },
+];
