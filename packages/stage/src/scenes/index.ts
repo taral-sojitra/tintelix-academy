@@ -9,6 +9,7 @@ import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
 import { createDataScene } from "./data";
 import { createHealthScene } from "./health";
+import { createIndexScene } from "./index-lookup";
 import { createProxyScene } from "./proxy";
 import { createSessionScene } from "./session";
 import type { SceneFactory } from "./types";
@@ -27,4 +28,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   health: createHealthScene,
   session: createSessionScene,
   data: createDataScene,
+  index: createIndexScene,
 };
