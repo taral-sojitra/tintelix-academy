@@ -9,11 +9,12 @@ import { availability } from "./system-design/availability/lesson";
 import { estimation } from "./system-design/estimation/lesson";
 import { scaling } from "./system-design/scaling/lesson";
 import { loadBalancing } from "./system-design/load-balancing/lesson";
+import { proxies } from "./system-design/proxies/lesson";
 
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, caching, cdn];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, caching, cdn];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);
