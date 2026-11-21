@@ -145,19 +145,100 @@ async def lesson_switch(page):
     return "switching lessons from Caching step 3 opens CDN fresh at step 1 with its own tiles"
 
 
+async def set_range(page, selector, value):
+    """Sets a range input the way a drag would, so React sees the change."""
+    await page.evaluate(
+        """([sel, v]) => {
+            const el = document.querySelector(sel);
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, String(v));
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            el.dispatchEvent(new Event("change", { bubbles: true }));
+        }""",
+        [selector, value],
+    )
+
+
+async def latency_flow(page):
+    await page.goto(BASE + "/system-design/latency-percentiles", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("The average is lying")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='avg'] .tx-v")).to_have_text("12 ms")
+    await expect(page.locator("[data-tile='p99'] .tx-v")).to_have_text("—")
+    await page.evaluate("document.querySelector('.stage-host').scrollIntoView()")
+    await page.wait_for_timeout(1200)
+    seen = set()
+    for _ in range(8):
+        seen.add(await page.locator(".tx-chartv").inner_text())
+        await page.wait_for_timeout(200)
+    assert seen == {"12 ms"}, f"chart label read {sorted(seen)} while step 1 says 12 ms"
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Watch p99, not the average")
+    await expect(page.locator("#ctl-slowPct")).to_be_enabled()
+    panel = page.locator("section.try", has=page.locator("#ctl-slowPct"))
+    # The slider works in hundredths of a percent (0.9% is 90), so its steps stay whole numbers.
+    await set_range(page, "#ctl-slowPct", 90)
+    await expect(panel.locator(".try-readout")).to_contain_text("the average is 4 ms and p99 is 2 ms")
+    await set_range(page, "#ctl-slowPct", 110)
+    await expect(panel.locator(".try-readout")).to_contain_text("the average is 4 ms and p99 is 200 ms")
+    await expect(page.locator("[data-tile='p99'] .tx-v")).to_have_text("200 ms", timeout=6000)
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Ten calls, and one is slow")
+    await page.locator("#ctl-calls").focus()
+    await page.keyboard.press("End")
+    calls_panel = page.locator("section.try", has=page.locator("#ctl-calls"))
+    await expect(calls_panel.locator(".try-readout")).to_contain_text("63% of pages wait on a slow call")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Ask twice, keep the first answer")
+    await expect(page.locator("[data-tile='p99'] .tx-v")).to_have_text("12 ms", timeout=10000)
+    return "Latency lesson: 12 ms average, chart agrees, p99 jumps across 1% while the average stays 4 ms, 100 calls make 63% of pages slow, hedging brings page p99 to 12 ms"
+
+
+async def latency_cheatsheet(page):
+    res = await page.goto(BASE + "/system-design/latency-percentiles/cheatsheet", wait_until="load")
+    assert res is not None and res.status == 200
+    await expect(page.get_by_text("With 95% of requests at 2 ms and 5% at 200 ms, the average is 12 ms, p50 is 2 ms and p99 is 200 ms.")).to_be_visible()
+    await expect(page.get_by_text("a page making 10 calls is slow 40% of the time")).to_be_visible()
+    return "Latency cheatsheet quotes the model's numbers"
+
+
+async def home_start_here(page):
+    await page.goto(BASE + "/", wait_until="load")
+    await expect(page.get_by_text("Start here · System Design · Lesson 1 of 30")).to_be_visible()
+    await expect(page.get_by_text("The average is lying").first).to_be_visible()
+    return "a new learner's Home card starts at Lesson 1 of 30, The average is lying"
+
+
+async def lesson_switch_latency(page):
+    await page.goto(BASE + "/system-design/latency-percentiles", wait_until="load")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Ten calls, and one is slow")
+    await page.locator("aside.side a", has_text="Survive the flash sale").click()
+    await page.wait_for_url("**/system-design/caching")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator(".narr h2")).to_have_text("The database is drowning")
+    await expect(page.locator("[data-tile='load']")).to_have_count(1)
+    await expect(page.locator("[data-tile='slow']")).to_have_count(0)
+    return "switching from Latency step 4 opens Caching fresh at step 1 with its own tiles"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("2 open now")).to_be_visible()
+    await expect(page.get_by_text("3 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("2 of 30 open")).to_be_visible()
-    return "System Design shows 2 lessons open"
+    await expect(page.get_by_text("3 of 30 open")).to_be_visible()
+    return "System Design shows 3 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

@@ -155,9 +155,43 @@
 /* CDN: edge and origin boxes, page copies, price tags. */
 .tx-tile.k-edge { background: var(--green); }
 .tx-tile.k-origin { background: var(--amber); }
+.tx-tile.k-services { background: var(--cyan); }
+.tx-tile.k-histogram { background: var(--blue); }
 .tx-node.k-edge { border-color: color-mix(in srgb, var(--green) 75%, transparent); }
 .tx-node.k-origin .tx-meter i { background: var(--amber); }
 .tx-keys i.stale { background: var(--amber); }
 .tx-row[data-price-row][hidden] { display: none; }
 .tx-price { font-weight: 650; color: var(--node-ink); }
 .tx-price.stale { color: var(--amber); }
+
+/* Latency lesson: services cells and the histogram panel. */
+.tx-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin: 7px 0 5px; }
+.tx-cells i { height: 10px; border-radius: 2.5px; background: color-mix(in srgb, var(--cyan) 16%, transparent); transition: background .3s, box-shadow .3s; }
+.tx-cells i.off { opacity: 0; }
+.tx-cells i.run { background: var(--green); }
+.tx-cells i.slow { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.tx-cells i.copy { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.tx-node.k-histogram { padding: 10px 12px 6px; }
+.tx-hist { display: block; margin-top: 4px; overflow: visible; }
+.tx-hist text { font-family: var(--mono); font-size: 13px; fill: var(--node-sub); }
+.tx-h-axisline, .tx-h-tick { stroke: var(--node-stroke); stroke-width: 1.2; }
+.tx-h-bar { transition: height .35s, y .35s; }
+.tx-h-bar.fast { fill: var(--green); }
+.tx-h-bar.mid { fill: var(--amber); }
+.tx-h-bar.slow { fill: var(--red); }
+.tx-hist text.tx-h-share { fill: var(--node-ink); font-weight: 650; font-size: 14px; }
+.tx-h-mark { stroke-width: 1.6; }
+.tx-h-mark.avg { stroke: var(--amber); stroke-dasharray: 4 4; }
+.tx-h-mark.p50 { stroke: var(--green); }
+.tx-h-mark.p99 { stroke: var(--red); }
+.tx-hist text.tx-h-mlabel { font-weight: 650; font-size: 14px; }
+.tx-hist text.tx-h-mlabel.avg { fill: var(--amber); }
+.tx-hist text.tx-h-mlabel.p50 { fill: var(--green); }
+.tx-hist text.tx-h-mlabel.p99 { fill: var(--red); }
+.tx-h-dot { fill: var(--cyan); stroke: var(--node-bg); stroke-width: 1.2; }
+.tx-h-dot.fast { fill: var(--green); }
+.tx-h-dot.mid { fill: var(--amber); }
+.tx-h-dot.slow { fill: var(--red); }
+@media (prefers-reduced-motion: reduce) {
+  .tx-cells i, .tx-h-bar { transition: none; }
+}

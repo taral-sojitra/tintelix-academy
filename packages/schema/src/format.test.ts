@@ -1,4 +1,5 @@
 import { caching } from "../../../content/system-design/caching/lesson";
+import { cdn } from "../../../content/system-design/cdn/lesson";
 import { fillOutputs, formatOutput } from "./format";
 
 describe("formatOutput keeps Caching as it reads today", () => {
@@ -64,5 +65,168 @@ describe("fillOutputs", () => {
   });
   it("leaves unknown names visible so they are easy to spot", () => {
     expect(fillOutputs("{nope}", {})).toBe("{nope}");
+  });
+});
+
+describe("formatOutput keeps CDN as it reads today", () => {
+  // Recorded before the rule for percentages under 10.
+  const recorded: Record<string, Record<string, string>> = {
+  "far-away": {
+    "trips": "4",
+    "traffic": "6,000",
+    "pages": "2,000",
+    "originKm": "13,000",
+    "ttlSec": "60 min",
+    "oldPrice": "₹999",
+    "newPrice": "₹799",
+    "rttOriginMs": "192 ms",
+    "rttEdgeMs": "10 ms",
+    "noEdgePageMs": "787 ms",
+    "hitPageMs": "42 ms",
+    "missPageMs": "252 ms",
+    "perPageRate": "3",
+    "edgeHitPct": "0%",
+    "originReqs": "6,000",
+    "pageMs": "787 ms",
+    "p95": "787 ms",
+    "staleSec": "60 min"
+  },
+  "add-edge": {
+    "trips": "4",
+    "traffic": "6,000",
+    "pages": "2,000",
+    "originKm": "13,000",
+    "ttlSec": "60 min",
+    "oldPrice": "₹999",
+    "newPrice": "₹799",
+    "rttOriginMs": "192 ms",
+    "rttEdgeMs": "10 ms",
+    "noEdgePageMs": "787 ms",
+    "hitPageMs": "42 ms",
+    "missPageMs": "252 ms",
+    "perPageRate": "3",
+    "edgeHitPct": "99.9%",
+    "originReqs": "0.6",
+    "pageMs": "42 ms",
+    "p95": "42 ms",
+    "staleSec": "60 min"
+  },
+  "slow-mo": {
+    "trips": "4",
+    "traffic": "6,000",
+    "pages": "2,000",
+    "originKm": "13,000",
+    "ttlSec": "60 min",
+    "oldPrice": "₹999",
+    "newPrice": "₹799",
+    "rttOriginMs": "192 ms",
+    "rttEdgeMs": "10 ms",
+    "noEdgePageMs": "787 ms",
+    "hitPageMs": "42 ms",
+    "missPageMs": "252 ms",
+    "perPageRate": "3",
+    "edgeHitPct": "90%",
+    "originReqs": "600",
+    "pageMs": "42 ms",
+    "p95": "252 ms",
+    "staleSec": "60 min"
+  },
+  "old-price": {
+    "trips": "4",
+    "traffic": "6,000",
+    "pages": "2,000",
+    "originKm": "13,000",
+    "ttlSec": "60 min",
+    "oldPrice": "₹999",
+    "newPrice": "₹799",
+    "rttOriginMs": "192 ms",
+    "rttEdgeMs": "10 ms",
+    "noEdgePageMs": "787 ms",
+    "hitPageMs": "42 ms",
+    "missPageMs": "252 ms",
+    "perPageRate": "3",
+    "edgeHitPct": "99.9%",
+    "originReqs": "0.6",
+    "pageMs": "42 ms",
+    "p95": "42 ms",
+    "staleSec": "60 min"
+  },
+  "purge": {
+    "trips": "4",
+    "traffic": "6,000",
+    "pages": "2,000",
+    "originKm": "13,000",
+    "ttlSec": "60 s",
+    "oldPrice": "₹999",
+    "newPrice": "₹799",
+    "rttOriginMs": "192 ms",
+    "rttEdgeMs": "10 ms",
+    "noEdgePageMs": "787 ms",
+    "hitPageMs": "42 ms",
+    "missPageMs": "252 ms",
+    "perPageRate": "3",
+    "edgeHitPct": "99.4%",
+    "originReqs": "33",
+    "pageMs": "42 ms",
+    "p95": "42 ms",
+    "staleSec": "1 s"
+  },
+  "recap": {
+    "trips": "4",
+    "traffic": "6,000",
+    "pages": "2,000",
+    "originKm": "13,000",
+    "ttlSec": "60 s",
+    "oldPrice": "₹999",
+    "newPrice": "₹799",
+    "rttOriginMs": "192 ms",
+    "rttEdgeMs": "10 ms",
+    "noEdgePageMs": "787 ms",
+    "hitPageMs": "42 ms",
+    "missPageMs": "252 ms",
+    "perPageRate": "3",
+    "edgeHitPct": "99.4%",
+    "originReqs": "33",
+    "pageMs": "42 ms",
+    "p95": "42 ms",
+    "staleSec": "1 s"
+  },
+  "cheatsheet": {
+    "trips": "4",
+    "traffic": "6,000",
+    "pages": "2,000",
+    "originKm": "13,000",
+    "ttlSec": "60 s",
+    "oldPrice": "₹999",
+    "newPrice": "₹799",
+    "rttOriginMs": "192 ms",
+    "rttEdgeMs": "10 ms",
+    "noEdgePageMs": "787 ms",
+    "hitPageMs": "42 ms",
+    "missPageMs": "252 ms",
+    "perPageRate": "3",
+    "edgeHitPct": "99.4%",
+    "originReqs": "33",
+    "pageMs": "42 ms",
+    "p95": "42 ms",
+    "staleSec": "1 s"
+  }
+};
+  const shown = (inputs: Record<string, number>) =>
+    Object.fromEntries(Object.entries(cdn.model.run({ ...cdn.model.defaults, ...inputs })).map(([k, v]) => [k, formatOutput(k, v)]));
+  it("keeps every CDN output exactly as it reads today", () => {
+    for (const step of cdn.steps) expect(shown(step.model ?? {})).toEqual(recorded[step.id]);
+    expect(shown(cdn.cheatsheetInputs ?? {})).toEqual(recorded.cheatsheet);
+  });
+});
+
+describe("formatOutput for the latency lesson", () => {
+  it("keeps one decimal for percentages under 10 that aren't whole", () => {
+    expect(formatOutput("pageSlowPct", 9.5618)).toBe("9.6%");
+    expect(formatOutput("slowPct", 0.5)).toBe("0.5%");
+    expect(formatOutput("pageSlowPct", 0.09996)).toBe("0.1%");
+    expect(formatOutput("slowPct", 1)).toBe("1%");
+    expect(formatOutput("pageSlowPct", 63.397)).toBe("63%");
+    expect(formatOutput("slowPct", 9.96)).toBe("10%");
   });
 });
