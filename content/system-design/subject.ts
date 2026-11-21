@@ -85,7 +85,7 @@ export const systemDesign: Subject = {
       title: "Case studies: the method and the classics",
       lessons: [
         l("design-method", "How to approach a design problem", "Turn a vague ask into requirements, numbers, an API, a first design, and the bottleneck to fix next.", ["estimation"]),
-        l("url-shortener", "Design a URL shortener", "Store billions of links, mint short codes that never clash, and serve forty reads for every write.", ["estimation", "caching", "sharding"]),
+        l("url-shortener", "Design a URL shortener", "Store billions of links, mint short codes that never clash, and serve forty reads for every write.", ["estimation", "caching", "sharding"], "Turn a long link into seven characters"),
         l("unique-ids", "Design a unique ID generator", "Hand out IDs from many machines at once without a single one repeating, and keep them roughly in order.", ["sharding", "leader-election"]),
         l("key-value-store", "Design a key-value store", "Spread keys over a ring of nodes, copy each to three, and keep taking writes when a node is down.", ["replication", "sharding", "consistent-hashing", "bloom-filters", "cap-theorem", "consistency-models"]),
         l("distributed-rate-limiter", "Design a distributed rate limiter", "Enforce one limit per user when their requests land on a thousand different servers.", ["rate-limiting", "api-gateway"]),
