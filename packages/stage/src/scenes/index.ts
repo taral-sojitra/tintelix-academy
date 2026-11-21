@@ -7,6 +7,7 @@ import { createChainScene } from "./chain";
 import { createEstimateScene } from "./estimate";
 import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
+import { createDataScene } from "./data";
 import { createHealthScene } from "./health";
 import { createProxyScene } from "./proxy";
 import { createSessionScene } from "./session";
@@ -25,4 +26,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   proxy: createProxyScene,
   health: createHealthScene,
   session: createSessionScene,
+  data: createDataScene,
 };
