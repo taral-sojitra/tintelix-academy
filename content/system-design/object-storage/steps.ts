@@ -1,0 +1,77 @@
+import type { Step } from "@tintelix/schema";
+
+export const uploadSteps: Step[] = [
+  {
+    id: "through-app",
+    tag: "problem",
+    title: "Uploads tie up the app servers",
+    short: "Through the app",
+    text: [
+      "Phones upload {uploadsPerSec} photos a second, {fileMb} MB each, and the app passes every byte on to object storage. On a {clientMbps} Mbit/s phone link one upload takes {uploadSec}, and the worker handling it waits the whole time.",
+      "By Little's law that keeps **{busyWorkers}** workers busy, so the app needs **{serversNeeded}** servers, and {appGbps} Gbit/s crosses them, just to move bytes it never reads.",
+    ],
+    note: { kind: "idea", text: "Object storage (S3, Azure Blob, GCS) keeps files under flat keys behind a plain HTTP API, with no servers for you to size." },
+    sim: { mode: "small", speed: 1 },
+    live: "LIVE · uploads through the app",
+  },
+  {
+    id: "signed-url",
+    tag: "solution",
+    title: "Hand out a signed URL",
+    short: "Signed URL",
+    text: [
+      "Instead, the app checks the user and signs a URL that allows one upload to one key for a few minutes. The phone sends the photo straight to object storage.",
+      "Signing takes {signMs}, so **{busyWorkers}** worker is busy and **{serversNeeded}** server does the job; **{appGbps}** Gbit/s goes through the app while storage takes all {storeGbps}.",
+    ],
+    note: { kind: "watch", text: "A signed URL is a key to one object until it expires, and it can't be taken back. Keep the expiry to minutes, and limit the size and content type it allows." },
+    changed: [{ kind: "mod", label: "Uploads", value: "straight to storage" }],
+    sim: { mode: "small", speed: 1 },
+    model: { direct: 1 },
+    live: "LIVE · signed URL",
+  },
+  {
+    id: "one-request",
+    tag: "problem",
+    title: "A big upload drops at 90%",
+    short: "Drop",
+    text: [
+      "Now a {bigFileMb} MB video: {bigSec} on the phone's link. Sent as one request, the connection drops at {failAtPct} and the upload starts over.",
+      "That is **{redoMb} MB** sent again, **{redoSec}** more of the user's time and data.",
+    ],
+    note: { kind: "watch", text: "The bar fills, turns back to zero, and fills again." },
+    changed: [{ kind: "add", label: "Video", value: "{bigFileMb} MB" }],
+    sim: { mode: "big", speed: 1 },
+    model: { direct: 1 },
+    live: "LIVE · one big request",
+  },
+  {
+    id: "multipart",
+    tag: "solution",
+    title: "Multipart: retry just one part",
+    short: "Multipart",
+    text: [
+      "A multipart upload splits the video into {parts} parts of {partMb} MB, uploads them separately, and stitches them together at the end.",
+      "When the connection drops, only the part in flight is lost: **{redoMb} MB**, {redoSec} more. Try it: change the part size.",
+    ],
+    note: { kind: "tip", text: "Parts can also go in parallel, and each part gets its own signed URL." },
+    changed: [{ kind: "mod", label: "Upload", value: "{parts} parts" }],
+    sim: { mode: "big", speed: 1 },
+    controls: ["partMb"],
+    model: { direct: 1, multipart: 1 },
+    live: "LIVE · multipart upload",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What object storage taught us",
+    short: "Recap",
+    text: [
+      "Keep big bytes off your servers: a short-lived signed URL lets the client upload straight to object storage, and {serversNeeded} server signs for {uploadsPerSec} uploads a second.",
+      "Send big files in parts so a dropped connection costs one part ({redoMb} MB), not the whole file.",
+    ],
+    note: { kind: "next", text: "Coming up in CAP theorem: what a network split forces a database to choose." },
+    sim: { mode: "small", speed: 1 },
+    model: { direct: 1, multipart: 1 },
+    live: "LIVE · recap",
+  },
+];

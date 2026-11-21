@@ -16,6 +16,7 @@ import { createReplScene } from "./repl";
 import { createRingScene } from "./ring";
 import { createSessionScene } from "./session";
 import { createShardScene } from "./shard";
+import { createUploadScene } from "./upload";
 import type { SceneFactory } from "./types";
 
 /** The runtime for each scene kind; the player picks one by `lesson.scene.kind`. */
@@ -37,4 +38,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   shard: createShardScene,
   ring: createRingScene,
   bloom: createBloomScene,
+  upload: createUploadScene,
 };

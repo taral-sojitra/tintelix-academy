@@ -14,6 +14,7 @@ import { proxies } from "./system-design/proxies/lesson";
 import { bloomFilters } from "./system-design/bloom-filters/lesson";
 import { consistentHashing } from "./system-design/consistent-hashing/lesson";
 import { indexing } from "./system-design/indexing/lesson";
+import { objectStorage } from "./system-design/object-storage/lesson";
 import { replication } from "./system-design/replication/lesson";
 import { sharding } from "./system-design/sharding/lesson";
 import { sqlVsNosql } from "./system-design/sql-vs-nosql/lesson";
@@ -22,7 +23,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);
