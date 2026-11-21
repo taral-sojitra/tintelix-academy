@@ -380,3 +380,4 @@
 .tx-feeds i.got { background: var(--amber); border-color: var(--amber); }
 .tx-feeds i.built { background: transparent; border: 1px dashed var(--violet); }
 .tx-feeds i.pulled::after { content: ""; position: absolute; right: 3px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--violet); }
+.tx-svcrow { grid-template-columns: 90px 1fr; }

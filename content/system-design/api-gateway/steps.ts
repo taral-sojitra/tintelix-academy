@@ -1,0 +1,77 @@
+import type { Step } from "@tintelix/schema";
+
+export const gatewaySteps: Step[] = [
+  {
+    id: "many-doors",
+    tag: "problem",
+    title: "Every service guards its own door",
+    short: "Many doors",
+    text: [
+      "The app talks straight to {services} services, so it knows **{addresses}** addresses, and each service checks sign-in and limits callers itself: **{authCopies}** copies of the same code.",
+      "Changing the sign-in rules means {authCopies} changes and {authCopies} deploys, and one service that forgets a check is an open door.",
+    ],
+    note: { kind: "watch", text: "Every service you reach checks sign-in again." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · no gateway",
+  },
+  {
+    id: "front-door",
+    tag: "solution",
+    title: "One front door",
+    short: "Gateway",
+    text: [
+      "Put an API gateway in front: it checks the sign-in token, applies rate limits, and routes /orders to Orders, /search to Search, and so on. The services trust it.",
+      "Sign-in checks: **{authCopies}**. The price is one more hop, **{gatewayMs}** a request, so the home screen takes {screenMs}.",
+    ],
+    note: { kind: "idea", text: "A gateway is a reverse proxy that knows about your API: routes, tokens, limits." },
+    changed: [{ kind: "add", label: "API gateway" }],
+    scene: { add: ["gateway"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · API gateway",
+  },
+  {
+    id: "aggregate",
+    tag: "technique",
+    title: "One call for the whole screen",
+    short: "Aggregate",
+    text: [
+      "The home screen needs the user, then their orders: {rounds} rounds, each across the phone network's {rttMs} round trip.",
+      "Let the gateway make those calls over the fast internal network and send back one answer: **{phoneCalls}** call from the phone, and the screen takes **{screenMs}**. Try it: change the phone's round trip.",
+    ],
+    note: { kind: "tip", text: "One aggregating gateway per kind of client (a \"backend for frontend\") keeps each app's needs out of the others'." },
+    changed: [{ kind: "mod", label: "Home screen", value: "one call" }],
+    sim: { mode: "steady", speed: 1 },
+    controls: ["rttMs"],
+    model: { mode: 2 },
+    live: "LIVE · aggregation",
+  },
+  {
+    id: "fleet",
+    tag: "problem",
+    title: "The front door can't fall off",
+    short: "Fleet",
+    text: [
+      "Every request now passes through the gateway, so if it stops, everything stops. Run it as a fleet: at {rps} requests a second and {perInstance} per copy, **{gatewayInstances}** copies, one of them spare, behind a load balancer.",
+      "Keep business logic out of it: a gateway that knows how to price an order has become a monolith that every team must change.",
+    ],
+    note: { kind: "watch", text: "The gateway is the one place every request touches, so watch its latency and error rate first." },
+    sim: { mode: "fleet", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · gateway fleet",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What the gateway taught us",
+    short: "Recap",
+    text: [
+      "A gateway is one front door: sign-in, limits and routing in one place, at {gatewayMs} a request. It can also gather a screen's calls into one ({screenMs} instead of many phone round trips).",
+      "It sits in every request, so run several copies and keep it thin.",
+    ],
+    note: { kind: "next", text: "Coming up in Monolith vs microservices: when splitting a system pays, and what each network call costs." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · recap",
+  },
+];
