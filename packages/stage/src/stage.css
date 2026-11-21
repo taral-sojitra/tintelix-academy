@@ -381,3 +381,6 @@
 .tx-feeds i.built { background: transparent; border: 1px dashed var(--violet); }
 .tx-feeds i.pulled::after { content: ""; position: absolute; right: 3px; top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--violet); }
 .tx-svcrow { grid-template-columns: 90px 1fr; }
+.tx-modules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; flex: 1; margin: 14px 0; }
+.tx-modules span { display: grid; place-items: center; border-radius: 10px; border: 1px solid var(--node-stroke); font-family: var(--mono); font-size: 13px; color: var(--node-ink); background: color-mix(in srgb, var(--cyan) 8%, transparent); transition: background .1s; }
+.tx-modules span.on { background: color-mix(in srgb, var(--cyan) 45%, transparent); border-color: var(--cyan); }
