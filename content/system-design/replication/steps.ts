@@ -1,0 +1,80 @@
+import type { Step } from "@tintelix/schema";
+
+export const replSteps: Step[] = [
+  {
+    id: "read-replicas",
+    tag: "technique",
+    title: "Copies take the reads",
+    short: "Replicas",
+    text: [
+      "The primary takes every write and streams each change to {replicas} replicas. Reads spread across the copies: {perReplicaReads} a second each, {replicaBusyPct} busy.",
+      "Writes don't spread: all {writeRps} a second still go through the one primary. More replicas add read capacity, never write capacity. Try it: change the number of replicas.",
+    ],
+    note: { kind: "idea", text: "A copy on another machine is also a spare: if the primary dies, one can take over." },
+    sim: { mode: "copies", speed: 1 },
+    controls: ["replicas"],
+    live: "LIVE · read replicas",
+  },
+  {
+    id: "stale-read",
+    tag: "problem",
+    title: "You save, then see the old value",
+    short: "Stale read",
+    text: [
+      "The replicas copy asynchronously, each change landing about {lagMs} after the primary has it. A user saves a new address, and the page reads it back from a replica within {windowMs}.",
+      "If that read beats the copy, it returns the old address: **{staleBackPct}** of read-backs here, {staleBackRps} a second. No error anywhere; the save just looks lost. Try it: change the lag.",
+    ],
+    note: { kind: "watch", text: "Violet requests read back a write; red ones got the old value." },
+    changed: [{ kind: "mod", label: "Replica lag", value: "{lagMs}" }],
+    sim: { mode: "lag", speed: 1 },
+    controls: ["lagMs"],
+    live: "LIVE · replication lag",
+  },
+  {
+    id: "read-your-writes",
+    tag: "solution",
+    title: "Read your own writes from the primary",
+    short: "Read your writes",
+    text: [
+      "Send a read that follows the user's own write to the primary, which always has it. Stale read-backs: **{staleBackPct}**.",
+      "The primary now also serves {readBackRps} reads a second, so it is {primaryBusyPct} busy; every other read still goes to a replica. Tracking which replicas have caught up to the user's write works too.",
+    ],
+    note: { kind: "tip", text: "Graph replication lag. It is the size of the window in which a user can miss their own change." },
+    changed: [{ kind: "mod", label: "Read-backs", value: "to the primary" }],
+    sim: { mode: "lag", speed: 1 },
+    model: { readBack: 1 },
+    live: "LIVE · read your own writes",
+  },
+  {
+    id: "failover",
+    tag: "problem",
+    title: "The primary dies with writes in flight",
+    short: "Failover",
+    text: [
+      "The primary crashes. Its last {lagMs} of changes never reached a replica, so **{lostWrites}** writes that users were told had succeeded are gone. Writes fail for {failoverSec} while Replica 1 is promoted.",
+      "Synchronous replication waits for a replica to confirm before saying yes: nothing lost, but each write takes **{syncWriteMs}** instead of {commitMs}, because that replica is a {rttMs} round trip away.",
+    ],
+    note: { kind: "watch", text: "Amber writes turn red until Replica 1 takes over; then the other {readers} replicas carry every read, {perReplicaReads} a second each." },
+    changed: [
+      { kind: "mod", label: "Primary", value: "down" },
+      { kind: "add", label: "Replica 3" },
+    ],
+    sim: { mode: "failover", speed: 1 },
+    model: { crash: 1, readBack: 1, replicas: 3 },
+    live: "LIVE · failover",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What replication taught us",
+    short: "Recap",
+    text: [
+      "Replicas multiply read capacity, not write capacity. Asynchronous copies lag ({lagMs} here), so send read-your-own-write reads to the primary.",
+      "Failover promotes a replica, and with asynchronous copies it can lose the last moments of writes. Synchronous replication loses none, at {syncWriteMs} a write.",
+    ],
+    note: { kind: "next", text: "Coming up in Database sharding: what to do when the writes are too many for one primary." },
+    sim: { mode: "copies", speed: 1 },
+    model: { readBack: 1 },
+    live: "LIVE · recap",
+  },
+];
