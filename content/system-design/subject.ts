@@ -54,7 +54,7 @@ export const systemDesign: Subject = {
       lessons: [
         l("cap-theorem", "CAP theorem", "A network split: refuse requests to stay consistent, or answer with possibly stale data to stay available.", ["replication"], "When the network splits"),
         l("consistency-models", "Consistency models", "One timeline of writes and reads, replayed under strong, read-your-writes, causal and eventual consistency.", ["cap-theorem"], "How current is this read?"),
-        l("distributed-transactions", "Distributed transactions", "Two-phase commit locks both sides; a saga undoes completed steps when a later one fails.", ["consistency-models"]),
+        l("distributed-transactions", "Distributed transactions", "Two-phase commit locks both sides; a saga undoes completed steps when a later one fails.", ["consistency-models"], "One order, three services"),
       ],
     },
     {

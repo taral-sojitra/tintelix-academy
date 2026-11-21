@@ -18,6 +18,7 @@ import { createRingScene } from "./ring";
 import { createSessionScene } from "./session";
 import { createShardScene } from "./shard";
 import { createTimelineScene } from "./timeline";
+import { createTxnScene } from "./txn";
 import { createUploadScene } from "./upload";
 import type { SceneFactory } from "./types";
 
@@ -43,4 +44,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   upload: createUploadScene,
   cap: createCapScene,
   timeline: createTimelineScene,
+  txn: createTxnScene,
 };

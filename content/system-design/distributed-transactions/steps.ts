@@ -1,0 +1,76 @@
+import type { Step } from "@tintelix/schema";
+
+export const txnSteps: Step[] = [
+  {
+    id: "half-done",
+    tag: "problem",
+    title: "One order, three databases",
+    short: "Half done",
+    text: [
+      "Checkout creates the order, charges the card and reserves the stock, but those live in three services with three databases, so no single transaction covers them.",
+      "When Inventory fails after the charge ({failPct} of orders), the order is left half done: **{brokenRate}** orders a second charged with nothing reserved.",
+    ],
+    note: { kind: "watch", text: "Failures are shown 1 order in 4 so you can see them; the numbers use the real rate." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · no coordination · failures shown 1 in 4",
+  },
+  {
+    id: "two-phase",
+    tag: "technique",
+    title: "Two-phase commit: all or nothing",
+    short: "2PC",
+    text: [
+      "Two-phase commit: checkout first asks every service to prepare (do the work, lock the rows, vote yes or no), then tells them all to commit, or all to abort. Broken orders: **{brokenRate}**.",
+      "But each service now holds its locks from prepare to commit, **{lockMs}** instead of {workMs}. A hot item can take only **{hotMax}** orders a second when {hotDemand} want it.",
+    ],
+    note: { kind: "watch", text: "A service glows purple while its rows are locked between prepare and commit." },
+    changed: [{ kind: "mod", label: "Checkout", value: "coordinator" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · two-phase commit",
+  },
+  {
+    id: "coordinator-down",
+    tag: "problem",
+    title: "The coordinator dies holding the locks",
+    short: "Blocked",
+    text: [
+      "Checkout crashes after the services have prepared but before it says commit or abort. They voted yes, so they can't decide on their own: they keep their locks.",
+      "For the **{recoverSec}** checkout takes to come back, the hot item stays locked and **{blockedOrders}** orders for it are blocked.",
+    ],
+    note: { kind: "idea", text: "That blocking is why 2PC is rare between services, and kept inside one database cluster where the coordinator is replicated." },
+    changed: [{ kind: "mod", label: "Checkout", value: "down" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · coordinator down",
+  },
+  {
+    id: "saga",
+    tag: "solution",
+    title: "A saga undoes the steps already done",
+    short: "Saga",
+    text: [
+      "A saga commits each step in its own service. When a later step fails, it runs compensating steps backwards: refund the card, cancel the order. Broken orders: **{brokenRate}**; compensations: {compRate} a second.",
+      "No locks span services, so the hot item can take {hotMax} orders a second. The cost: in-between states are visible, such as a customer briefly seeing a charge and then a refund.",
+    ],
+    note: { kind: "tip", text: "Every compensating step must be safe to run twice: a retried refund must not refund twice." },
+    changed: [{ kind: "mod", label: "Checkout", value: "saga" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · saga · failures shown 1 in 4",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What distributed transactions taught us",
+    short: "Recap",
+    text: [
+      "Across services, either coordinate (two-phase commit: all or nothing, but locks for {lockMs} and a blocking coordinator) or compensate (a saga: steps commit alone and are undone on failure).",
+      "Most systems between services choose sagas, and design every step and undo to be safe to retry.",
+    ],
+    note: { kind: "next", text: "Coming up in Message queues: letting services hand off work without waiting on each other." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · recap · failures shown 1 in 4",
+  },
+];
