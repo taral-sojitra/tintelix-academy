@@ -43,7 +43,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -110,6 +110,10 @@ describe("content", () => {
 
   it("lists lesson 18, Let uploads skip your servers", () => {
     expect(lessonSummaries("system-design")[17]).toMatchObject({ id: "object-storage", order: 18, available: true, title: "Let uploads skip your servers" });
+  });
+
+  it("lists lesson 19, When the network splits", () => {
+    expect(lessonSummaries("system-design")[18]).toMatchObject({ id: "cap-theorem", order: 19, available: true, title: "When the network splits" });
   });
 
   it("lists the CDN lesson as written and in order", () => {

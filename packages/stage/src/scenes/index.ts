@@ -8,6 +8,7 @@ import { createEstimateScene } from "./estimate";
 import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
 import { createBloomScene } from "./bloom";
+import { createCapScene } from "./cap";
 import { createDataScene } from "./data";
 import { createHealthScene } from "./health";
 import { createIndexScene } from "./index-lookup";
@@ -39,4 +40,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   ring: createRingScene,
   bloom: createBloomScene,
   upload: createUploadScene,
+  cap: createCapScene,
 };
