@@ -337,3 +337,11 @@
 .tx-bits i.on::after { content: "1"; color: var(--node-ink); }
 .tx-bits i.probe { box-shadow: 0 0 0 2px var(--green); }
 .tx-bits i.zero { box-shadow: 0 0 0 2px var(--red); background: color-mix(in srgb, var(--red) 18%, transparent); }
+.tx-fleet { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; margin-top: 6px; }
+.tx-fleet i { height: 26px; border-radius: 5px; border: 1px solid var(--node-stroke); background: transparent; transition: background .3s; }
+.tx-fleet i.on { background: color-mix(in srgb, var(--violet) 55%, transparent); border-color: var(--violet); }
+.tx-parts { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin-top: 8px; }
+.tx-parts i { height: 20px; border-radius: 4px; border: 1px solid var(--node-stroke); transition: background .2s; }
+.tx-parts i.done { background: color-mix(in srgb, var(--green) 55%, transparent); border-color: var(--green); }
+.tx-parts i.failed { background: var(--red); border-color: var(--red); }
+[data-partbox][hidden], [data-arriving]:empty { display: none; }

@@ -516,19 +516,38 @@ async def bloom_flow(page):
     return "Bloom filter lesson: 10,000 disk reads become 2,066 at 0.82% false positives; 20 bits a key gives 0.01%; an outgrown filter climbs to 14%"
 
 
+async def upload_flow(page):
+    await page.goto(BASE + "/system-design/object-storage", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Let uploads skip your servers")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("16")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Hand out a signed URL")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("1", timeout=6000)
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Multipart: retry just one part")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("100 MB")
+    panel = page.locator("section.try", has=page.locator("#ctl-partMb"))
+    await set_range(page, "#ctl-partMb", 10)
+    await expect(panel.locator(".try-val")).to_have_text("10 MB")
+    await expect(panel.locator(".try-readout")).to_contain_text("a drop costs 10 MB: 16 s more")
+    return "Object storage lesson: relaying uploads needs 16 servers; signed URLs need 1; multipart redoes one 100 MB part"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("17 open now")).to_be_visible()
+    await expect(page.get_by_text("18 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("17 of 30 open")).to_be_visible()
-    return "System Design shows 17 lessons open"
+    await expect(page.get_by_text("18 of 30 open")).to_be_visible()
+    return "System Design shows 18 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

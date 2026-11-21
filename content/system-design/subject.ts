@@ -46,7 +46,7 @@ export const systemDesign: Subject = {
         l("sharding", "Database sharding", "Splitting by key range creates a hot spot; splitting by hash evens it out.", ["replication"], "Too big for one database"),
         l("consistent-hashing", "Consistent hashing", "Adding a server with hash mod N moves almost every key; a hash ring moves only one slice.", ["sharding"], "Add a server, move few keys"),
         l("bloom-filters", "Bloom filters", "A small bit array answers \"definitely not here\" or \"maybe here\" without touching the disk.", ["indexing"], "Definitely not here"),
-        l("object-storage", "Object storage", "An upload goes straight to object storage with a signed URL while the app server stays out of the way.", ["cdn"]),
+        l("object-storage", "Object storage", "An upload goes straight to object storage with a signed URL while the app server stays out of the way.", ["cdn"], "Let uploads skip your servers"),
       ],
     },
     {
