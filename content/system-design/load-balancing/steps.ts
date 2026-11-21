@@ -1,0 +1,80 @@
+import type { Step } from "@tintelix/schema";
+import { POLICY } from "./model";
+
+export const lbSteps: Step[] = [
+  {
+    id: "one-server",
+    tag: "problem",
+    title: "One server takes everything",
+    short: "One server",
+    text: [
+      "The shop runs three product servers, but every request lands on the first. Most are quick lookups of {lightMs}; {heavyPct} are reports that take {heavyMs}.",
+      "Server A would need {serverLoadPct} of one server's time, so it can't keep up: only **{servedPct}** of requests are served, while B and C sit idle.",
+    ],
+    note: { kind: "watch", text: "Red requests found A's line full and were turned away." },
+    sim: { mode: "steady", speed: 1 },
+    model: { policy: POLICY.single },
+    live: "LIVE · everything on server A",
+  },
+  {
+    id: "round-robin",
+    tag: "technique",
+    title: "Round robin takes turns",
+    short: "Round robin",
+    text: [
+      "Put a load balancer in front. Round robin sends the first request to A, the next to B, then C, and around again. Each server is now **{serverLoadPct}** busy and every request is served.",
+      "But round robin counts requests, not work. A lookup that lands behind a report waits for it: lookups take **{lookupMs}** on average, reports {reportMs}. Try it: change the share of reports.",
+    ],
+    note: { kind: "idea", text: "Round robin is fair by count. That is only fair by work when every request costs the same." },
+    changed: [{ kind: "add", label: "Load balancer", value: "round robin" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { policy: POLICY.roundRobin },
+    controls: ["heavyPct"],
+    live: "LIVE · round robin",
+  },
+  {
+    id: "least-connections",
+    tag: "solution",
+    title: "Least connections watches the load",
+    short: "Least conns",
+    text: [
+      "Least connections sends each request to the server with the fewest requests in progress. A server stuck on a report gets skipped until it frees up.",
+      "It works almost like one shared line for all three servers: lookups now take **{lookupMs}**, reports {reportMs}. Try it: change the traffic.",
+    ],
+    note: { kind: "watch", text: "A broken server that fails instantly looks idle to least connections and gets sent even more. Health checks, two lessons on, stop that." },
+    changed: [{ kind: "mod", label: "Lookups take", value: "{lookupMs}" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { policy: POLICY.leastConnections },
+    controls: ["traffic"],
+    live: "LIVE · least connections",
+  },
+  {
+    id: "layer-7",
+    tag: "technique",
+    title: "Layer 4 or layer 7",
+    short: "L4 vs L7",
+    text: [
+      "A layer 4 balancer sees only addresses and ports: it passes whole connections along without reading them. A layer 7 balancer reads each HTTP request, so it can route by path.",
+      "Send /reports to server C and lookups to A and B. Lookups never wait behind a report again: **{lookupMs}**. Reports take {reportMs}, on a server {reportServerLoadPct} busy.",
+    ],
+    note: { kind: "tip", text: "Layer 7 does more work per request, since it has to read it. Use layer 4 for raw connection volume, layer 7 when you need to see the request." },
+    changed: [{ kind: "mod", label: "Policy", value: "layer 7 by path" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { policy: POLICY.byPath },
+    live: "LIVE · routing by path",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What balancing taught us",
+    short: "Recap",
+    text: [
+      "A load balancer spreads requests so no server drowns while others idle.",
+      "Round robin is fair by count, not by work. Least connections follows the live load. A layer 7 balancer can split traffic by what each request is: here lookups take {lookupMs}.",
+    ],
+    note: { kind: "next", text: "Coming up in Forward and reverse proxy: the servers that sit in the middle." },
+    sim: { mode: "steady", speed: 1 },
+    model: { policy: POLICY.byPath },
+    live: "LIVE · recap",
+  },
+];

@@ -148,3 +148,19 @@ describe("Queue work times", () => {
     expect(t / 2000).toBeLessThan(0.106);
   });
 });
+
+describe("Queue work per request", () => {
+  it("uses a request's own work time when it carries one", () => {
+    const q = new Queue(10);
+    q.push({ id: 1, work: 2 } as never);
+    q.push({ id: 2 } as never);
+    let t = 0;
+    const doneAt: number[] = [];
+    while (doneAt.length < 2) {
+      t += 0.01;
+      for (const _ of q.tick(0.01)) doneAt.push(Math.round(t * 100) / 100);
+    }
+    expect(doneAt[0]).toBeCloseTo(2, 1);
+    expect(doneAt[1]).toBeCloseTo(2.1, 1);
+  });
+});

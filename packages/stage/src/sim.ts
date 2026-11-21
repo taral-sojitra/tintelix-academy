@@ -30,6 +30,8 @@ export interface Packet {
   trail: Point[];
   /** The latency this request was given, in ms, for scenes that show it. */
   ms?: number;
+  /** Seconds of work this request needs from a queue's server; without it the queue decides. */
+  work?: number;
 }
 
 export type SimEvent =
@@ -68,6 +70,10 @@ export class Queue {
   get waiting(): number {
     return this.items.length;
   }
+  /** The requests waiting, oldest first, for scenes that draw the line. */
+  get queued(): readonly Packet[] {
+    return this.items;
+  }
   /** Advance by dt seconds and return every packet finished in that time, oldest first. */
   tick(dt: number): Packet[] {
     const done: Packet[] = [];
@@ -76,7 +82,7 @@ export class Queue {
       if (!this.serving) {
         if (!this.items.length) return done;
         this.serving = this.items.shift()!;
-        this.remain = this.draw ? this.draw() : 1 / this.mu;
+        this.remain = this.serving.work ?? (this.draw ? this.draw() : 1 / this.mu);
       }
       if (this.remain > left + 1e-9) {
         this.remain -= left;
