@@ -11,6 +11,7 @@ import { createBloomScene } from "./bloom";
 import { createCapScene } from "./cap";
 import { createDataScene } from "./data";
 import { createHealthScene } from "./health";
+import { createIdemScene } from "./idem";
 import { createIndexScene } from "./index-lookup";
 import { createMqScene } from "./mq";
 import { createProxyScene } from "./proxy";
@@ -47,4 +48,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   timeline: createTimelineScene,
   txn: createTxnScene,
   mq: createMqScene,
+  idem: createIdemScene,
 };

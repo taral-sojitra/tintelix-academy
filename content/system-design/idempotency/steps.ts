@@ -1,0 +1,76 @@
+import type { Step } from "@tintelix/schema";
+
+export const idemSteps: Step[] = [
+  {
+    id: "double-charge",
+    tag: "problem",
+    title: "A timeout, a retry, a second charge",
+    short: "Retry",
+    text: [
+      "{timeoutPct} of payment calls time out, so the app retries: {retries} retries a second. For {completedPct} of them the card had already been charged; only the reply was lost.",
+      "The retry charges again. Add double taps on the Pay button and **{doubles}** payments a second are charged twice: **{doublesPerDay}** a day.",
+    ],
+    note: { kind: "watch", text: "Lost replies and double taps are drawn far more often than they happen." },
+    sim: { mode: "retries", speed: 1 },
+    live: "LIVE · no idempotency key",
+  },
+  {
+    id: "idempotency-key",
+    tag: "solution",
+    title: "Send an idempotency key",
+    short: "Key",
+    text: [
+      "The app makes one random key per payment and sends it with every attempt. The API saves the key with the result; a retry with the same key gets the saved result back, and the card isn't touched.",
+      "Double charges from retries: **{retryDoubles}**. The cost: keys kept for {keyTtlHours} hours, {keysStored} of them, about {keyGb} GB.",
+    ],
+    note: { kind: "idea", text: "The key belongs to the payment, not the request: every retry must reuse it." },
+    changed: [{ kind: "add", label: "Idempotency keys" }],
+    scene: { add: ["keys"] },
+    sim: { mode: "retries", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · idempotency key",
+  },
+  {
+    id: "race",
+    tag: "problem",
+    title: "Two requests check at once",
+    short: "Race",
+    text: [
+      "A double tap sends two requests with the same key at the same moment. Each looks up the key, neither finds it, and both charge before either saves it.",
+      "That still charges **{raceDoubles}** payments a second twice.",
+    ],
+    note: { kind: "watch", text: "Two amber requests pass the key store together; both reach the bank." },
+    sim: { mode: "races", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · check, then save",
+  },
+  {
+    id: "atomic-claim",
+    tag: "solution",
+    title: "Claim the key first",
+    short: "Claim",
+    text: [
+      "Claim the key before charging, in one atomic step: a unique insert, or a set-if-absent. The second request finds it taken and gets \"already in progress\" instead of a second charge.",
+      "Charged twice: **{doubles}**.",
+    ],
+    note: { kind: "tip", text: "Save the result under the claimed key when the charge finishes, so later retries get it back." },
+    changed: [{ kind: "mod", label: "Key check", value: "atomic claim" }],
+    sim: { mode: "races", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · atomic claim",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What idempotency taught us",
+    short: "Recap",
+    text: [
+      "Networks lose replies, so clients retry, and queues deliver at least once. Any operation that must happen once needs an idempotency key.",
+      "Claim the key atomically, save the result with it, and keep it as long as retries can arrive ({keyTtlHours} hours here).",
+    ],
+    note: { kind: "next", text: "Coming up in Rate limiting: one client flooding the API." },
+    sim: { mode: "races", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · recap",
+  },
+];
