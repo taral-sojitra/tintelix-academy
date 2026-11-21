@@ -13,6 +13,7 @@ import { createIndexScene } from "./index-lookup";
 import { createProxyScene } from "./proxy";
 import { createReplScene } from "./repl";
 import { createSessionScene } from "./session";
+import { createShardScene } from "./shard";
 import type { SceneFactory } from "./types";
 
 /** The runtime for each scene kind; the player picks one by `lesson.scene.kind`. */
@@ -31,4 +32,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   data: createDataScene,
   index: createIndexScene,
   repl: createReplScene,
+  shard: createShardScene,
 };

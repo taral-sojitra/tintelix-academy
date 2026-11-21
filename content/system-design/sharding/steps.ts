@@ -1,0 +1,78 @@
+import type { Step } from "@tintelix/schema";
+
+export const shardSteps: Step[] = [
+  {
+    id: "one-primary",
+    tag: "problem",
+    title: "One primary can't take the writes",
+    short: "One primary",
+    text: [
+      "The shop now takes {writes} writes a second, and one primary handles {nodeCap}. It is **{hottestPct}** busy, and only **{servedPct}** of writes get through.",
+      "Read replicas won't help: every write still goes to the primary. It needs at least {needShards} machines that each accept writes.",
+    ],
+    note: { kind: "idea", text: "Sharding splits the data so different keys live on different machines, each with its own share of the writes." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · one primary",
+  },
+  {
+    id: "by-range",
+    tag: "problem",
+    title: "Split by range: the newest shard burns",
+    short: "By range",
+    text: [
+      "Split the orders into {shards} shards by order id range. But order ids only grow, so every new order lands on the last shard: **{hottestLoad}** writes a second there while the others sit idle. Still only **{servedPct}** served.",
+      "Ranges do have a strength: a query for this week's orders asks just {queryShards} shard, because neighbouring ids live together.",
+    ],
+    note: { kind: "watch", text: "Every write goes to the bottom shard." },
+    changed: [{ kind: "add", label: "Shards", value: "{shards}, by range" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { scheme: 1 },
+    live: "LIVE · range sharding",
+  },
+  {
+    id: "by-hash",
+    tag: "solution",
+    title: "Split by hash: even shards",
+    short: "By hash",
+    text: [
+      "Hash the order id and let the hash pick the shard. Neighbouring ids scatter, so each shard takes **{evenLoad}** writes a second, **{hottestPct}** busy, and **{servedPct}** are stored.",
+      "The price: a query for this week's orders now has to ask all {queryShards} shards and merge the answers. Try it: change the number of shards.",
+    ],
+    note: { kind: "tip", text: "Pick the shard key from how the data is read and written. It's the hardest decision to change later." },
+    changed: [{ kind: "mod", label: "Shard key", value: "hash of order id" }],
+    sim: { mode: "steady", speed: 1 },
+    controls: ["shards"],
+    model: { scheme: 2 },
+    live: "LIVE · hash sharding",
+  },
+  {
+    id: "hot-key",
+    tag: "problem",
+    title: "One hot key still burns one shard",
+    short: "Hot key",
+    text: [
+      "A flash sale: one product takes {hotPct} of all writes. Its key always hashes to the same shard, which now takes **{hottestLoad}** writes a second, **{hottestPct}** busy. Hashing evens out keys, not traffic.",
+      "Split the hot key into sub-keys (sale-0, sale-1, …) that land on different shards; reading its total then means asking each one. Try it: split the hot key.",
+    ],
+    note: { kind: "watch", text: "The top shard turns red while the rest stay calm." },
+    changed: [{ kind: "add", label: "Hot product", value: "{hotPct} of writes" }],
+    sim: { mode: "steady", speed: 1 },
+    controls: ["split"],
+    model: { scheme: 2, hotPct: 30 },
+    live: "LIVE · hot key",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What sharding taught us",
+    short: "Recap",
+    text: [
+      "Shard to add write capacity: {shards} shards take {writes} writes a second that one primary couldn't.",
+      "Ranges keep neighbours together but burn on growing keys; hashes spread keys but scatter range queries; neither fixes a hot key, which needs splitting.",
+    ],
+    note: { kind: "next", text: "Coming up in Consistent hashing: adding a shard without moving almost every key." },
+    sim: { mode: "steady", speed: 1 },
+    model: { scheme: 2 },
+    live: "LIVE · recap",
+  },
+];
