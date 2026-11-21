@@ -7,6 +7,7 @@ import { createChainScene } from "./chain";
 import { createEstimateScene } from "./estimate";
 import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
+import { createHealthScene } from "./health";
 import { createProxyScene } from "./proxy";
 import type { SceneFactory } from "./types";
 
@@ -21,4 +22,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   scale: createScaleScene,
   balance: createBalanceScene,
   proxy: createProxyScene,
+  health: createHealthScene,
 };
