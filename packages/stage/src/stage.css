@@ -238,3 +238,17 @@
 .tx-calc-v { margin: 8px 0 0; font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--node-ink); line-height: 1.1; }
 .tx-calc-s { margin: 4px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--node-sub); }
 .tx-wlabel[hidden] { display: none; }
+
+/* Scaling lesson: cores in one box, servers in a fleet, the linear line and traffic on the curve. */
+.tx-grid8, .tx-grid10 { display: grid; gap: 4px; margin-top: 10px; }
+.tx-grid8 { grid-template-columns: repeat(8, 1fr); }
+.tx-grid10 { grid-template-columns: repeat(10, 1fr); gap: 3px; }
+.tx-grid8 i { height: 14px; border-radius: 3px; background: color-mix(in srgb, var(--cyan) 12%, transparent); transition: background .25s; }
+.tx-grid10 i { height: 10px; border-radius: 2.5px; background: color-mix(in srgb, var(--violet) 12%, transparent); transition: background .25s; }
+.tx-grid8 i.on { background: var(--cyan); }
+.tx-grid10 i.on { background: var(--violet); }
+.tx-c-linear { fill: none; stroke: var(--node-sub); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.tx-c-traffic { stroke: var(--amber); stroke-width: 1.5; stroke-dasharray: 3 4; }
+@media (prefers-reduced-motion: reduce) {
+  .tx-grid8 i, .tx-grid10 i { transition: none; }
+}
