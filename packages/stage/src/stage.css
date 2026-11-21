@@ -252,3 +252,13 @@
 @media (prefers-reduced-motion: reduce) {
   .tx-grid8 i, .tx-grid10 i { transition: none; }
 }
+
+/* Load balancing lesson: each server's line, and the panel comparing policies. */
+.tx-sline { flex: 1; display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
+.tx-sline i { height: 12px; border-radius: 50%; background: color-mix(in srgb, var(--cyan) 10%, transparent); }
+.tx-sline i.on { background: var(--cyan); }
+.tx-sline i.on.heavy { background: var(--amber); border-radius: 3px; }
+.tx-compare { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.tx-compare li { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--node-stroke); font-size: 12.5px; color: var(--node-sub); }
+.tx-compare li b { font-family: var(--mono); font-size: 18px; color: var(--node-ink); }
+.tx-compare li.on { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 12%, transparent); color: var(--node-ink); }
