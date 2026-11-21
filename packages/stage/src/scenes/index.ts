@@ -7,6 +7,7 @@ import { createChainScene } from "./chain";
 import { createEstimateScene } from "./estimate";
 import { createScaleScene } from "./scale";
 import { createBalanceScene } from "./balance";
+import { createProxyScene } from "./proxy";
 import type { SceneFactory } from "./types";
 
 /** The runtime for each scene kind; the player picks one by `lesson.scene.kind`. */
@@ -19,4 +20,5 @@ export const scenes: Record<SceneKind, SceneFactory> = {
   estimate: createEstimateScene,
   scale: createScaleScene,
   balance: createBalanceScene,
+  proxy: createProxyScene,
 };

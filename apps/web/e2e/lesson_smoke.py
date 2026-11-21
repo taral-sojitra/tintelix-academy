@@ -353,19 +353,36 @@ async def lb_flow(page):
     return "Load balancing lesson: one server 48% served, round robin 82 ms, least connections 27 ms, layer 7 by path 16 ms"
 
 
+async def proxy_flow(page):
+    await page.goto(BASE + "/system-design/proxies", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Who speaks for whom?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("100 GB")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("99.8%")
+    await page.keyboard.press("ArrowRight")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Slow phones hold the workers")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("134", timeout=8000)
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("75%")
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("21 ms", timeout=8000)
+    await expect(page.locator("[data-buffering]")).to_have_text("buffering on")
+    return "Proxy lesson: forward proxy saves 99.8% of 100 GB; slow phones need 134 workers (75% served); buffering holds a worker 21 ms"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("8 open now")).to_be_visible()
+    await expect(page.get_by_text("9 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("8 of 30 open")).to_be_visible()
-    return "System Design shows 8 lessons open"
+    await expect(page.get_by_text("9 of 30 open")).to_be_visible()
+    return "System Design shows 9 lessons open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []
