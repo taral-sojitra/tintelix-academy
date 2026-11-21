@@ -1,0 +1,78 @@
+import type { Step } from "@tintelix/schema";
+
+export const bloomSteps: Step[] = [
+  {
+    id: "misses-hit-disk",
+    tag: "problem",
+    title: "Every miss still reads the disk",
+    short: "Misses",
+    text: [
+      "The API gets {lookups} lookups a second, and {absentPct} are for keys that don't exist: mistyped coupon codes, bots guessing ids, names not taken yet.",
+      "Each one still costs a disk read to find nothing: **{absentRps}** wasted reads a second, out of **{diskReads}** in all.",
+    ],
+    note: { kind: "watch", text: "Amber replies went all the way to the disk and found nothing." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · no filter",
+  },
+  {
+    id: "bit-array",
+    tag: "technique",
+    title: "A bit array that can say no",
+    short: "Bit array",
+    text: [
+      "A Bloom filter is an array of bits plus a few hash functions. Storing a key sets the bit at each of its hash positions to 1.",
+      "A lookup checks the same positions. If any bit is 0, the key was **definitely never stored**, and the disk is never touched. If all are 1, the answer is only **maybe**: other keys may have set those bits.",
+    ],
+    note: { kind: "idea", text: "It never says no to a key that's there. Its only mistake is a \"maybe\" for a key that isn't." },
+    changed: [{ kind: "add", label: "Bloom filter", value: "{filterMb} MB" }],
+    scene: { add: ["filter"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { filter: 1 },
+    live: "LIVE · Bloom filter",
+  },
+  {
+    id: "sizing",
+    tag: "solution",
+    title: "Most misses never touch the disk",
+    short: "Sizing",
+    text: [
+      "Give the filter {bitsPerKey} bits per key with {hashes} hashes: only **{fpPct}** of missing keys get a false \"maybe\". Disk reads drop to **{diskReads}** a second, {savedPct} fewer.",
+      "For {keys} keys that takes {filterMb} MB of memory, against {keysMb} MB to hold the keys themselves. Try it: change the bits per key.",
+    ],
+    note: { kind: "tip", text: "Twice the bits per key doesn't halve the false positives; it cuts them about a hundredfold." },
+    sim: { mode: "steady", speed: 1 },
+    controls: ["bitsPerKey"],
+    model: { filter: 1 },
+    live: "LIVE · sizing the filter",
+  },
+  {
+    id: "outgrown",
+    tag: "problem",
+    title: "A filter that stopped growing",
+    short: "Outgrown",
+    text: [
+      "The filter was sized for {designKeys} keys, but the table now holds {keys}. That is only {actualBits} bits a key, and false \"maybe\"s climb to **{fpPct}**.",
+      "Disk reads creep back up to **{diskReads}** a second. Rebuild the filter bigger as the data grows. Try it: change how many keys it holds.",
+    ],
+    note: { kind: "watch", text: "Never let a bare \"maybe\" skip something you can't undo, like charging a card. A \"maybe\" should trigger a real check." },
+    changed: [{ kind: "mod", label: "Keys", value: "{keys}" }],
+    sim: { mode: "steady", speed: 1 },
+    controls: ["keys"],
+    model: { filter: 1, keys: 200_000_000 },
+    live: "LIVE · outgrown filter",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What Bloom filters taught us",
+    short: "Recap",
+    text: [
+      "\"Definitely not\" is exact; \"maybe\" is wrong {fpPct} of the time at {bitsPerKey} bits a key, so a maybe always gets a real check.",
+      "A few bits per key keep most misses off the disk ({diskReads} reads instead of {lookups}). Size the filter for the data you'll have, not the data you have.",
+    ],
+    note: { kind: "next", text: "Coming up in Object storage: letting uploads skip your servers entirely." },
+    sim: { mode: "steady", speed: 1 },
+    model: { filter: 1 },
+    live: "LIVE · recap",
+  },
+];

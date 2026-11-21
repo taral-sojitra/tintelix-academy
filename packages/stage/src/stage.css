@@ -330,3 +330,10 @@
 .tx-chipsrow { display: flex; flex-wrap: wrap; gap: 10px; font-family: var(--mono); font-size: 11px; color: var(--node-sub); }
 .tx-chipsrow span { display: flex; align-items: center; gap: 5px; }
 .tx-chipsrow i { width: 9px; height: 9px; border-radius: 50%; }
+.tx-bits { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 8px; }
+.tx-bits i { height: 23px; border-radius: 5px; border: 1px solid var(--node-stroke); background: transparent; transition: background .2s, box-shadow .2s; position: relative; }
+.tx-bits i::after { content: "0"; position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-bits i.on { background: color-mix(in srgb, var(--violet) 30%, transparent); }
+.tx-bits i.on::after { content: "1"; color: var(--node-ink); }
+.tx-bits i.probe { box-shadow: 0 0 0 2px var(--green); }
+.tx-bits i.zero { box-shadow: 0 0 0 2px var(--red); background: color-mix(in srgb, var(--red) 18%, transparent); }
