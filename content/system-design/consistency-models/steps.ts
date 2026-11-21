@@ -1,0 +1,77 @@
+import type { Step } from "@tintelix/schema";
+
+export const consistencySteps: Step[] = [
+  {
+    id: "eventual",
+    tag: "problem",
+    title: "Eventual: copies agree, eventually",
+    short: "Eventual",
+    text: [
+      "Asha posts. Replica 1 gets the post {lag1Ms} later and replica 2 {lag2Ms} later. At {ashaReadAt} Asha reloads from replica 1, which doesn't have it yet: her own post is missing.",
+      "Chen sees the post and replies, and replies are stored near Ben, so at {benReadAt} Ben sees **a reply to a post he can't see**. Eventual consistency only promises that the copies agree once writes stop: here after {convergeMs}.",
+    ],
+    note: { kind: "watch", text: "Follow the amber playhead: each read is marked as it happens." },
+    sim: { mode: "steady", speed: 1 },
+    live: "LIVE · eventual",
+  },
+  {
+    id: "read-your-writes",
+    tag: "technique",
+    title: "Read your writes: Asha sees her post",
+    short: "Your writes",
+    text: [
+      "Read-your-writes: a user's reads go somewhere that has their own writes, such as the leader for a few seconds after they write. Asha now sees her post.",
+      "It says nothing about other people's writes, so Ben still sees **a reply to nothing**.",
+    ],
+    note: { kind: "idea", text: "Monotonic reads is its cousin: once you've seen something, you never see an older version." },
+    changed: [{ kind: "mod", label: "Guarantee", value: "read your writes" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · read your writes",
+  },
+  {
+    id: "causal",
+    tag: "technique",
+    title: "Causal: no reply before its post",
+    short: "Causal",
+    text: [
+      "Causal consistency: if one write depends on another, everyone sees them in that order. Replica 2 holds Chen's reply until the post it answers has arrived, at {replyVisible2}.",
+      "At {benReadAt} Ben sees **neither yet**: older than the truth, but it makes sense. And Asha still sees her own post.",
+    ],
+    note: { kind: "watch", text: "The dashed purple line is the reply waiting at replica 2." },
+    changed: [{ kind: "mod", label: "Guarantee", value: "causal" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · causal",
+  },
+  {
+    id: "strong",
+    tag: "technique",
+    title: "Strong: one copy, as far as anyone can tell",
+    short: "Strong",
+    text: [
+      "Strong (linearizable) consistency: every read sees the latest write, as if there were one copy. Ben sees **the post and the reply**.",
+      "The price: his read has to reach the leaders across the ocean, **{readMs}** instead of {localMs}. Try it: change that round trip.",
+    ],
+    note: { kind: "tip", text: "Use the weakest guarantee a feature can live with. A like count can be eventual; a bank balance can't." },
+    changed: [{ kind: "mod", label: "Guarantee", value: "strong" }],
+    sim: { mode: "steady", speed: 1 },
+    controls: ["rttMs"],
+    model: { mode: 3 },
+    live: "LIVE · strong",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "What consistency models taught us",
+    short: "Recap",
+    text: [
+      "Eventual: copies agree once writes stop ({convergeMs} here). Read-your-writes: you see your own changes. Causal: effects never show up before their causes. Strong: always the latest.",
+      "Each step up means more waiting or coordination: a strong read here costs {readMs}.",
+    ],
+    note: { kind: "next", text: "Coming up in Distributed transactions: one action that has to change two services." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · recap",
+  },
+];
