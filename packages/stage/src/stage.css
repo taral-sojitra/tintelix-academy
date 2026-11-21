@@ -464,3 +464,11 @@
 .tx-b62 { margin-top: 8px; }
 .tx-b62-id { margin: 0; font-family: var(--mono); font-size: 13px; color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-log li[hidden], .tx-calc-s[hidden] { display: none; }
+.tx-sclock { margin-top: 8px; }
+.tx-sclock-bar { display: grid; gap: 4px; }
+.tx-sclock-bar span { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tx-sclock-bar i { height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--node-stroke) 60%, transparent); transition: background .3s, box-shadow .3s; }
+.tx-sclock-bar em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-sclock-bar span.done i { background: var(--green); }
+.tx-sclock-bar span.now i { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+.tx-sclock-bar span.now em { color: var(--node-ink); }

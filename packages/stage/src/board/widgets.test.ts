@@ -62,4 +62,16 @@ describe("board widgets", () => {
     expect(root.textContent).toContain("#10,950,000,000 → needs 6 characters");
     expect(root.textContent).toContain("5 characters: out of codes");
   });
+  it("stepclock widget marks the seven steps done, now and to do, with their minutes", () => {
+    const w: BoardWidget = { kind: "custom", name: "stepclock" };
+    const root = mount(w, { phase: 3, phaseEnd: 4 });
+    const cls = [...root.querySelectorAll("[data-seg]")].map((s) => (s.classList.contains("done") ? "done" : s.classList.contains("now") ? "now" : "todo"));
+    expect(cls).toEqual(["done", "done", "now", "now", "todo", "todo", "todo"]);
+    expect(root.querySelector(".tx-calc-s")!.textContent).toBe("Minutes 10–20: API, data");
+    paintWidget(root, w, { phase: 6, phaseEnd: 0 }, 0);
+    expect(root.querySelector(".tx-calc-s")!.textContent).toBe("Minutes 30–40: deep dive");
+    paintWidget(root, w, { phase: 8, phaseEnd: 0 }, 0);
+    expect(root.querySelectorAll("[data-seg].done")).toHaveLength(7);
+    expect(root.querySelector(".tx-calc-s")!.textContent).toBe("45 minutes: all seven steps done");
+  });
 });

@@ -8,8 +8,33 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** The seven steps of a design interview and the minutes each gets out of 45. */
+const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API", 5], ["data", 5], ["design", 10], ["deep dive", 10], ["bottlenecks", 5]];
+
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A 45-minute bar split into the seven steps, marking the step (or steps) this part of the lesson covers. */
+  stepclock: {
+    html: (key) =>
+      `<div class="tx-sclock" data-w="${key}"><div class="tx-sclock-bar" style="grid-template-columns:${STEPS.map(([, m]) => `${m}fr`).join(" ")}">${STEPS.map(([name], i) => `<span data-seg="${i + 1}"><i></i><em>${esc(name)}</em></span>`).join("")}</div><p class="tx-calc-s"></p></div>`,
+    paint(root, d) {
+      const from = Math.round(d.phase ?? 1);
+      const to = Math.max(from, Math.round(d.phaseEnd ?? 0));
+      root.querySelectorAll<HTMLElement>("[data-seg]").forEach((seg) => {
+        const i = Number(seg.dataset.seg);
+        seg.classList.toggle("done", i < from || from > STEPS.length);
+        seg.classList.toggle("now", i >= from && i <= to && from <= STEPS.length);
+      });
+      let text = "45 minutes: all seven steps done";
+      if (from <= STEPS.length) {
+        const start = STEPS.slice(0, from - 1).reduce((a, [, m]) => a + m, 0);
+        const span = STEPS.slice(from - 1, to);
+        const end = start + span.reduce((a, [, m]) => a + m, 0);
+        text = `Minutes ${start}–${end}: ${span.map(([n]) => n).join(", ")}`;
+      }
+      root.querySelector(".tx-calc-s")!.textContent = text;
+    },
+  },
   /** The id counter behind short codes: the next id and the code it becomes. */
   base62: {
     html: (key) => `<div class="tx-b62" data-w="${key}"><p class="tx-b62-id"></p><p class="tx-calc-s"></p></div>`,

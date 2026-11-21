@@ -67,7 +67,7 @@ export function board(state: BoardRouterState): Router {
       p.route.push(...legs);
       return;
     }
-    sim.emit({ kind: "reply", node: START, at, hit: p.kind !== "miss" });
+    sim.emit({ kind: "reply", node: trips.get(p.id)?.flow.from ?? START, at, hit: p.kind !== "miss" });
     finish(p);
   };
   return {
@@ -89,7 +89,7 @@ export function board(state: BoardRouterState): Router {
       const { flow } = trip;
       const at: Point = [p.x, p.y];
       if (leg.end === "ret:0") {
-        sim.emit({ kind: "reply", node: START, at, hit: p.kind !== "miss" });
+        sim.emit({ kind: "reply", node: flow.from ?? START, at, hit: p.kind !== "miss" });
         finish(p);
         return;
       }

@@ -197,6 +197,10 @@ describe("board scenes", () => {
     const problems = check(boardLesson({ flows: { read: { path: [{ wire: "u_a", dir: 1, at: "ghost" }], color: "cyan" } } }));
     expect(problems).toContain("caching: board flow read reaches unknown node ghost");
   });
+  it("a flow that starts at an unknown node is reported", () => {
+    const problems = check(boardLesson({ flows: { read: { from: "nowhere", path: [{ wire: "u_a", dir: 1, at: "app" }], color: "cyan" } } }));
+    expect(problems).toContain("caching: board flow read starts at unknown node nowhere");
+  });
   it("a failure share must be a Pct output", () => {
     const problems = check(boardLesson({ flows: { read: { path: [{ wire: "u_a", dir: 1, at: "app" }], color: "cyan", fail: { at: "app", share: "dbBusy" } } } }));
     expect(problems).toContain("caching: board flow read fail share dbBusy must be a …Pct output");
