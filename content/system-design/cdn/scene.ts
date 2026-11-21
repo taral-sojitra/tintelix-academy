@@ -14,12 +14,12 @@ export const cdnScene: SceneSpec = {
   ],
   nodes: {
     users: { x: 36, y: 262, w: 166, h: 74, kind: "users", label: "Users", sub: "Mumbai" },
-    edge: { x: 226, y: 104, w: 160, h: 132, kind: "edge", label: "CDN edge", sub: "Mumbai", hidden: true },
+    edge: { x: 222, y: 104, w: 174, h: 132, kind: "edge", label: "CDN edge", sub: "Mumbai", hidden: true },
     origin: { x: 732, y: 196, w: 220, h: 132, kind: "origin", label: "Origin", sub: "Virginia, USA" },
   },
   wires: {
     u_origin: { from: [202, 304], to: [732, 286], pace: 0.45, label: "13,000 km" },
-    u_edge: { from: [202, 284], to: [226, 196] },
-    edge_origin: { from: [386, 170], to: [732, 236], pace: 0.45, label: "13,000 km" },
+    u_edge: { from: [202, 284], to: [222, 196] },
+    edge_origin: { from: [396, 170], to: [732, 236], pace: 0.45, label: "13,000 km" },
   },
 };

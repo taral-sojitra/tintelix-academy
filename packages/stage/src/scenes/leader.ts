@@ -132,7 +132,8 @@ export function createLeaderScene(o: { fx: Effects; rand: () => number; scene: S
 
     onEvent(e: SimEvent, ctx) {
       ctxRef = ctx;
-      if (e.kind === "miss" && e.node === "storage") fx.float(e.at[0] - 290, e.at[1] + 26, `token ${f("oldTerm", live())} is old: rejected`, "red");
+      // Above the n1 → storage wire, where there's open space near both.
+      if (e.kind === "miss" && e.node === "storage") fx.float(490, 52, `token ${f("oldTerm", live())} is old: rejected`, "red");
       if (e.kind === "fill" && e.node === "n1") fx.float(e.at[0], e.at[1] - 50, "steps down", "amber");
       if (e.kind === "hit" && rand() < 0.35) fx.float(e.at[0], e.at[1] - 40, "vote", "violet");
     },

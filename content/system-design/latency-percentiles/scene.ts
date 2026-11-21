@@ -11,11 +11,11 @@ export const latencyScene: SceneSpec = {
   nodes: {
     users: { x: 36, y: 70, w: 166, h: 74, kind: "users", label: "Shoppers", sub: "product page" },
     app: { x: 400, y: 60, w: 200, h: 96, kind: "app", label: "Product service", sub: "answers the page" },
-    services: { x: 760, y: 52, w: 210, h: 120, kind: "services", label: "Services", sub: "price, stock, reviews…", hidden: true },
+    services: { x: 736, y: 50, w: 234, h: 130, kind: "services", label: "Services", sub: "price, stock, reviews…", hidden: true },
     histogram: { x: 36, y: 190, w: 934, h: 236, kind: "histogram", label: "Latency histogram", sub: "every finished request", hidden: true },
   },
   wires: {
     users_app: { from: [202, 107], to: [400, 107] },
-    app_services: { from: [600, 108], to: [760, 112] },
+    app_services: { from: [600, 108], to: [736, 112] },
   },
 };

@@ -310,7 +310,7 @@ export function createLatencyScene(o: { fx: Effects; rand: () => number; scene: 
             .map((ms) => {
               const x = xOf(ms).toFixed(1);
               const label = ms === 1000 ? "1,000 ms" : `${ms} ms`;
-              return `<line class="tx-h-tick" x1="${x}" x2="${x}" y1="${PAD.top + plotH}" y2="${PAD.top + plotH + 4}"/><text class="tx-h-axis" x="${x}" y="${svgH - 4}" text-anchor="middle">${label}</text>`;
+              return `<line class="tx-h-tick" x1="${x}" x2="${x}" y1="${PAD.top + plotH}" y2="${PAD.top + plotH + 4}"/><text class="tx-h-axis" x="${x}" y="${svgH - 4}" text-anchor="${ms === 1000 ? "end" : "middle"}">${label}</text>`;
             })
             .join("");
           const bars = (["fast", "mid", "slow"] as const)

@@ -7,7 +7,7 @@ export const fanoutScene: SceneSpec = {
   bounds: { x: 8, y: 40, w: 984, h: 390 },
   nodes: {
     asha: { x: 16, y: 70, w: 190, h: 86, kind: "users", label: "Asha", sub: "a normal account" },
-    celeb: { x: 16, y: 300, w: 190, h: 86, kind: "users", label: "A celebrity", sub: "millions of followers" },
+    celeb: { x: 16, y: 300, w: 190, h: 86, kind: "users", label: "A celebrity", sub: "millions follow" },
     workers: { x: 296, y: 168, w: 236, h: 144, kind: "app", label: "Fan-out workers", sub: "copy posts into feeds" },
     feeds: { x: 630, y: 56, w: 352, h: 370, kind: "db", label: "Followers' feeds", sub: "one list per follower" },
   },

@@ -1,9 +1,10 @@
 import type { View } from "../camera";
-import type { Particle, Float, Ripple } from "../effects";
+import { floatRise, type Particle, type Float, type Ripple } from "../effects";
 import type { Wire } from "../geometry";
 import { withAlpha, type Palette } from "../palette";
 import type { Packet } from "../sim";
 import type { WireStyle } from "../scenes/types";
+import { placeLabel, type Box } from "./labels";
 
 export interface Surface {
   ctx: CanvasRenderingContext2D;
@@ -39,7 +40,7 @@ function drawWire(ctx: CanvasRenderingContext2D, w: Wire, st: WireStyle, color: 
 }
 
 /** Wires and landing rings, behind the boxes. */
-export function drawBack(s: Surface, view: View, wires: Record<string, Wire>, styles: WireStyle[], ripples: Ripple[], pal: Palette, flowClock: number) {
+export function drawBack(s: Surface, view: View, wires: Record<string, Wire>, styles: WireStyle[], ripples: Ripple[], pal: Palette, flowClock: number, packets: Packet[] = [], particles: Particle[] = []) {
   clear(s, view);
   const { ctx } = s;
   ctx.lineCap = "round";
@@ -58,6 +59,56 @@ export function drawBack(s: Surface, view: View, wires: Record<string, Wire>, st
     ctx.fillStyle = withAlpha(pal.colors[r.color], a * 0.12);
     ctx.fill();
   }
+  drawPackets(ctx, packets, pal);
+  ctx.globalCompositeOperation = pal.dark ? "lighter" : "source-over";
+  for (const q of particles) {
+    ctx.fillStyle = withAlpha(pal.colors[q.color], Math.max(0, q.life / q.max));
+    ctx.fillRect(q.x - q.size / 2, q.y - q.size / 2, q.size, q.size);
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+/**
+ * Moving requests: trails, glows, then the dots. They sit on the back layer with the wires, under the
+ * boxes, so a dot reaching a box slips under its edge instead of covering it.
+ */
+function drawPackets(ctx: CanvasRenderingContext2D, packets: Packet[], pal: Palette) {
+  const c = pal.colors;
+  ctx.globalCompositeOperation = pal.dark ? "lighter" : "source-over";
+  for (const p of packets) {
+    if (p.hidden || p.inNode) continue;
+    const col = c[p.color];
+    const t = p.trail;
+    for (let i = 1; i < t.length; i++) {
+      const f = i / t.length;
+      ctx.strokeStyle = withAlpha(col, f * (p.small ? 0.4 : 0.55));
+      ctx.lineWidth = (p.small ? 1.6 : 3) * f + 0.4;
+      ctx.beginPath();
+      ctx.moveTo(t[i - 1]![0], t[i - 1]![1]);
+      ctx.lineTo(t[i]![0], t[i]![1]);
+      ctx.stroke();
+    }
+    const R = p.small ? 8 : 12;
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
+    g.addColorStop(0, withAlpha(col, pal.dark ? 0.55 : 0.3));
+    g.addColorStop(1, withAlpha(col, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+  for (const p of packets) {
+    if (p.hidden || p.inNode) continue;
+    ctx.fillStyle = c[p.color];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.small ? 2.7 : 4.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = pal.dark ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.75)";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.small ? 1 : 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 export interface QueueView {
@@ -67,8 +118,8 @@ export interface QueueView {
   simTime: number;
 }
 
-/** The database queue, moving requests, bursts and floating labels, in front of the boxes. */
-export function drawFront(s: Surface, view: View, packets: Packet[], queue: QueueView | null, particles: Particle[], floats: Float[], pal: Palette) {
+/** The database queue and floating labels, in front of the boxes. */
+export function drawFront(s: Surface, view: View, queue: QueueView | null, floats: Float[], pal: Palette, obstacles: () => Box[] = () => []) {
   clear(s, view);
   const { ctx } = s;
   const c = pal.colors;
@@ -95,55 +146,42 @@ export function drawFront(s: Surface, view: View, packets: Packet[], queue: Queu
       ctx.fill();
     }
   }
-  ctx.globalCompositeOperation = pal.dark ? "lighter" : "source-over";
-  for (const p of packets) {
-    if (p.hidden || p.inNode) continue;
-    const col = c[p.color];
-    const t = p.trail;
-    for (let i = 1; i < t.length; i++) {
-      const f = i / t.length;
-      ctx.strokeStyle = withAlpha(col, f * (p.small ? 0.4 : 0.55));
-      ctx.lineWidth = (p.small ? 1.6 : 3) * f + 0.4;
-      ctx.beginPath();
-      ctx.moveTo(t[i - 1]![0], t[i - 1]![1]);
-      ctx.lineTo(t[i]![0], t[i]![1]);
-      ctx.stroke();
-    }
-    const R = p.small ? 8 : 12;
-    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
-    g.addColorStop(0, withAlpha(col, pal.dark ? 0.55 : 0.3));
-    g.addColorStop(1, withAlpha(col, 0));
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, R, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  for (const q of particles) {
-    ctx.fillStyle = withAlpha(c[q.color], Math.max(0, q.life / q.max));
-    ctx.fillRect(q.x - q.size / 2, q.y - q.size / 2, q.size, q.size);
-  }
-  ctx.globalCompositeOperation = "source-over";
-  for (const p of packets) {
-    if (p.hidden || p.inNode) continue;
-    ctx.fillStyle = c[p.color];
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.small ? 2.7 : 4.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = pal.dark ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.75)";
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.small ? 1 : 1.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
   // Labels are drawn in screen space so they stay readable at any scale.
   ctx.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
-  for (const f of floats) {
-    const a = Math.min(1, (f.life / f.max) * 2.2);
-    const x = f.x * view.s + view.ox;
-    const y = f.y * view.s + view.oy;
+  const size = (f: Float) => {
     ctx.font = `${f.big ? 700 : 600} ${f.big ? 13 : 11}px "IBM Plex Mono", ui-monospace, monospace`;
-    const w = ctx.measureText(f.text).width + (f.big ? 20 : 14);
-    const h = f.big ? 24 : 19;
-    const lx = fitLabelX(x, w, s.w);
+    return { w: ctx.measureText(f.text).width + (f.big ? 20 : 14), h: f.big ? 24 : 19 };
+  };
+  /** Top-left of the label where its float puts it now, before any offset. */
+  const base = (f: Float, w: number, h: number) => ({ x: fitLabelX(f.x * view.s + view.ox, w, s.w), y: f.y * view.s + view.oy - h / 2 });
+  /** The space a label takes from now until it fades, as it drifts up. */
+  const claim = (f: Float): Box => {
+    const { w, h } = size(f);
+    const b = base(f, w, h);
+    const rise = floatRise(f) * Math.max(0, f.life) * view.s;
+    return { x: b.x + (f.dx ?? 0), y: b.y + (f.dy ?? 0) - rise, w, h: h + rise };
+  };
+  let blockers: Box[] | null = null;
+  for (const f of floats) {
+    if (f.placedAt === view.s) continue;
+    blockers ??= obstacles();
+    f.dx = 0;
+    f.dy = 0;
+    const others = floats.filter((o) => o !== f && o.placedAt === view.s && !o.dropped).map(claim);
+    const at = placeLabel(claim(f), [...blockers, ...others], { x: 0, y: 0, w: s.w, h: s.h });
+    // A big label always shows; a small one is skipped when there's no clear spot.
+    f.dropped = !at && !f.big;
+    f.dx = at?.dx ?? 0;
+    f.dy = at?.dy ?? 0;
+    f.placedAt = view.s;
+  }
+  for (const f of floats) {
+    if (f.dropped) continue;
+    const a = Math.min(1, (f.life / f.max) * 2.2);
+    const { w, h } = size(f);
+    const b = base(f, w, h);
+    const lx = b.x + (f.dx ?? 0);
+    const y = b.y + (f.dy ?? 0) + h / 2;
     ctx.globalAlpha = a;
     ctx.fillStyle = pal.dark ? "rgba(6,16,34,0.9)" : "rgba(255,252,246,0.95)";
     ctx.strokeStyle = withAlpha(c[f.color], 0.75);
@@ -158,6 +196,8 @@ export function drawFront(s: Surface, view: View, packets: Packet[], queue: Queu
     ctx.globalAlpha = 1;
   }
 }
+
+
 
 /** A scene's chart metric over the last 30 seconds, on a 0..max scale with a dashed danger line. */
 export function drawChart(s: Surface, hist: number[], pal: Palette, scale: { max: number; danger: number }) {

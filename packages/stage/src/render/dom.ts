@@ -36,6 +36,8 @@ export interface StageDom {
   chart: HTMLCanvasElement;
   chartValue: HTMLElement;
   tagText: HTMLElement;
+  /** On a narrow stage: switches between a readable zoom and the whole diagram. */
+  zoom: HTMLButtonElement;
   nodes: Record<string, HTMLElement>;
 }
 
@@ -48,6 +50,8 @@ export function buildStage(host: HTMLElement, scene: SceneSpec, opts: StageOptio
     <div class="tx-ov tx-tagline"><span class="tx-live"></span><span class="tx-tagtext"></span></div>
     <div class="tx-ov tx-legend" aria-hidden="true">${opts.legend.map(([c, l]) => `<span><i style="background:var(--${esc(c)})"></i>${esc(l)}</span>`).join("")}</div>
     <div class="tx-ov tx-chartbox" aria-hidden="true"><div class="tx-ch"><span>${esc(opts.chartLabel)}</span><b class="tx-chartv"></b></div><canvas class="tx-chart"></canvas></div>
+    <button type="button" class="tx-ov tx-zoom">Whole diagram</button>
+    <div class="tx-ov tx-panhint" aria-hidden="true">drag ↔</div>
   </div>`;
   const root = host.querySelector<HTMLElement>(".tx-stage")!;
   const world = root.querySelector<HTMLElement>(".tx-world")!;
@@ -88,6 +92,7 @@ export function buildStage(host: HTMLElement, scene: SceneSpec, opts: StageOptio
     chart: root.querySelector(".tx-chart")!,
     chartValue: root.querySelector(".tx-chartv")!,
     tagText: root.querySelector(".tx-tagtext")!,
+    zoom: root.querySelector<HTMLButtonElement>(".tx-zoom")!,
     nodes,
   };
 }
@@ -104,9 +109,20 @@ export function renderTiles(el: HTMLElement, tiles: Tile[]): void {
     const m = el.children[i] as HTMLElement;
     m.classList.toggle("good", t.mood === "good");
     m.classList.toggle("bad", t.mood === "bad");
+    // A step can reuse a tile id for a different number: keep the label and icon in step with it.
+    const k = m.querySelector<HTMLElement>(".tx-k")!;
+    if (k.textContent !== t.label) k.textContent = t.label;
+    const mi = m.querySelector<HTMLElement>(".tx-mi")!;
+    if (mi.dataset.icon !== `${t.icon} ${t.hue}`) {
+      mi.dataset.icon = `${t.icon} ${t.hue}`;
+      mi.className = `tx-mi h-${t.hue}`;
+      mi.innerHTML = iconSvg(t.icon, "");
+    }
     const v = m.querySelector<HTMLElement>(".tx-v")!;
     const d = m.querySelector<HTMLElement>(".tx-d")!;
     if (v.textContent !== t.value) v.textContent = t.value;
+    // Words like "Least connections" don't fit a tile at full size: smaller, and broken only between words.
+    v.classList.toggle("long", t.value.length > 10);
     if (d.textContent !== t.note) d.textContent = t.note;
   });
 }

@@ -160,7 +160,7 @@ export function createReplScene(o: { fx: Effects; rand: () => number; scene: Sce
       }
       if (els.label) {
         els.label.hidden = crashed;
-        text(els.label, mode === "copies" ? "streams every change" : `lag ${f("lagMs", d)}`);
+        text(els.label, mode === "copies" ? "streams changes" : `lag ${f("lagMs", d)}`);
       }
     },
 

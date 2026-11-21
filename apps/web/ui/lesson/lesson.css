@@ -106,7 +106,7 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 1px 5px; border-radius
 }
 @media (max-width: 640px) {
   .lesson-content { padding: 14px 12px 28px; }
-  .stage-wrap { height: 340px; }
+  .stage-wrap { height: 420px; }
   .sheet-link { margin-left: 0; }
   .st span { display: none; }
   .st.cur span { display: block; overflow: visible; max-width: none; }

@@ -38,7 +38,7 @@ export const leaderScene: SceneSpec = {
     n4: server("n4"),
     n5: server("n5"),
     tally: { x: 720, y: 250, w: 260, h: 160, kind: "curve", label: "Votes", sub: "a majority is 3 of 5" },
-    storage: { ...STORAGE, kind: "db", label: "Storage", sub: "keeps the highest token", hidden: true },
+    storage: { ...STORAGE, kind: "db", label: "Storage", sub: "checks each token", hidden: true },
   },
   wires,
 };
