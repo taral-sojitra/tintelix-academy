@@ -74,4 +74,17 @@ describe("board widgets", () => {
     expect(root.querySelectorAll("[data-seg].done")).toHaveLength(7);
     expect(root.querySelector(".tx-calc-s")!.textContent).toBe("45 minutes: all seven steps done");
   });
+  it("bitlayout widget splits 64 bits and builds the ID from time, machine and sequence", () => {
+    const w: BoardWidget = { kind: "custom", name: "bitlayout" };
+    const d = { machineBits: 10, seqBits: 12, sampleMs: 1000, sampleMachine: 37, perServerRate: 2000 };
+    const root = mount(w, d, 0);
+    expect(root.querySelector<HTMLElement>(".tx-idbits-bar")!.style.gridTemplateColumns).toBe("1fr 41fr 10fr 12fr");
+    expect(root.querySelector("[data-bits-vals]")!.textContent).toBe("time 1,000 ms · machine 37 · sequence 0");
+    expect(root.querySelector("[data-bits-id]")!.textContent).toBe("ID 4,194,455,552");
+    paintWidget(root, w, d, 0.0005);
+    expect(root.querySelector("[data-bits-id]")!.textContent).toBe("ID 4,194,455,553");
+    paintWidget(root, w, { ...d, machineBits: 5, seqBits: 17 }, 0);
+    expect(root.querySelector("[data-bits-vals]")!.textContent).toBe("machine 37 doesn't fit in 5 bits");
+    expect(root.querySelector("[data-bits-id]")!.textContent).toBe("no valid ID");
+  });
 });

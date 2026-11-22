@@ -13,6 +13,35 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A 64-bit ID drawn as its parts (sign, time, machine, sequence) and the number they make. */
+  bitlayout: {
+    html: (key) =>
+      `<div class="tx-idbits" data-w="${key}"><div class="tx-idbits-bar"><span class="b-sign"><i></i><em></em></span><span class="b-time"><i></i><em data-bl="time"></em></span><span class="b-machine"><i></i><em data-bl="machine"></em></span><span class="b-seq"><i></i><em data-bl="seq"></em></span></div><p class="tx-calc-s" data-bits-vals></p><p class="tx-b62-id" data-bits-id></p></div>`,
+    paint(root, d, clock) {
+      const mb = Math.round(d.machineBits ?? 10);
+      const sb = Math.round(d.seqBits ?? 22 - mb);
+      const bar = root.querySelector<HTMLElement>(".tx-idbits-bar")!;
+      const cols = `1fr 41fr ${mb}fr ${sb}fr`;
+      if (bar.style.gridTemplateColumns !== cols) bar.style.gridTemplateColumns = cols;
+      root.querySelector("[data-bl='time']")!.textContent = "time · 41 bits";
+      root.querySelector("[data-bl='machine']")!.textContent = "machine";
+      root.querySelector("[data-bl='seq']")!.textContent = "seq";
+      const machine = Math.round(d.sampleMachine ?? 0);
+      const vals = root.querySelector("[data-bits-vals]")!;
+      const idEl = root.querySelector("[data-bits-id]")!;
+      if (machine >= 2 ** mb) {
+        vals.textContent = `machine ${machine} doesn't fit in ${mb} bits`;
+        idEl.textContent = "no valid ID";
+        return;
+      }
+      const t = Math.round(d.sampleMs ?? 0) + Math.floor(Math.max(0, clock) * 1000);
+      const perMs = Math.max(1, Math.round((d.perServerRate ?? 1000) / 1000));
+      const seq = Math.floor(Math.max(0, clock) * (d.perServerRate ?? 0)) % perMs;
+      const id = (BigInt(t) << BigInt(mb + sb)) | (BigInt(machine) << BigInt(sb)) | BigInt(seq);
+      vals.textContent = `time ${group(t)} ms · machine ${machine} · sequence ${seq}`;
+      idEl.textContent = `ID ${id.toLocaleString("en-US")}`;
+    },
+  },
   /** A 45-minute bar split into the seven steps, marking the step (or steps) this part of the lesson covers. */
   stepclock: {
     html: (key) =>
