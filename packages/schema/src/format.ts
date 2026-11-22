@@ -64,7 +64,7 @@ export function formatOutput(name: string, value: number): string {
     // Small shares keep one decimal, so 9.6% doesn't read as 10% and 0.1% doesn't read as none.
     const tenth = Math.round(value * 10) / 10;
     if (Math.abs(tenth) < 10 && !Number.isInteger(tenth)) return `${tenth.toFixed(1)}%`;
-    return `${Math.round(value)}%`;
+    return `${grouped.format(Math.round(value))}%`;
   }
   if (name === "p95" || name.endsWith("Ms")) {
     // One decimal only for a half (25.5 ms), so a cache hit doesn't read as 26 ms; everything else is whole.

@@ -49,7 +49,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region", "url-shortener"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region", "design-method", "url-shortener"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -168,7 +168,10 @@ describe("content", () => {
 
   it("lists lesson 32, Turn a long link into seven characters", () => {
     expect(lessonSummaries("system-design")[31]).toMatchObject({ id: "url-shortener", module: "Case studies: the method and the classics", order: 32, available: true, title: "Turn a long link into seven characters" });
-    expect(lessonSummaries("system-design")[30]).toMatchObject({ id: "design-method", order: 31, available: false });
+  });
+
+  it("lists lesson 31, Forty-five minutes, one whiteboard", () => {
+    expect(lessonSummaries("system-design")[30]).toMatchObject({ id: "design-method", module: "Case studies: the method and the classics", order: 31, available: true, title: "Forty-five minutes, one whiteboard" });
   });
 
   it("lists the CDN lesson as written and in order", () => {

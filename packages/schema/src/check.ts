@@ -72,6 +72,7 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
     if (lesson.scene.kind === "board" && !board) problems.push(`${id}: scene kind board needs scene.board`);
     if (board) {
       for (const [fid, f] of Object.entries(board.flows)) {
+        if (f.from !== undefined && !(f.from in nodes)) problems.push(`${id}: board flow ${fid} starts at unknown node ${f.from}`);
         for (const hop of f.path) {
           if (!(hop.wire in lesson.scene.wires)) problems.push(`${id}: board flow ${fid} uses unknown wire ${hop.wire}`);
           if (!(hop.at in nodes)) problems.push(`${id}: board flow ${fid} reaches unknown node ${hop.at}`);

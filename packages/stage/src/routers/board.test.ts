@@ -69,4 +69,11 @@ describe("board router", () => {
     expect(replies(sim, true)).toBe(spawns(sim));
     expect(sim.packets).toHaveLength(0);
   });
+  it("replies at the flow's start node", () => {
+    const batch: BoardFlow = { from: "app", path: [{ wire: "a_d", dir: 1, at: "db" }], color: "violet", back: "green" };
+    const sim = run({ flows: () => [{ id: "batch", flow: batch, weight: 1 }] }, 5);
+    const at = sim.events.filter((e) => e.kind === "reply").map((e) => e.node);
+    expect(at.length).toBeGreaterThan(10);
+    expect(new Set(at)).toEqual(new Set(["app"]));
+  });
 });

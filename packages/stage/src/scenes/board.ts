@@ -86,7 +86,7 @@ export function createBoardScene(o: { fx: Effects; rand: () => number; scene: Sc
 
     onEvent(e: SimEvent, ctx) {
       ctxRef = ctx;
-      if (e.kind === "reply") pings.users = 1;
+      if (e.kind === "reply") pings[e.node] = 1;
       if (e.kind !== "pass" && e.kind !== "miss") return;
       pings[e.node] = 1;
       if (e.kind !== "pass") return;

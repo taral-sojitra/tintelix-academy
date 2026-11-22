@@ -19,6 +19,8 @@ export function testCond(c: Cond, outputs: Outputs): boolean {
 
 /** One kind of request: the wires it travels, the node each wire reaches, and how it ends. */
 export const BoardFlow = z.object({
+  /** The node the flow starts from, where it replies when it comes back; users when left out. */
+  from: z.string().optional(),
   path: z.array(z.object({ wire: z.string(), dir: z.union([z.literal(1), z.literal(-1)]), at: z.string() })).min(1),
   color: Hue,
   /** Colour on the way back to the start; without it the request stops at its last node. */
