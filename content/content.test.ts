@@ -6,7 +6,7 @@ describe("content", () => {
     expect(checkContent({ subjects, lessons, components })).toEqual([]);
   });
 
-  it("lists 30 System Design lessons in 8 modules, opening with Measuring systems and closing with Staying up", () => {
+  it("lists 59 System Design lessons in 13 modules: eight of concepts, then five of case studies", () => {
     const sd = subjects.find((s) => s.id === "system-design")!;
     expect(sd.modules.map((m) => m.title)).toEqual([
       "Measuring systems",
@@ -17,8 +17,14 @@ describe("content", () => {
       "Messaging and reliability",
       "Services",
       "Staying up",
+      "Case studies: the method and the classics",
+      "Case studies: social and real time",
+      "Case studies: media and files",
+      "Case studies: data pipelines",
+      "Case studies: money and orders",
     ]);
-    expect(sd.modules.flatMap((m) => m.lessons)).toHaveLength(30);
+    expect(sd.modules.flatMap((m) => m.lessons)).toHaveLength(59);
+    expect(sd.modules[8]!.lessons.slice(0, 2).map((l) => l.id)).toEqual(["design-method", "url-shortener"]);
   });
 
   it("only builds on lessons that come earlier", () => {
@@ -43,7 +49,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region", "url-shortener"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -158,6 +164,11 @@ describe("content", () => {
 
   it("lists lesson 30, A whole region goes dark", () => {
     expect(lessonSummaries("system-design")[29]).toMatchObject({ id: "multi-region", order: 30, available: true, title: "A whole region goes dark" });
+  });
+
+  it("lists lesson 32, Turn a long link into seven characters", () => {
+    expect(lessonSummaries("system-design")[31]).toMatchObject({ id: "url-shortener", module: "Case studies: the method and the classics", order: 32, available: true, title: "Turn a long link into seven characters" });
+    expect(lessonSummaries("system-design")[30]).toMatchObject({ id: "design-method", order: 31, available: false });
   });
 
   it("lists the CDN lesson as written and in order", () => {

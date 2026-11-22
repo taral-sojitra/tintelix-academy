@@ -1,12 +1,13 @@
 import { z } from "zod";
 import type { Model } from "./model";
+import { Board } from "./board";
 import { SubjectId } from "./subject";
 
 const Point = z.tuple([z.number(), z.number()]);
 const Rect = z.object({ x: z.number(), y: z.number(), w: z.number().positive(), h: z.number().positive() });
 
 /** Each kind of diagram the stage can play. A lesson's scene names one. */
-export const SCENE_KINDS = ["cache-aside", "cdn", "latency", "queue", "chain", "estimate", "scale", "balance", "proxy", "health", "session", "data", "index", "repl", "shard", "ring", "bloom", "upload", "cap", "timeline", "txn", "mq", "idem", "limit", "fanout", "gateway", "micro", "retry", "leader", "region"] as const;
+export const SCENE_KINDS = ["cache-aside", "cdn", "latency", "queue", "chain", "estimate", "scale", "balance", "proxy", "health", "session", "data", "index", "repl", "shard", "ring", "bloom", "upload", "cap", "timeline", "txn", "mq", "idem", "limit", "fanout", "gateway", "micro", "retry", "leader", "region", "board"] as const;
 export type SceneKind = (typeof SCENE_KINDS)[number];
 
 /** The `sim.mode` values each scene kind understands. */
@@ -41,6 +42,7 @@ export const SCENE_MODES: Record<SceneKind, readonly string[]> = {
   retry: ["none", "steady"],
   leader: ["none", "steady"],
   region: ["none", "steady"],
+  board: ["none", "steady"],
 };
 
 export const SceneNode = Rect.extend({
@@ -71,6 +73,8 @@ export const SceneSpec = z.object({
       straight: z.boolean().optional(),
     }),
   ),
+  /** A case study's design board (scene kind "board"): flows, modes, widgets and tiles as data. */
+  board: Board.optional(),
 });
 export type SceneSpec = z.infer<typeof SceneSpec>;
 
