@@ -1413,19 +1413,42 @@ async def payment_flow(page):
     return "Payment lesson: 694 payments a second at peak; charge-then-record makes 2,000 double charges a day (5 timeouts in 10,000: 10,000); intent first makes 0; a balanced double-entry ledger"
 
 
+async def wallet_flow(page):
+    await page.goto(BASE + "/system-design/digital-wallet", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Move money between wallets safely")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("50,000/s")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("One machine can't move it all")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("1,000%", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Shard by wallet, transfer as a saga")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("50%", timeout=8000)
+    shards = page.locator("section.try", has=page.locator("#ctl-shards"))
+    await set_range(page, "#ctl-shards", 40)
+    await expect(shards.locator(".try-readout")).to_contain_text("25%")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Keep the events, derive the balance")
+    await expect(page.locator("[data-node='log'] .tx-ev-cap")).to_contain_text("balance")
+    return "Wallet lesson: 50,000 transfers a second; one database is 1,000% busy; 20 shards are 50% busy (40: 25%); balances replayed from the event log"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("59 lessons in 13 modules · 57 open now")).to_be_visible()
+    await expect(page.get_by_text("59 lessons in 13 modules · 58 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("57 of 59 open")).to_be_visible()
-    return "System Design lists 59 lessons in 13 modules, 57 open"
+    await expect(page.get_by_text("58 of 59 open")).to_be_visible()
+    return "System Design lists 59 lessons in 13 modules, 58 open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

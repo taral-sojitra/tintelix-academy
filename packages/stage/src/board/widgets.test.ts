@@ -178,6 +178,22 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("eventlog widget appends a wallet's events and derives the balance by replaying them", () => {
+    const w: BoardWidget = { kind: "custom", name: "eventlog" };
+    const root = mount(w, {}, 0.5);
+    const shown = () => [...root.querySelectorAll<HTMLElement>(".tx-ev-row")].filter((r) => !r.hidden);
+    const caption = () => root.querySelector(".tx-ev-cap")!.textContent;
+    expect(shown().map((r) => [r.querySelector("em")!.textContent, r.querySelector("b")!.textContent])).toEqual([["#1 top-up", "+5,000"]]);
+    expect(caption()).toBe("balance ₹5,000, replayed from 1 event");
+    paintWidget(root, w, {}, 3.5);
+    expect(shown()).toHaveLength(4);
+    expect(shown()[1]!.querySelector("b")!.textContent).toBe("−1,200");
+    expect(shown()[1]!.classList.contains("out")).toBe(true);
+    expect(caption()).toBe("balance ₹3,650, replayed from 4 events");
+    paintWidget(root, w, {}, 5.2);
+    expect(shown()).toHaveLength(1);
+  });
+
   it("ledger widget writes every movement as a debit and a credit that always balance", () => {
     const w: BoardWidget = { kind: "custom", name: "ledger" };
     const root = mount(w, {}, 0.5);

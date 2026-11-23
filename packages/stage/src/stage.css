@@ -671,3 +671,12 @@
 .tx-dbl-row span { font-family: var(--mono); font-size: 10.5px; color: var(--violet); }
 .tx-dbl-row:nth-of-type(even) { border-top: 1px solid var(--node-stroke); }
 .tx-dbl-cap { margin: 4px 0 0; font-family: var(--mono); color: var(--green); }
+
+/* Digital wallet: an append-only event log and the balance replayed from it. */
+.tx-ev { margin-top: 6px; display: grid; gap: 3px; }
+.tx-ev-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 1px 6px; border-left: 2px solid var(--violet); }
+.tx-ev-row[hidden] { display: none; }
+.tx-ev-row em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-ink); }
+.tx-ev-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--green); }
+.tx-ev-row.out b { color: var(--amber); }
+.tx-ev-cap { margin: 4px 0 0; font-family: var(--mono); color: var(--cyan); }

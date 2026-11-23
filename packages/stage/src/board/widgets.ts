@@ -8,6 +8,10 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** One wallet's events in rupees, one more appearing each second of a 5 s cycle. */
+const EV_EVENTS: [string, number][] = [["top-up", 5000], ["to Ravi", -1200], ["from Dev", 300], ["to Meera", -450]];
+const EV_CYCLE_SEC = 5;
+
 /** Three money movements, each a debit and a credit in rupees, one more appearing each second of a 4 s cycle. */
 const DBL_ENTRIES: [string, number, number][][] = [
   [["card network", 2499, 0], ["merchant owed", 0, 2499]],
@@ -138,6 +142,31 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** Event sourcing: a wallet's balance isn't stored, it's the sum of its events, replayed in order. */
+  eventlog: {
+    html: (key) =>
+      `<div class="tx-ev" data-w="${key}">${EV_EVENTS.map(() => `<div class="tx-ev-row"><em></em><b></b></div>`).join("")}<p class="tx-calc-s tx-ev-cap"></p></div>`,
+    paint(root, _d, clock) {
+      const visible = Math.min(EV_EVENTS.length, Math.floor(Math.max(0, clock) % EV_CYCLE_SEC) + 1);
+      let balance = 0;
+      root.querySelectorAll<HTMLElement>(".tx-ev-row").forEach((row, n) => {
+        const [what, amount] = EV_EVENTS[n]!;
+        const on = n < visible;
+        row.hidden = !on;
+        if (on) balance += amount;
+        row.classList.toggle("out", amount < 0);
+        const name = `#${n + 1} ${what}`;
+        const value = `${amount < 0 ? "−" : "+"}${group(Math.abs(amount))}`;
+        const em = row.querySelector("em")!;
+        if (em.textContent !== name) em.textContent = name;
+        const b = row.querySelector("b")!;
+        if (b.textContent !== value) b.textContent = value;
+      });
+      const text = `balance ₹${group(balance)}, replayed from ${visible} event${visible === 1 ? "" : "s"}`;
+      const cap = root.querySelector(".tx-ev-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** A double-entry ledger: every movement is a debit on one account and an equal credit on another, so the totals always match. */
   ledger: {
     html: (key) =>
