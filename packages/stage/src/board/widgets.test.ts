@@ -178,6 +178,29 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("partitions widget appends to four logs and shows each group's committed offset", () => {
+    const w: BoardWidget = { kind: "custom", name: "partitions" };
+    const root = mount(w, { groups: 2 }, 0);
+    const row = (r: number) => root.querySelectorAll<HTMLElement>(".tx-pt-row")[r]!;
+    const cells = (r: number) => [...row(r).querySelectorAll("i")];
+    const written = (r: number) => cells(r).filter((c) => c.classList.contains("on")).length;
+    const at = (r: number, cls: string) => cells(r).findIndex((c) => c.classList.contains(cls));
+    expect(root.querySelectorAll(".tx-pt-row")).toHaveLength(4);
+    expect(cells(0)).toHaveLength(14);
+    expect(row(0).querySelector("em")!.textContent).toBe("P0");
+    expect(written(0)).toBe(4);
+    expect(at(0, "ga")).toBe(2);
+    expect(at(0, "gb")).toBe(0);
+    paintWidget(root, w, { groups: 2 }, 3);
+    expect(written(0)).toBe(10);
+    expect(at(0, "ga")).toBe(8);
+    expect(at(0, "gb")).toBe(3);
+    expect(root.querySelector(".tx-pt-cap")!.textContent).toBe("● billing · ● analytics, replaying");
+    paintWidget(root, w, { groups: 1 }, 3);
+    expect(at(0, "gb")).toBe(-1);
+    expect(root.querySelector(".tx-pt-cap")!.textContent).toBe("a reader's committed offset ●");
+  });
+
   it("erasure widget loses disks one by one: one copy is gone, three copies keep one, 10 + 4 keeps ten", () => {
     const w: BoardWidget = { kind: "custom", name: "erasure" };
     const ec = { pieces: 14, dataPieces: 10, tolerance: 4, erasure: 1 };

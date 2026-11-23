@@ -8,6 +8,14 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Four partitions of a topic, 14 offsets each, filling at 2 records a second over a 6 s cycle; each starts at its own offset. */
+const PT_BASES = [3, 2, 4, 1];
+const PT_CELLS = 14;
+const PT_CYCLE_SEC = 6;
+const PT_PER_SEC = 2;
+/** How far the second group (replaying older records) trails the head. */
+const PT_LAG = 6;
+
 /** Disks holding one object's copies or pieces (up to 18); one more disk dies each second of a 5 s cycle, up to what the scheme survives. */
 const EC_SLOTS = 18;
 const EC_CYCLE_SEC = 5;
@@ -75,6 +83,33 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A topic's partitions as append-only logs: records written so far, and where each consumer group has committed. */
+  partitions: {
+    html: (key) =>
+      `<div class="tx-pt" data-w="${key}">${PT_BASES.map((_, r) => `<div class="tx-pt-row"><em>P${r}</em><span>${"<i></i>".repeat(PT_CELLS)}</span></div>`).join("")}<p class="tx-calc-s tx-pt-cap"></p></div>`,
+    paint(root, d, clock) {
+      const t = Math.max(0, clock) % PT_CYCLE_SEC;
+      const two = (d.groups ?? 1) >= 2;
+      root.querySelectorAll<HTMLElement>(".tx-pt-row").forEach((row, r) => {
+        const head = Math.min(PT_CELLS - 1, PT_BASES[r]! + Math.floor(t * PT_PER_SEC));
+        const ga = head - 1;
+        const gb = two ? Math.max(0, head - PT_LAG) : -1;
+        row.querySelectorAll("i").forEach((cell, n) => {
+          cell.classList.toggle("on", n <= head);
+          cell.classList.toggle("ga", n === ga);
+          cell.classList.toggle("gb", n === gb);
+        });
+      });
+      const key = two ? "two" : "one";
+      const cap = root.querySelector<HTMLElement>(".tx-pt-cap")!;
+      if (cap.dataset.k !== key) {
+        cap.dataset.k = key;
+        cap.innerHTML = two
+          ? '<span class="a">●</span> billing · <span class="b">●</span> analytics, replaying'
+          : 'a reader\'s committed offset <span class="a">●</span>';
+      }
+    },
+  },
   /** One object on separate disks (one copy, three copies, or data + parity pieces) as disks die one by one. */
   erasure: {
     html: (key) => `<div class="tx-ec" data-w="${key}"><div class="tx-ec-disks">${"<i></i>".repeat(EC_SLOTS)}</div><p class="tx-calc-s tx-ec-cap"></p></div>`,
