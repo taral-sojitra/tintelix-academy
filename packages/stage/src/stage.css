@@ -638,3 +638,14 @@
 .tx-zs-row.me { background: color-mix(in srgb, var(--green) 16%, transparent); }
 .tx-zs-row.me em, .tx-zs-row.me span { color: var(--green); }
 .tx-zs-cap { margin: 2px 0 0; font-family: var(--mono); }
+
+/* RAG: the retrieval funnel from every passage to one answer. */
+.tx-fun { margin-top: 6px; display: grid; gap: 5px; }
+.tx-fun-row { display: grid; grid-template-columns: 86px 1fr 70px; align-items: center; gap: 8px; opacity: .45; transition: opacity .25s; }
+.tx-fun-row.on { opacity: 1; }
+.tx-fun-row em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-fun-row span { display: flex; justify-content: center; }
+.tx-fun-row span i { display: block; height: 10px; border-radius: 3px; background: var(--violet); }
+.tx-fun-row:last-of-type span i { background: var(--green); }
+.tx-fun-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--node-ink); text-align: right; }
+.tx-fun-cap { margin: 2px 0 0; font-family: var(--mono); }

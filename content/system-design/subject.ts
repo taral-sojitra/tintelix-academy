@@ -122,7 +122,7 @@ export const systemDesign: Subject = {
         l("metrics-alerting", "Design metrics monitoring and alerting", "Collect millions of numbers a second, roll them up over time, and alert before users notice.", ["latency-percentiles", "availability", "health-checks"], "Spot the outage before users do"),
         l("click-aggregation", "Design ad click aggregation (analytics)", "Count every ad click once, in windows of time, even when events arrive late or twice.", ["message-queues", "idempotency", "message-queue-design"], "Count every click exactly once"),
         l("leaderboard", "Design a real-time leaderboard", "Rank millions of players live with a sorted set, and show anyone their place in a blink.", ["caching", "sharding"], "Rank ten million players live"),
-        l("rag-serving", "Design a RAG and model-serving system", "Find the right passages in your own documents and hand them to a model that answers in seconds.", ["caching", "message-queues", "api-gateway"]),
+        l("rag-serving", "Design a RAG and model-serving system", "Find the right passages in your own documents and hand them to a model that answers in seconds.", ["caching", "message-queues", "api-gateway"], "Answer from your own documents"),
       ],
     },
     {
