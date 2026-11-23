@@ -490,3 +490,10 @@
 .tx-nwr-row[data-q="write"] i.on { background: color-mix(in srgb, var(--green) 60%, transparent); }
 .tx-nwr-row[data-q="read"] i.on { background: color-mix(in srgb, var(--violet) 55%, transparent); }
 .tx-nwr-row i.down { background: color-mix(in srgb, var(--red) 25%, transparent); border-color: var(--red); }
+.tx-hq { margin-top: 8px; display: grid; gap: 5px; }
+.tx-hq-row { display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: 8px; }
+.tx-hq-row em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-hq-row span { display: flex; gap: 3px; }
+.tx-hq-row i { width: 10px; height: 12px; border-radius: 2px; border: 1px solid var(--node-stroke); }
+.tx-hq-row i.on { background: color-mix(in srgb, var(--cyan) 55%, transparent); }
+.tx-hq-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); text-align: right; white-space: nowrap; }
