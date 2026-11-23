@@ -605,3 +605,11 @@
 .tx-pt-cap { margin: 2px 0 0; font-family: var(--mono); }
 .tx-pt-cap span.a { color: var(--green); }
 .tx-pt-cap span.b { color: var(--violet); }
+
+/* Metrics: one series' history, raw or rolled up into coarser points. */
+.tx-rup { margin-top: 6px; display: grid; gap: 6px; }
+.tx-rup-bars { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; align-items: end; height: 46px; border-bottom: 1px solid var(--node-stroke); }
+.tx-rup-bars i { background: var(--cyan); border-radius: 1px 1px 0 0; transition: height .3s; }
+.tx-rup-bars i.mn { background: var(--violet); }
+.tx-rup-bars i.hr { background: var(--amber); }
+.tx-rup-cap { margin: 0; font-family: var(--mono); }
