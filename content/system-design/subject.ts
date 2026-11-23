@@ -98,7 +98,7 @@ export const systemDesign: Subject = {
       title: "Case studies: social and real time",
       lessons: [
         l("notification-service", "Design a notification service", "Send push, SMS and email to millions through queues, without losing one or sending it twice.", ["message-queues", "idempotency", "rate-limiting", "retries-and-circuit-breakers"], "A million alerts, none sent twice"),
-        l("photo-feed", "Design a photo feed (news feed)", "Build each person's home feed fast by mixing posts pushed ahead of time with posts pulled on read.", ["caching", "object-storage", "fan-out"]),
+        l("photo-feed", "Design a photo feed (news feed)", "Build each person's home feed fast by mixing posts pushed ahead of time with posts pulled on read.", ["caching", "object-storage", "fan-out"], "Fill the home feed in a blink"),
         l("chat-app", "Design a chat app (one-to-one, groups, channels)", "Keep millions of connections open and deliver every message once, in order, with read receipts.", ["health-checks", "message-queues", "fan-out", "unique-ids"]),
         l("proximity-service", "Design a proximity service", "Find the places within a few kilometres of a user by cutting the map into cells.", ["caching", "indexing", "replication"]),
         l("nearby-friends", "Design nearby friends", "Show which friends are close right now as millions of phones report where they are.", ["fan-out", "chat-app", "proximity-service"]),
