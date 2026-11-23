@@ -8,6 +8,25 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Three minutes of clicks as [click time, arrival time] in seconds after 12:00, played 20× fast over a 10 s cycle. One phone was offline. */
+const WM_EVENTS: [number, number][] = [
+  [5, 7], [18, 21], [33, 36], [47, 50], [58, 63], [66, 68], [79, 83], [92, 95], [104, 107], [40, 125], [131, 134], [150, 152], [167, 170],
+];
+const WM_SPAN = 180;
+const WM_SPEEDUP = 20;
+const WM_CYCLE_SEC = 10;
+
+/** When each one-minute window closes: the first arrival that pushes the watermark past its end. */
+const wmCloseTimes = (slack: number) =>
+  [60, 120, 180].map((end) => {
+    let latest = -Infinity;
+    for (const [at, arrive] of [...WM_EVENTS].sort((a, b) => a[1] - b[1])) {
+      latest = Math.max(latest, at);
+      if (latest - slack >= end) return arrive;
+    }
+    return Infinity;
+  });
+
 /** One metric over time as 24 bars, oldest first. Rolled up: the oldest 12 average in fours (1 h), the next 8 in pairs (1 min), the last 4 stay raw. */
 const RUP_HEIGHTS = Array.from({ length: 24 }, (_, n) => Math.round(42 + 22 * Math.sin(n * 0.9) + 12 * Math.sin(n * 0.37 + 1)));
 const rupGroup = (n: number): [number, number, string] => (n < 12 ? [n - (n % 4), 4, "hr"] : n < 20 ? [n - (n % 2), 2, "mn"] : [n, 1, ""]);
@@ -87,6 +106,40 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** Clicks placed by when they happened, minute windows that close once the watermark passes, and a click too late to count. */
+  watermark: {
+    html: (key) =>
+      `<div class="tx-wm" data-w="${key}"><div class="tx-wm-axis">${["12:00", "12:01", "12:02"].map((t) => `<div class="tx-wm-win"><em>${t}</em><b></b></div>`).join("")}${WM_EVENTS.map(([at]) => `<i style="left:${+((at / WM_SPAN) * 100).toFixed(1)}%"></i>`).join("")}<s class="tx-wm-line"></s></div><p class="tx-calc-s tx-wm-cap"></p></div>`,
+    paint(root, d, clock) {
+      const slack = Math.max(0, d.slackSec ?? 30);
+      const now = Math.min(WM_SPAN, (Math.max(0, clock) % WM_CYCLE_SEC) * WM_SPEEDUP);
+      const closes = wmCloseTimes(slack);
+      const seen = WM_EVENTS.filter(([, arrive]) => arrive <= now);
+      const watermark = Math.max(0, Math.max(-Infinity, ...seen.map(([at]) => at)) - slack);
+      const line = root.querySelector<HTMLElement>(".tx-wm-line")!;
+      const left = `${+((Math.min(WM_SPAN, watermark) / WM_SPAN) * 100).toFixed(1)}%`;
+      if (line.style.left !== left) line.style.left = left;
+      let late = 0;
+      root.querySelectorAll<HTMLElement>(".tx-wm-axis i").forEach((dot, n) => {
+        const [at, arrive] = WM_EVENTS[n]!;
+        dot.hidden = arrive > now;
+        const tooLate = arrive <= now && arrive > closes[Math.floor(at / 60)]!;
+        if (tooLate) late++;
+        dot.className = tooLate ? "late" : "";
+      });
+      root.querySelectorAll<HTMLElement>(".tx-wm-win").forEach((win, w) => {
+        const closed = closes[w]! <= now;
+        win.classList.toggle("closed", closed);
+        const count = WM_EVENTS.filter(([at, arrive]) => Math.floor(at / 60) === w && arrive <= closes[w]!).length;
+        const text = closed ? String(count) : "open";
+        const b = win.querySelector("b")!;
+        if (b.textContent !== text) b.textContent = text;
+      });
+      const text = late > 0 ? `${late} too late → correction path` : `watermark = latest click − ${Math.round(slack)} s`;
+      const cap = root.querySelector(".tx-wm-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** One metric's history: every raw point, or older points averaged into coarser rollups. */
   rollup: {
     html: (key) => `<div class="tx-rup" data-w="${key}"><div class="tx-rup-bars">${"<i></i>".repeat(RUP_HEIGHTS.length)}</div><p class="tx-calc-s tx-rup-cap"></p></div>`,

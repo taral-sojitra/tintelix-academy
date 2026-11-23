@@ -178,6 +178,31 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("watermark widget closes minute windows once the watermark passes, and sends a too-late click aside", () => {
+    const w: BoardWidget = { kind: "custom", name: "watermark" };
+    const d = { slackSec: 30 };
+    const root = mount(w, d, 0);
+    const dots = () => [...root.querySelectorAll<HTMLElement>(".tx-wm-axis i")].filter((i) => !i.hidden);
+    const wins = () => [...root.querySelectorAll(".tx-wm-win")].map((x) => [x.querySelector("em")!.textContent, x.querySelector("b")!.textContent, x.classList.contains("closed")]);
+    const caption = () => root.querySelector(".tx-wm-cap")!.textContent;
+    expect(dots()).toHaveLength(0);
+    expect(wins()).toEqual([["12:00", "open", false], ["12:01", "open", false], ["12:02", "open", false]]);
+    expect(root.querySelector<HTMLElement>(".tx-wm-line")!.style.left).toBe("0%");
+    paintWidget(root, w, d, 5);
+    expect(dots()).toHaveLength(8);
+    expect(wins()[0]).toEqual(["12:00", "5", true]);
+    expect(wins()[1]![2]).toBe(false);
+    expect(root.querySelector<HTMLElement>(".tx-wm-line")!.style.left).toBe("34.4%");
+    expect(caption()).toBe("watermark = latest click − 30 s");
+    paintWidget(root, w, d, 6.5);
+    expect(root.querySelectorAll(".tx-wm-axis i.late")).toHaveLength(1);
+    expect(wins()[0]![1]).toBe("5");
+    expect(caption()).toBe("1 too late → correction path");
+    paintWidget(root, w, { slackSec: 120 }, 6.5);
+    expect(root.querySelectorAll(".tx-wm-axis i.late")).toHaveLength(0);
+    expect(wins()[0]).toEqual(["12:00", "open", false]);
+  });
+
   it("rollup widget keeps recent points raw and averages older ones into 1-minute and 1-hour points", () => {
     const w: BoardWidget = { kind: "custom", name: "rollup" };
     const root = mount(w, { rollups: 0 }, 0);
