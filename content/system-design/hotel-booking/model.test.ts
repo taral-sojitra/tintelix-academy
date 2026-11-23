@@ -12,6 +12,8 @@ describe("hotel booking model (book chapter 134's numbers)", () => {
     expect(show({}, "searchAvg")).toBe("231");
     expect(show({}, "searchPeak")).toBe("926");
     expect(show({}, "bookPeak")).toBe("19");
+    expect(show({}, "conversionPct")).toBe("2%");
+    expect(show({}, "searchCacheHitPct")).toBe("95%");
   });
 
   it("check-then-insert sells rooms twice once bookings race", () => {
@@ -34,7 +36,7 @@ describe("hotel booking model (book chapter 134's numbers)", () => {
   });
 
   it("guards against nonsense inputs", () => {
-    const out = run({ properties: -1, conversion: 0, checkoutPct: 0, holdMin: Number.NaN });
+    const out = run({ properties: -1, conversionPct: 0, checkoutPct: 0, holdMin: Number.NaN });
     for (const v of Object.values(out)) expect(Number.isFinite(v)).toBe(true);
   });
 });
