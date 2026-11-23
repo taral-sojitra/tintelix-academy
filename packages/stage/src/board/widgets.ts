@@ -8,6 +8,10 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** The geohash picture shows an 8 km square drawn 150 px wide. */
+const GEO_KM = 8;
+const GEO_PX = 150;
+
 /** Sample contacts: name and seconds since last seen (null = online now). */
 const PRESENCE: [string, number | null][] = [["Ravi", null], ["Meera", null], ["Dev", 180], ["Kiran", 3700]];
 
@@ -32,6 +36,31 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** An 8 km square of map: geohash cells at the chosen length, the block of cells read, and the search circle. */
+  geogrid: {
+    html: (key) =>
+      `<div class="tx-geo" data-w="${key}"><div class="tx-geo-map"><div class="tx-geo-read"></div><div class="tx-geo-ring"></div><i class="tx-geo-dot"></i></div><p class="tx-calc-s"></p></div>`,
+    paint(root, d) {
+      const px = (km: number) => (GEO_PX * km) / GEO_KM;
+      const cw = px(d.cellW ?? 1);
+      const ch = px(d.cellH ?? 1);
+      const nx = Math.round(d.cellsX ?? 3);
+      const ny = Math.round(d.cellsY ?? 3);
+      const set = (el: HTMLElement, prop: "width" | "height" | "backgroundSize", v: string) => {
+        if (el.style[prop] !== v) el.style[prop] = v;
+      };
+      const map = root.querySelector<HTMLElement>(".tx-geo-map")!;
+      set(map, "backgroundSize", `${+cw.toFixed(1)}px ${+ch.toFixed(1)}px`);
+      const read = root.querySelector<HTMLElement>(".tx-geo-read")!;
+      set(read, "width", `${+Math.min(GEO_PX, nx * cw).toFixed(1)}px`);
+      set(read, "height", `${+Math.min(GEO_PX, ny * ch).toFixed(1)}px`);
+      const ring = root.querySelector<HTMLElement>(".tx-geo-ring")!;
+      const dia = `${+px(2 * (d.radiusKm ?? 2)).toFixed(1)}px`;
+      set(ring, "width", dia);
+      set(ring, "height", dia);
+      root.querySelector(".tx-calc-s")!.textContent = `length ${Math.round(d.geoLen ?? 6)}: ${nx} × ${ny} = ${group(nx * ny)} cells read`;
+    },
+  },
   /** A contact list: who is online now, and how long ago the others were last seen (counting up). */
   presence: {
     html: (key) =>
