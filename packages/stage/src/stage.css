@@ -548,3 +548,13 @@
 .tx-disp-row.mine i { background: var(--green); border-color: var(--green); }
 .tx-disp-row.mine b { color: var(--green); }
 .tx-disp-row.clash i { box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 45%, transparent); }
+
+/* Maps and navigation: a route search on a small road graph. */
+.tx-rg { margin-top: 6px; display: grid; gap: 6px; }
+.tx-rg-map { display: grid; grid-template-columns: repeat(14, 1fr); gap: 5px 0; justify-items: center; padding: 6px 4px;
+  background-image: linear-gradient(var(--node-stroke) 1px, transparent 1px); background-size: 100% 20%; background-position: 0 50%; }
+.tx-rg-map i { width: 7px; height: 7px; border-radius: 50%; background: var(--node-stroke); transition: background .2s; }
+.tx-rg-map i.lit { background: var(--amber); }
+.tx-rg.fast .tx-rg-map i.lit { background: var(--green); }
+.tx-rg-map i.start, .tx-rg-map i.goal { outline: 2px solid var(--node-ink); outline-offset: 1px; }
+.tx-rg-cap { margin: 0; font-family: var(--mono); }

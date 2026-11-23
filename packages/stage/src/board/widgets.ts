@@ -8,6 +8,17 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** A small road graph: a grid of intersections, home at the left, the destination at the right. A search plays 3 s, then holds 1 s. */
+const RG_COLS = 14;
+const RG_ROWS = 5;
+const RG_START: [number, number] = [0, 2];
+const RG_GOAL: [number, number] = [13, 2];
+const RG_GROW_SEC = 3;
+const RG_CYCLE_SEC = 4;
+const rgDist = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+/** With shortcuts: local streets around each end, plus every third intersection along the highway between. */
+const rgShortcut = (p: [number, number]) => rgDist(p, RG_START) <= 1.5 || rgDist(p, RG_GOAL) <= 1.5 || (p[1] === RG_START[1] && p[0] % 3 === 0);
+
 /** Free drivers near the rider, best first: driver number and minutes away. One phase of the match plays every 1.5 s. */
 const DISPATCH: [string, number][] = [["37", 2], ["51", 3], ["8", 5]];
 const DISPATCH_PHASE_SEC = 1.5;
@@ -44,6 +55,31 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A route search on a small road graph: without shortcuts it spreads in a circle from home; with them it hops along the highway. */
+  roadgraph: {
+    html: (key) => {
+      const dots = Array.from({ length: RG_COLS * RG_ROWS }, (_, n) => {
+        const p: [number, number] = [n % RG_COLS, Math.floor(n / RG_COLS)];
+        const cls = rgDist(p, RG_START) === 0 ? "start" : rgDist(p, RG_GOAL) === 0 ? "goal" : "";
+        return `<i${cls ? ` class="${cls}"` : ""}></i>`;
+      }).join("");
+      return `<div class="tx-rg" data-w="${key}"><div class="tx-rg-map">${dots}</div><p class="tx-calc-s tx-rg-cap"></p></div>`;
+    },
+    paint(root, d, clock) {
+      const fast = (d.shortcuts ?? 0) > 0;
+      const t = Math.min(1, (Math.max(0, clock) % RG_CYCLE_SEC) / RG_GROW_SEC);
+      const reach = t * (RG_COLS - 1);
+      root.classList.toggle("fast", fast);
+      root.querySelectorAll<HTMLElement>(".tx-rg-map i").forEach((dot, n) => {
+        const p: [number, number] = [n % RG_COLS, Math.floor(n / RG_COLS)];
+        const on = fast ? rgShortcut(p) && p[0] <= reach : rgDist(p, RG_START) <= reach;
+        dot.classList.toggle("lit", on);
+      });
+      const text = `${fast ? "shortcuts" : "every road"} · ${group(d.explored ?? 0)} searched${t >= 1 ? " · found" : ""}`;
+      const cap = root.querySelector(".tx-rg-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** One match: rank nearby free drivers, claim the best, then offer; with a race on, a second rider's claim on the same driver fails. */
   dispatch: {
     html: (key) =>
