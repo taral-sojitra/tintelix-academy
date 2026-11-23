@@ -8,7 +8,7 @@ export const hotelSteps: Step[] = [
     short: "The ask",
     text: [
       "Guests search rooms by place, dates and party size, hold one while they pay, then confirm, change or cancel. Search may be a few seconds stale and prices may drift; one thing may never happen: the same room given to two guests for overlapping nights.",
-      "{properties} properties of {roomsPer} rooms is **{roomsM} million** rooms. {searchesPerDay} searches a day with {conversion} becoming bookings is **{bookingsPerDay}** bookings, about {bookAvg} a second. At peak: **{searchPeak}** searches and **{bookPeak}** bookings a second.",
+      "{properties} properties of {roomsPer} rooms is **{roomsM} million** rooms. {searchesPerDay} searches a day with {conversionPct} becoming bookings is **{bookingsPerDay}** bookings, about {bookAvg} a second. At peak: **{searchPeak}** searches and **{bookPeak}** bookings a second.",
     ],
     note: { kind: "idea", text: "Bookings are rare; correctness is everything. Searches are many; a little staleness is fine. Treat them differently." },
     sim: { mode: "none", speed: 1 },
@@ -78,7 +78,7 @@ export const hotelSteps: Step[] = [
     title: "Search fast, book carefully",
     short: "Search",
     text: [
-      "Searches outnumber bookings 50 to 1 and can be a few seconds stale, so serve them from an availability cache refreshed from the database: **{searchCacheHit}** come from the cache and the database sees **{searchDbReads}** search reads a second. The booking path still checks the database itself.",
+      "Searches outnumber bookings 50 to 1 and can be a few seconds stale, so serve them from an availability cache refreshed from the database: **{searchCacheHitPct}** come from the cache and the database sees **{searchDbReads}** search reads a second. The booking path still checks the database itself.",
       "Selling more rooms than exist, on purpose, is a different thing: overbooking a room type to {overbookPct}, betting on no-shows, is a pricing decision with a plan for the rare night it fails, never a race.",
     ],
     scene: { add: ["cache"] },
