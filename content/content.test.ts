@@ -49,7 +49,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region", "design-method", "url-shortener", "unique-ids", "key-value-store", "distributed-rate-limiter", "web-crawler", "search-engine", "search-autocomplete", "notification-service", "photo-feed", "chat-app", "proximity-service", "nearby-friends", "ride-hailing", "maps-navigation", "video-streaming", "file-sync", "object-store-internals", "email-service", "message-queue-design", "metrics-alerting", "click-aggregation"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region", "design-method", "url-shortener", "unique-ids", "key-value-store", "distributed-rate-limiter", "web-crawler", "search-engine", "search-autocomplete", "notification-service", "photo-feed", "chat-app", "proximity-service", "nearby-friends", "ride-hailing", "maps-navigation", "video-streaming", "file-sync", "object-store-internals", "email-service", "message-queue-design", "metrics-alerting", "click-aggregation", "leaderboard"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -168,6 +168,10 @@ describe("content", () => {
 
   it("lists lesson 32, Turn a long link into seven characters", () => {
     expect(lessonSummaries("system-design")[31]).toMatchObject({ id: "url-shortener", module: "Case studies: the method and the classics", order: 32, available: true, title: "Turn a long link into seven characters" });
+  });
+
+  it("lists lesson 53, Rank ten million players live", () => {
+    expect(lessonSummaries("system-design")[52]).toMatchObject({ id: "leaderboard", order: 53, available: true, title: "Rank ten million players live" });
   });
 
   it("lists lesson 52, Count every click exactly once", () => {

@@ -178,6 +178,27 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("sortedset widget keeps the board in score order as your score climbs past others", () => {
+    const w: BoardWidget = { kind: "custom", name: "sortedset" };
+    const d = { logSteps: 23.25 };
+    const root = mount(w, d, 0);
+    const rows = () => [...root.querySelectorAll(".tx-zs-row")].map((r) => [r.querySelector("b")!.textContent, r.querySelector("em")!.textContent, r.querySelector("span")!.textContent, r.classList.contains("me")]);
+    expect(rows()).toEqual([
+      ["#1,203", "Asha", "9,820", false],
+      ["#1,204", "Ken", "9,705", false],
+      ["#1,205", "Lola", "9,650", false],
+      ["#1,206", "Omar", "9,580", false],
+      ["#1,207", "Priya", "9,555", false],
+      ["#1,208", "you", "9,540", true],
+    ]);
+    expect(root.querySelector(".tx-zs-cap")!.textContent).toBe("your rank found in 23 steps");
+    paintWidget(root, w, d, 3.5);
+    expect(rows()[2]).toEqual(["#1,205", "you", "9,690", true]);
+    expect(rows()[3]![1]).toBe("Lola");
+    paintWidget(root, w, d, 5.2);
+    expect(rows()[5]![1]).toBe("you");
+  });
+
   it("watermark widget closes minute windows once the watermark passes, and sends a too-late click aside", () => {
     const w: BoardWidget = { kind: "custom", name: "watermark" };
     const d = { slackSec: 30 };

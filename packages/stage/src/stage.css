@@ -628,3 +628,13 @@
 .tx-wm-axis i.late { background: var(--red); bottom: 26px; }
 .tx-wm-line { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--amber); transition: left .3s; }
 .tx-wm-cap { margin: 0; font-family: var(--mono); }
+
+/* Leaderboard: a slice of a sorted set around you. */
+.tx-zs { margin-top: 6px; display: grid; gap: 3px; }
+.tx-zs-row { display: grid; grid-template-columns: 58px 1fr auto; gap: 8px; align-items: center; padding: 1px 4px; border-radius: 3px; }
+.tx-zs-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-zs-row em { font-style: normal; font-size: 12px; color: var(--node-ink); }
+.tx-zs-row span { font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-zs-row.me { background: color-mix(in srgb, var(--green) 16%, transparent); }
+.tx-zs-row.me em, .tx-zs-row.me span { color: var(--green); }
+.tx-zs-cap { margin: 2px 0 0; font-family: var(--mono); }
