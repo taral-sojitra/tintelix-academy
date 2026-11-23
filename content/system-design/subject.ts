@@ -112,7 +112,7 @@ export const systemDesign: Subject = {
         l("video-streaming", "Design video streaming (YouTube, Netflix)", "Turn one upload into many sizes and stream it from servers close to every viewer.", ["cdn", "object-storage", "message-queues"], "Upload once, play anywhere"),
         l("file-sync", "Design cloud storage and file sync (Drive, Dropbox)", "Split files into blocks, upload only what changed, and keep every device in step.", ["object-storage", "consistency-models"], "Edit on a laptop, see it on a phone"),
         l("object-store-internals", "Design S3-like object storage", "Store a trillion objects across disks that fail every day, and lose none of them.", ["replication", "object-storage"], "Store a trillion files, lose none"),
-        l("email-service", "Design an email service", "Receive, store and search mail for a billion inboxes, and send it out without landing in spam.", ["sharding", "object-storage", "search-engine"]),
+        l("email-service", "Design an email service", "Receive, store and search mail for a billion inboxes, and send it out without landing in spam.", ["sharding", "object-storage", "search-engine"], "An inbox for a billion people"),
       ],
     },
     {
