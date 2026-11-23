@@ -178,6 +178,25 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("locking widget shows two guests racing for one room, with and without the database refusing", () => {
+    const w: BoardWidget = { kind: "custom", name: "locking" };
+    const root = mount(w, { locked: 0 }, 0.5);
+    const lanes = () => [...root.querySelectorAll(".tx-lk-row")].map((r) => [r.querySelector("em")!.textContent, r.querySelector("b")!.textContent]);
+    const caption = () => root.querySelector(".tx-lk-cap")!.textContent;
+    expect(lanes()).toEqual([["guest A", "check: room free"], ["guest B", "check: room free"]]);
+    paintWidget(root, w, { locked: 0 }, 2.5);
+    expect(lanes()).toEqual([["guest A", "commit"], ["guest B", "commit"]]);
+    paintWidget(root, w, { locked: 0 }, 3.5);
+    expect(caption()).toBe("room 412 sold twice");
+    expect(root.classList.contains("bad")).toBe(true);
+    paintWidget(root, w, { locked: 1 }, 0.5);
+    expect(lanes()).toEqual([["guest A", "lock room 412"], ["guest B", "waits for the lock"]]);
+    paintWidget(root, w, { locked: 1 }, 3.5);
+    expect(lanes()[1]![1]).toBe("check: taken → 409");
+    expect(caption()).toBe("B is offered another room");
+    expect(root.classList.contains("bad")).toBe(false);
+  });
+
   it("funnel widget narrows millions of passages to a few the model reads, stage by stage", () => {
     const w: BoardWidget = { kind: "custom", name: "funnel" };
     const d = { chunks: 6e6, annVisited: 2000, topK: 5 };

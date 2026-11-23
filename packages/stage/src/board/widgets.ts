@@ -8,6 +8,18 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Two guests booking the last room, one phase a second over 4 s: without anything refusing, and with a lock on the room. */
+const LK_NAIVE: [string[], string[], string[]] = [
+  ["check: room free", "insert", "commit", "booked"],
+  ["check: room free", "insert", "commit", "booked"],
+  ["check, then insert", "check, then insert", "check, then insert", "room 412 sold twice"],
+];
+const LK_LOCKED: [string[], string[], string[]] = [
+  ["lock room 412", "insert", "commit", "booked"],
+  ["waits for the lock", "still waiting", "gets the lock", "check: taken → 409"],
+  ["one at a time for this room", "one at a time for this room", "one at a time for this room", "B is offered another room"],
+];
+
 /** The retrieval funnel's stages and when each lights up within a 4 s cycle. */
 const FUN_STAGES = ["passages", "compared", "in the prompt", "answer"];
 const FUN_AT = [0.5, 1.2, 2, 3];
@@ -118,6 +130,25 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** Two guests racing for the last room: check-then-insert sells it twice; a lock (or a constraint) makes the second one lose cleanly. */
+  locking: {
+    html: (key) =>
+      `<div class="tx-lk" data-w="${key}">${["guest A", "guest B"].map((g) => `<div class="tx-lk-row"><em>${g}</em><b></b></div>`).join("")}<p class="tx-calc-s tx-lk-cap"></p></div>`,
+    paint(root, d, clock) {
+      const locked = (d.locked ?? 0) > 0;
+      const [a, b, cap] = locked ? LK_LOCKED : LK_NAIVE;
+      const phase = Math.floor(Math.max(0, clock) % 4);
+      root.querySelectorAll<HTMLElement>(".tx-lk-row").forEach((row, n) => {
+        const text = (n === 0 ? a : b)[phase]!;
+        const el = row.querySelector("b")!;
+        if (el.textContent !== text) el.textContent = text;
+        row.classList.toggle("wait", locked && n === 1 && phase < 2);
+      });
+      root.classList.toggle("bad", !locked && phase === 3);
+      const c = root.querySelector(".tx-lk-cap")!;
+      if (c.textContent !== cap[phase]) c.textContent = cap[phase]!;
+    },
+  },
   /** Retrieval as a funnel: every passage, the few thousand the index compares, the handful in the prompt, one answer. */
   funnel: {
     html: (key) =>

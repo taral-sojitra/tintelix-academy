@@ -50,6 +50,7 @@ import { metricsAlerting } from "./system-design/metrics-alerting/lesson";
 import { clickAggregation } from "./system-design/click-aggregation/lesson";
 import { leaderboard } from "./system-design/leaderboard/lesson";
 import { ragServing } from "./system-design/rag-serving/lesson";
+import { hotelBooking } from "./system-design/hotel-booking/lesson";
 import { replication } from "./system-design/replication/lesson";
 import { retriesAndCircuitBreakers } from "./system-design/retries-and-circuit-breakers/lesson";
 import { sharding } from "./system-design/sharding/lesson";
@@ -59,7 +60,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);
