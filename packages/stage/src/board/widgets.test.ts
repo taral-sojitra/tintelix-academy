@@ -178,6 +178,35 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("erasure widget loses disks one by one: one copy is gone, three copies keep one, 10 + 4 keeps ten", () => {
+    const w: BoardWidget = { kind: "custom", name: "erasure" };
+    const ec = { pieces: 14, dataPieces: 10, tolerance: 4, erasure: 1 };
+    const root = mount(w, ec, 0);
+    const shown = () => [...root.querySelectorAll<HTMLElement>(".tx-ec-disks i")].filter((c) => !c.hidden);
+    const dead = () => shown().filter((c) => c.classList.contains("dead")).length;
+    const caption = () => root.querySelector(".tx-ec-cap")!.textContent;
+    expect(shown()).toHaveLength(14);
+    expect(shown().filter((c) => c.classList.contains("par"))).toHaveLength(4);
+    expect(root.querySelectorAll(".tx-ec-disks i.par")).toHaveLength(4);
+    expect(dead()).toBe(0);
+    expect(caption()).toBe("10 data + 4 parity, on 14 disks");
+    paintWidget(root, w, ec, 4.5);
+    expect(dead()).toBe(4);
+    expect(caption()).toBe("10 of 14 left · any 10 rebuild it");
+    const copies = { pieces: 3, dataPieces: 1, tolerance: 2, erasure: 0 };
+    paintWidget(root, w, copies, 2.5);
+    expect(shown()).toHaveLength(3);
+    expect(dead()).toBe(2);
+    expect(caption()).toBe("1 of 3 copies left · copying again");
+    const one = { pieces: 1, dataPieces: 1, tolerance: 0, erasure: 0 };
+    paintWidget(root, w, one, 0.5);
+    expect(caption()).toBe("1 copy, on 1 disk");
+    paintWidget(root, w, one, 1.5);
+    expect(dead()).toBe(1);
+    expect(caption()).toBe("the only copy is gone");
+    expect(root.classList.contains("lost")).toBe(true);
+  });
+
   it("blocksync widget shows an insert resending the rest of the file with fixed chunks, and two chunks with content-defined ones", () => {
     const w: BoardWidget = { kind: "custom", name: "blocksync" };
     const root = mount(w, { contentDefined: 0 }, 0);

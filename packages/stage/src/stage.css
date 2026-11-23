@@ -581,3 +581,14 @@
 .tx-bs-row i.chg { background: var(--amber); border-color: var(--amber); }
 .tx-bs-row.on:last-child i.chg { background: var(--green); border-color: var(--green); }
 .tx-bs-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); white-space: nowrap; }
+
+/* Object storage: one object's copies or erasure-coded pieces as disks die. */
+.tx-ec { margin-top: 6px; display: grid; gap: 6px; }
+.tx-ec-disks { display: flex; flex-wrap: wrap; gap: 4px; }
+.tx-ec-disks i { width: 16px; height: 22px; border-radius: 3px; background: color-mix(in srgb, var(--cyan) 30%, transparent); border: 1px solid var(--cyan); position: relative; }
+.tx-ec-disks i[hidden] { display: none; }
+.tx-ec-disks i.par { background: color-mix(in srgb, var(--violet) 30%, transparent); border-color: var(--violet); }
+.tx-ec-disks i.dead { background: transparent; border: 1px dashed var(--red); }
+.tx-ec-disks i.dead::after { content: "×"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--red); font-size: 12px; }
+.tx-ec-cap { margin: 0; font-family: var(--mono); }
+.tx-ec.lost .tx-ec-cap { color: var(--red); }
