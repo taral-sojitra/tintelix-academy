@@ -8,6 +8,14 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Three money movements, each a debit and a credit in rupees, one more appearing each second of a 4 s cycle. */
+const DBL_ENTRIES: [string, number, number][][] = [
+  [["card network", 2499, 0], ["merchant owed", 0, 2499]],
+  [["merchant owed", 50, 0], ["our fees", 0, 50]],
+  [["merchant owed", 499, 0], ["card network", 0, 499]],
+];
+const DBL_CYCLE_SEC = 4;
+
 /** Two guests booking the last room, one phase a second over 4 s: without anything refusing, and with a lock on the room. */
 const LK_NAIVE: [string[], string[], string[]] = [
   ["check: room free", "insert", "commit", "booked"],
@@ -130,6 +138,39 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A double-entry ledger: every movement is a debit on one account and an equal credit on another, so the totals always match. */
+  ledger: {
+    html: (key) =>
+      `<div class="tx-dbl" data-w="${key}"><div class="tx-dbl-head"><em>account</em><b>debit</b><span>credit</span></div>${DBL_ENTRIES.flat()
+        .map(() => `<div class="tx-dbl-row"><em></em><b></b><span></span></div>`)
+        .join("")}<p class="tx-calc-s tx-dbl-cap"></p></div>`,
+    paint(root, _d, clock) {
+      const t = Math.max(0, clock) % DBL_CYCLE_SEC;
+      const visible = Math.min(DBL_ENTRIES.length, Math.floor(t) + 1);
+      let debits = 0;
+      let credits = 0;
+      root.querySelectorAll<HTMLElement>(".tx-dbl-row").forEach((row, n) => {
+        const move = Math.floor(n / 2);
+        const [account, debit, credit] = DBL_ENTRIES[move]![n % 2]!;
+        const on = move < visible;
+        row.hidden = !on;
+        if (on) {
+          debits += debit;
+          credits += credit;
+        }
+        const set = (sel: string, text: string) => {
+          const el = row.querySelector(sel)!;
+          if (el.textContent !== text) el.textContent = text;
+        };
+        set("em", account);
+        set("b", debit ? group(debit) : "");
+        set("span", credit ? group(credit) : "");
+      });
+      const text = debits === credits ? `debits = credits = ₹${group(debits)}` : `out of balance by ₹${group(Math.abs(debits - credits))}`;
+      const cap = root.querySelector(".tx-dbl-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** Two guests racing for the last room: check-then-insert sells it twice; a lock (or a constraint) makes the second one lose cleanly. */
   locking: {
     html: (key) =>

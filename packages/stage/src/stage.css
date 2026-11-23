@@ -658,3 +658,16 @@
 .tx-lk-row.wait b { color: var(--amber); }
 .tx-lk-cap { margin: 2px 0 0; font-family: var(--mono); color: var(--green); }
 .tx-lk.bad .tx-lk-cap { color: var(--red); }
+
+/* Payments: a double-entry ledger whose debits always equal its credits. */
+.tx-dbl { margin-top: 6px; display: grid; gap: 2px; }
+.tx-dbl-head, .tx-dbl-row { display: grid; grid-template-columns: 1fr 50px 50px; gap: 6px; align-items: center; }
+.tx-dbl-row[hidden] { display: none; }
+.tx-dbl-head { font-family: var(--mono); font-size: 9.5px; color: var(--node-sub); text-transform: uppercase; letter-spacing: .04em; }
+.tx-dbl-head em, .tx-dbl-head b, .tx-dbl-head span { font-style: normal; font-weight: 400; font-family: var(--mono); font-size: 9.5px; color: var(--node-sub); }
+.tx-dbl-head b, .tx-dbl-head span, .tx-dbl-row b, .tx-dbl-row span { text-align: right; }
+.tx-dbl-row em { font-style: normal; font-size: 11.5px; color: var(--node-ink); }
+.tx-dbl-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--cyan); }
+.tx-dbl-row span { font-family: var(--mono); font-size: 10.5px; color: var(--violet); }
+.tx-dbl-row:nth-of-type(even) { border-top: 1px solid var(--node-stroke); }
+.tx-dbl-cap { margin: 4px 0 0; font-family: var(--mono); color: var(--green); }
