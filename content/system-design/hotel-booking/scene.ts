@@ -47,7 +47,7 @@ export const hotelScene: SceneSpec = {
         tiles: [
           { id: "a", label: "Rooms", icon: "blocks", hue: "cyan", value: "{roomsM} million", note: "{properties} properties" },
           { id: "b", label: "Searches", icon: "target", hue: "violet", value: "{searchPeak}/s", note: "at peak" },
-          { id: "c", label: "Bookings", icon: "check", hue: "amber", value: "{bookPeak}/s", note: "{conversion} of searches" },
+          { id: "c", label: "Bookings", icon: "check", hue: "amber", value: "{bookPeak}/s", note: "{conversionPct} of searches" },
         ],
       },
       {
@@ -90,7 +90,7 @@ export const hotelScene: SceneSpec = {
         flows: [{ flow: "searchCache", weight: 3 }, { flow: "book", weight: 2 }, { flow: "raceSafe", weight: 1 }],
         rate: 7,
         tiles: [
-          { id: "a", label: "Search reads", icon: "db", hue: "green", value: "{searchDbReads}/s", note: "{searchCacheHit} from the cache", mood: "good" },
+          { id: "a", label: "Search reads", icon: "db", hue: "green", value: "{searchDbReads}/s", note: "{searchCacheHitPct} from the cache", mood: "good" },
           { id: "b", label: "Final check", icon: "check", hue: "cyan", value: "at booking", note: "the cache may be stale" },
           { id: "c", label: "Overbooking", icon: "gauge", hue: "violet", value: "{overbookPct}", note: "a pricing choice, not a bug" },
         ],

@@ -3,7 +3,7 @@ import type { Lesson } from "@tintelix/schema";
 export const hotelCheatsheet: Lesson["cheatsheet"] = [
   {
     heading: "The numbers",
-    text: ["{roomsM} million rooms. {searchesPerDay} searches a day, {conversion} convert: {bookingsPerDay} bookings. Peak: {searchPeak} searches and {bookPeak} bookings a second."],
+    text: ["{roomsM} million rooms. {searchesPerDay} searches a day, {conversionPct} convert: {bookingsPerDay} bookings. Peak: {searchPeak} searches and {bookPeak} bookings a second."],
   },
   {
     heading: "No double bookings",
