@@ -132,7 +132,7 @@ export const systemDesign: Subject = {
         l("orders-inventory", "Design orders and inventory", "Take an order, hold the stock, charge the card, and undo it all cleanly if a step fails.", ["distributed-transactions", "message-queues", "idempotency"], "Sell only what's on the shelf"),
         l("payment-system", "Design a payment system", "Charge a card exactly once through flaky providers, and keep a ledger where every cent adds up.", ["distributed-transactions", "idempotency", "retries-and-circuit-breakers"], "Take the money exactly once"),
         l("digital-wallet", "Design a digital wallet", "Move money between millions of wallets with an event log that can rebuild any balance.", ["sharding", "distributed-transactions", "payment-system"], "Move money between wallets safely"),
-        l("stock-exchange", "Design a stock exchange", "Match buy and sell orders in microseconds on one fast path, and broadcast every trade.", ["message-queues", "unique-ids"]),
+        l("stock-exchange", "Design a stock exchange", "Match buy and sell orders in microseconds on one fast path, and broadcast every trade.", ["message-queues", "unique-ids"], "Match a buy and a sell in microseconds"),
       ],
     },
   ],

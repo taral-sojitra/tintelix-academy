@@ -8,6 +8,17 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** A stock's order book (asks above bids) and a buy order arriving: phase 0 the book, 1 the order, 2–3 the trade. A 4 s cycle. */
+const OB_BOOK: ["ask" | "bid", number, number, number][] = [
+  ["ask", 101.7, 500, 500],
+  ["ask", 101.6, 300, 200],
+  ["ask", 101.5, 200, 0],
+  ["bid", 101.4, 400, 400],
+  ["bid", 101.3, 250, 250],
+  ["bid", 101.2, 600, 600],
+];
+const OB_CYCLE_SEC = 4;
+
 /** One wallet's events in rupees, one more appearing each second of a 5 s cycle. */
 const EV_EVENTS: [string, number][] = [["top-up", 5000], ["to Ravi", -1200], ["from Dev", 300], ["to Meera", -450]];
 const EV_CYCLE_SEC = 5;
@@ -142,6 +153,34 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** An order book: sell orders (asks) above buy orders (bids), best prices meeting in the middle, and a buy order trading against it. */
+  orderbook: {
+    html: (key) =>
+      `<div class="tx-ob" data-w="${key}">${OB_BOOK.map(([side]) => `<div class="tx-ob-row ${side}"><em></em><b></b></div>`).join("")}<p class="tx-calc-s tx-ob-in"></p><p class="tx-calc-s tx-ob-cap"></p></div>`,
+    paint(root, _d, clock) {
+      const phase = Math.floor(Math.max(0, clock) % OB_CYCLE_SEC);
+      const traded = phase >= 2;
+      root.querySelectorAll<HTMLElement>(".tx-ob-row").forEach((row, n) => {
+        const [, price, before, after] = OB_BOOK[n]!;
+        const qty = traded ? after : before;
+        const filled = traded && after === 0;
+        row.classList.toggle("filled", filled);
+        row.classList.toggle("hit", traded && after !== before);
+        const set = (sel: string, text: string) => {
+          const el = row.querySelector(sel)!;
+          if (el.textContent !== text) el.textContent = text;
+        };
+        set("em", price.toFixed(2));
+        set("b", filled ? "filled" : group(qty));
+      });
+      const order = phase === 1 ? "buy 300 at up to 101.60" : "";
+      const inEl = root.querySelector(".tx-ob-in")!;
+      if (inEl.textContent !== order) inEl.textContent = order;
+      const text = traded ? "traded 200 @ 101.50, 100 @ 101.60" : "best bid 101.40 · best ask 101.50";
+      const cap = root.querySelector(".tx-ob-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** Event sourcing: a wallet's balance isn't stored, it's the sum of its events, replayed in order. */
   eventlog: {
     html: (key) =>

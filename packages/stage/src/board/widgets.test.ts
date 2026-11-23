@@ -178,6 +178,32 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("orderbook widget shows asks over bids, then a buy order sweeping the cheapest asks", () => {
+    const w: BoardWidget = { kind: "custom", name: "orderbook" };
+    const root = mount(w, {}, 0.5);
+    const rows = () => [...root.querySelectorAll(".tx-ob-row")].map((r) => [r.classList.contains("ask") ? "ask" : "bid", r.querySelector("em")!.textContent, r.querySelector("b")!.textContent]);
+    const incoming = () => root.querySelector(".tx-ob-in")!.textContent;
+    const caption = () => root.querySelector(".tx-ob-cap")!.textContent;
+    expect(rows()).toEqual([
+      ["ask", "101.70", "500"],
+      ["ask", "101.60", "300"],
+      ["ask", "101.50", "200"],
+      ["bid", "101.40", "400"],
+      ["bid", "101.30", "250"],
+      ["bid", "101.20", "600"],
+    ]);
+    expect(incoming()).toBe("");
+    expect(caption()).toBe("best bid 101.40 · best ask 101.50");
+    paintWidget(root, w, {}, 1.5);
+    expect(incoming()).toBe("buy 300 at up to 101.60");
+    paintWidget(root, w, {}, 2.5);
+    expect(rows()[1]).toEqual(["ask", "101.60", "200"]);
+    expect(rows()[2]).toEqual(["ask", "101.50", "filled"]);
+    expect(caption()).toBe("traded 200 @ 101.50, 100 @ 101.60");
+    paintWidget(root, w, {}, 4.2);
+    expect(rows()[2]).toEqual(["ask", "101.50", "200"]);
+  });
+
   it("eventlog widget appends a wallet's events and derives the balance by replaying them", () => {
     const w: BoardWidget = { kind: "custom", name: "eventlog" };
     const root = mount(w, {}, 0.5);
