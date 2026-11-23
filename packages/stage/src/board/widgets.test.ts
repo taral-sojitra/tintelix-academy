@@ -151,4 +151,17 @@ describe("board widgets", () => {
     expect(lanes()[2]![1]).toBe("12% · all by 41:40");
     expect(root.querySelector<HTMLElement>(".tx-chl-row:nth-child(3) .tx-chl-bar i")!.style.width).toBe("12%");
   });
+  it("presence widget shows who is online and how long ago the others were seen", () => {
+    const w: BoardWidget = { kind: "custom", name: "presence" };
+    const root = mount(w, {}, 0);
+    const rows = () => [...root.querySelectorAll(".tx-pres-row")].map((r) => [r.querySelector("em")!.textContent, r.classList.contains("on"), r.querySelector("b")!.textContent]);
+    expect(rows()).toEqual([
+      ["Ravi", true, "online"],
+      ["Meera", true, "online"],
+      ["Dev", false, "last seen 3 min ago"],
+      ["Kiran", false, "last seen 1 h ago"],
+    ]);
+    paintWidget(root, w, {}, 120);
+    expect(rows()[2]![2]).toBe("last seen 5 min ago");
+  });
 });
