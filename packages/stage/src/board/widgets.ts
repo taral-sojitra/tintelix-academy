@@ -8,6 +8,10 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Friends subscribed to your channel: name and distance in km (null = not sharing). One real second plays 10. */
+const SUBSCRIBERS: [string, number | null][] = [["Meera", 1.2], ["Dev", 3.8], ["Kiran", 12], ["Ravi", null]];
+const PUBSUB_SPEEDUP = 10;
+
 /** The geohash picture shows an 8 km square drawn 150 px wide. */
 const GEO_KM = 8;
 const GEO_PX = 150;
@@ -36,6 +40,25 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** One person's location channel: each update goes to subscribed friends, sent only if close enough. */
+  pubsub: {
+    html: (key) =>
+      `<div class="tx-ps" data-w="${key}"><p class="tx-calc-s tx-ps-head"></p>${SUBSCRIBERS.map(([name]) => `<div class="tx-ps-row"><i></i><em>${esc(name)}</em><b></b></div>`).join("")}</div>`,
+    paint(root, d, clock) {
+      const every = Math.max(1, d.updateEvery ?? 20);
+      const radius = d.radiusKm ?? 5;
+      const n = Math.floor((Math.max(0, clock) * PUBSUB_SPEEDUP) / every) + 1;
+      const head = root.querySelector(".tx-ps-head")!;
+      const text = `your channel · update #${n}`;
+      if (head.textContent !== text) head.textContent = text;
+      root.querySelectorAll<HTMLElement>(".tx-ps-row").forEach((row, i) => {
+        const [, km] = SUBSCRIBERS[i]!;
+        const state = km === null ? "off" : km <= radius ? "near" : "far";
+        row.className = `tx-ps-row ${state}`;
+        row.querySelector("b")!.textContent = km === null ? "not sharing" : `${km} km · ${state === "near" ? "sent" : "too far"}`;
+      });
+    },
+  },
   /** An 8 km square of map: geohash cells at the chosen length, the block of cells read, and the search circle. */
   geogrid: {
     html: (key) =>
