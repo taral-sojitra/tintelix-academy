@@ -905,19 +905,44 @@ async def crawl_flow(page):
     return "Crawler lesson: 772 pages a second; a plain queue sends 463/s to one site, 98% refused; per-site queues at a 2 s delay need 1,543 sites at once; a 6 GB Bloom filter drops seen links"
 
 
+async def search_flow(page):
+    await page.goto(BASE + "/system-design/search-engine", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Find it among a billion pages")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("2,315/s")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Two billion rows, one at a time")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("7 min", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Turn it around: words to documents")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("30 ms", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Indexing takes time; say how long")
+    refresh = page.locator("section.try", has=page.locator("#ctl-refreshSec"))
+    await set_range(page, "#ctl-refreshSec", 10)
+    await expect(refresh.locator(".try-readout")).to_contain_text("11 s")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Everyone searches the same thing")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("80%", timeout=8000)
+    return "Search lesson: 2,315 searches a second; a LIKE scan of 2 billion rows takes 7 min; an inverted index answers in 30 ms; a 10 s refresh means 11 s to searchable; 80% of a trending term comes from cache"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("59 lessons in 13 modules · 36 open now")).to_be_visible()
+    await expect(page.get_by_text("59 lessons in 13 modules · 37 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("36 of 59 open")).to_be_visible()
-    return "System Design lists 59 lessons in 13 modules, 36 open"
+    await expect(page.get_by_text("37 of 59 open")).to_be_visible()
+    return "System Design lists 59 lessons in 13 modules, 37 open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []
