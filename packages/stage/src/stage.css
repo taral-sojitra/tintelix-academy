@@ -482,3 +482,11 @@
 .tx-idbits-bar .b-machine i { background: color-mix(in srgb, var(--amber) 80%, transparent); }
 .tx-idbits-bar .b-seq i { background: color-mix(in srgb, var(--green) 75%, transparent); }
 .tx-idbits .tx-b62-id { margin-top: 4px; }
+.tx-nwr { margin-top: 8px; display: grid; gap: 6px; }
+.tx-nwr-row { display: flex; align-items: center; gap: 8px; }
+.tx-nwr-row em { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--node-sub); min-width: 38px; }
+.tx-nwr-row span { display: flex; gap: 5px; }
+.tx-nwr-row i { width: 22px; height: 16px; border-radius: 4px; border: 1px solid var(--node-stroke); transition: background .2s; }
+.tx-nwr-row[data-q="write"] i.on { background: color-mix(in srgb, var(--green) 60%, transparent); }
+.tx-nwr-row[data-q="read"] i.on { background: color-mix(in srgb, var(--violet) 55%, transparent); }
+.tx-nwr-row i.down { background: color-mix(in srgb, var(--red) 25%, transparent); border-color: var(--red); }

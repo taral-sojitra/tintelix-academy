@@ -13,6 +13,34 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** N replica slots, with the W a write waits for and the R a read asks, and whether they must overlap. */
+  quorum: {
+    html: (key) =>
+      `<div class="tx-nwr" data-w="${key}"><div class="tx-nwr-row" data-q="write"><em>write</em><span></span></div><div class="tx-nwr-row" data-q="read"><em>read</em><span></span></div><p class="tx-calc-s"></p></div>`,
+    paint(root, d) {
+      const n = Math.max(1, Math.round(d.replicas ?? 3));
+      const w = Math.min(n, Math.max(1, Math.round(d.writeQuorum ?? 1)));
+      const r = Math.min(n, Math.max(1, Math.round(d.readQuorum ?? 1)));
+      const down = Math.round(d.downReplica ?? 0);
+      const alive = [...Array(n).keys()].map((i) => i + 1).filter((i) => i !== down);
+      const writes = new Set(alive.slice(0, w));
+      const reads = new Set(alive.slice(-r));
+      for (const [name, set] of [["write", writes], ["read", reads]] as const) {
+        const cells = root.querySelector(`[data-q="${name}"] span`)!;
+        if (cells.children.length !== n) cells.innerHTML = "<i></i>".repeat(n);
+        [...cells.children].forEach((c, i) => {
+          c.classList.toggle("down", i + 1 === down);
+          c.classList.toggle("on", set.has(i + 1));
+        });
+      }
+      root.querySelector(".tx-calc-s")!.textContent =
+        alive.length < w
+          ? `Only ${alive.length} of ${n} replicas up: writes need ${w}`
+          : w + r > n
+            ? `W ${w} + R ${r} > N ${n}: every read meets the latest write`
+            : `W ${w} + R ${r} ≤ N ${n}: a read can miss the latest write`;
+    },
+  },
   /** A 64-bit ID drawn as its parts (sign, time, machine, sequence) and the number they make. */
   bitlayout: {
     html: (key) =>
