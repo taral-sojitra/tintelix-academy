@@ -178,6 +178,26 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("transcode widget encodes every segment at every quality in parallel, then says when it can play", () => {
+    const w: BoardWidget = { kind: "custom", name: "transcode" };
+    const d = { segments: 900, parallelSec: 38 };
+    const root = mount(w, d, 0);
+    const done = () => root.querySelectorAll(".tx-tc-row i.done").length;
+    const caption = () => root.querySelector(".tx-tc-cap")!.textContent;
+    expect([...root.querySelectorAll(".tx-tc-row em")].map((e) => e.textContent)).toEqual(["240p", "720p", "1080p", "4K"]);
+    expect(root.querySelectorAll(".tx-tc-row i")).toHaveLength(48);
+    expect(done()).toBe(0);
+    expect(caption()).toBe("900 segments, all encoding at once");
+    paintWidget(root, w, d, 1);
+    expect(done()).toBe(16);
+    paintWidget(root, w, d, 3);
+    expect(done()).toBe(48);
+    expect(root.classList.contains("ready")).toBe(true);
+    expect(caption()).toBe("ready to play in 38 s");
+    paintWidget(root, w, d, 4.1);
+    expect(done()).toBe(0);
+  });
+
   it("roadgraph widget grows a search circle from home, or follows shortcuts once they exist", () => {
     const w: BoardWidget = { kind: "custom", name: "roadgraph" };
     const slow = { shortcuts: 0, explored: 628319 };

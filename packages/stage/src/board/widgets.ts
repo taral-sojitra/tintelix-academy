@@ -8,6 +8,12 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** A video as 12 segments (of many) by 4 of its qualities. Each cell finishes at its own moment in a 2.5 s burst; the cycle is 4 s. */
+const TC_QUALITIES = ["240p", "720p", "1080p", "4K"];
+const TC_SEGMENTS = 12;
+const TC_CYCLE_SEC = 4;
+const tcDoneAt = (col: number, row: number) => 0.3 + ((col * 5 + row * 3) % TC_SEGMENTS) * 0.2;
+
 /** A small road graph: a grid of intersections, home at the left, the destination at the right. A search plays 3 s, then holds 1 s. */
 const RG_COLS = 14;
 const RG_ROWS = 5;
@@ -55,6 +61,27 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** Encoding a new video: every segment at every quality runs at once on a pool of encoders, then it can play. */
+  transcode: {
+    html: (key) =>
+      `<div class="tx-tc" data-w="${key}">${TC_QUALITIES.map((q) => `<div class="tx-tc-row"><em>${esc(q)}</em><span>${"<i></i>".repeat(TC_SEGMENTS)}</span></div>`).join("")}<p class="tx-calc-s tx-tc-cap"></p></div>`,
+    paint(root, d, clock) {
+      const t = Math.max(0, clock) % TC_CYCLE_SEC;
+      let left = 0;
+      root.querySelectorAll<HTMLElement>(".tx-tc-row").forEach((row, r) => {
+        row.querySelectorAll("i").forEach((cell, c) => {
+          const done = t >= tcDoneAt(c, r);
+          cell.classList.toggle("done", done);
+          if (!done) left++;
+        });
+      });
+      const ready = left === 0;
+      root.classList.toggle("ready", ready);
+      const text = ready ? fillOutputs("ready to play in {parallelSec}", d) : `${group(d.segments ?? 0)} segments, all encoding at once`;
+      const cap = root.querySelector(".tx-tc-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** A route search on a small road graph: without shortcuts it spreads in a circle from home; with them it hops along the highway. */
   roadgraph: {
     html: (key) => {

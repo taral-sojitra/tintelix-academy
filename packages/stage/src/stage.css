@@ -558,3 +558,14 @@
 .tx-rg.fast .tx-rg-map i.lit { background: var(--green); }
 .tx-rg-map i.start, .tx-rg-map i.goal { outline: 2px solid var(--node-ink); outline-offset: 1px; }
 .tx-rg-cap { margin: 0; font-family: var(--mono); }
+
+/* Video streaming: segments encoded at every quality in parallel. */
+.tx-tc { margin-top: 6px; display: grid; gap: 4px; }
+.tx-tc-row { display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 6px; }
+.tx-tc-row em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-tc-row span { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+.tx-tc-row i { height: 9px; border-radius: 2px; border: 1px solid var(--node-stroke); }
+.tx-tc-row i.done { background: var(--violet); border-color: var(--violet); }
+.tx-tc.ready .tx-tc-row i.done { background: var(--green); border-color: var(--green); }
+.tx-tc-cap { margin: 2px 0 0; font-family: var(--mono); }
+.tx-tc.ready .tx-tc-cap { color: var(--green); }
