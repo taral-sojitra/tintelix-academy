@@ -8,6 +8,15 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** A file as 12 chunks with bytes inserted into the 4th: which chunks each way of cutting has to resend. Shown 1–3 s of a 3 s cycle. */
+const BS_CHUNKS = 12;
+const BS_ROWS: [string, number[]][] = [
+  ["fixed", [3, 4, 5, 6, 7, 8, 9, 10, 11]],
+  ["by content", [3, 4]],
+];
+const BS_CYCLE_SEC = 3;
+const BS_SHOW_SEC = 1;
+
 /** A video as 12 segments (of many) by 4 of its qualities. Each cell finishes at its own moment in a 2.5 s burst; the cycle is 4 s. */
 const TC_QUALITIES = ["240p", "720p", "1080p", "4K"];
 const TC_SEGMENTS = 12;
@@ -61,6 +70,23 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** Bytes inserted near the start of a file: fixed-size chunks shift and resend the rest; content-defined chunks resend two. */
+  blocksync: {
+    html: (key) =>
+      `<div class="tx-bs" data-w="${key}">${BS_ROWS.map(([label]) => `<div class="tx-bs-row"><em>${esc(label)}</em><span>${"<i></i>".repeat(BS_CHUNKS)}</span><b></b></div>`).join("")}</div>`,
+    paint(root, d, clock) {
+      const shown = Math.max(0, clock) % BS_CYCLE_SEC >= BS_SHOW_SEC;
+      const active = (d.contentDefined ?? 0) > 0 ? 1 : 0;
+      root.querySelectorAll<HTMLElement>(".tx-bs-row").forEach((row, r) => {
+        const changed = BS_ROWS[r]![1];
+        row.classList.toggle("on", r === active);
+        row.querySelectorAll("i").forEach((cell, c) => cell.classList.toggle("chg", shown && changed.includes(c)));
+        const text = shown ? `${changed.length} of ${BS_CHUNKS} resent` : "";
+        const b = row.querySelector("b")!;
+        if (b.textContent !== text) b.textContent = text;
+      });
+    },
+  },
   /** Encoding a new video: every segment at every quality runs at once on a pool of encoders, then it can play. */
   transcode: {
     html: (key) =>
