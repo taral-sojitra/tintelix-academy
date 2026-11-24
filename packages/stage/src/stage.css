@@ -518,3 +518,11 @@
 .tx-pres-row em { font-style: normal; font-size: 12px; color: var(--node-ink); }
 .tx-pres-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); white-space: nowrap; }
 .tx-pres-row.on b { color: var(--green); }
+.tx-geo { margin-top: 6px; display: flex; gap: 12px; align-items: center; }
+.tx-geo-map { position: relative; flex: none; width: 150px; height: 150px; border: 1px solid var(--node-stroke); border-radius: 4px; overflow: hidden;
+  background-image: linear-gradient(to right, color-mix(in srgb, var(--node-stroke) 70%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--node-stroke) 70%, transparent) 1px, transparent 1px);
+  background-position: center center; }
+.tx-geo-read { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: color-mix(in srgb, var(--cyan) 22%, transparent); outline: 1.5px solid var(--cyan); }
+.tx-geo-ring { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); border: 2px solid var(--amber); border-radius: 50%; }
+.tx-geo-dot { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--amber); }
+.tx-geo .tx-calc-s { margin: 0; }

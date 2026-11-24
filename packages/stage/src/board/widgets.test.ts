@@ -164,4 +164,18 @@ describe("board widgets", () => {
     paintWidget(root, w, {}, 120);
     expect(rows()[2]![2]).toBe("last seen 5 min ago");
   });
+  it("geogrid widget draws the cells at this length, the block read, and the search circle", () => {
+    const w: BoardWidget = { kind: "custom", name: "geogrid" };
+    const d = { geoLen: 6, radiusKm: 2, cellW: 1.22, cellH: 0.61, cellsX: 5, cellsY: 8 };
+    const root = mount(w, d, 0);
+    const map = root.querySelector<HTMLElement>(".tx-geo-map")!;
+    expect(map.style.backgroundSize).toBe("22.9px 11.4px");
+    const read = root.querySelector<HTMLElement>(".tx-geo-read")!;
+    expect(read.style.width).toBe("114.4px");
+    expect(read.style.height).toBe("91.5px");
+    expect(root.querySelector<HTMLElement>(".tx-geo-ring")!.style.width).toBe("75px");
+    expect(root.querySelector(".tx-calc-s")!.textContent).toBe("length 6: 5 × 8 = 40 cells read");
+    paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
+    expect(read.style.width).toBe("150px");
+  });
 });
