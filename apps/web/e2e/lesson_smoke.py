@@ -1474,6 +1474,7 @@ SQL_READY = ".sql-clauses, .sql-stage.empty .sql-stage-msg"
 SQL_LESSONS = [
     ("select", "Pick the columns you need", "FROM starts with every row of products: 15 rows."),
     ("where", "Only the rows that match", "FROM starts with every row of products: 15 rows."),
+    ("order-by", "Who comes first?", "FROM starts with every row of products: 15 rows."),
 ]
 
 
