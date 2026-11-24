@@ -1486,6 +1486,7 @@ SQL_LESSONS = [
     ("cte", "Name a step, use it later", "WITH made a step called spend: 15 rows."),
     ("row-number", "Each customer's latest order", "FROM starts with every row of orders: 60 rows."),
     ("insert", "Add a new product", "FROM starts with every row of products: 15 rows."),
+    ("update", "Change some rows, not all", "There's no WHERE, so UPDATE changes every row: all 15."),
 ]
 
 
