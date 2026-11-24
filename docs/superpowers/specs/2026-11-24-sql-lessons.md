@@ -72,3 +72,11 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Replay: the FROM frame of a join now says which rows had no match and were left out ("5 rows of customers had no
   match"); for the wrong-join starter it reads "40 rows of orders had no match", which shows the bug. Outer joins say
   which rows they kept with NULLs and mark them (used in lesson 11).
+
+## 11. LEFT JOIN: Who never ordered?
+
+- Tasks: every customer with their order ids (the starter's inner join loses five customers); customers who never
+  ordered (`WHERE o.id IS NULL`); orders per customer with 0 for none (the starter's `count(*)` gives 1); delivered
+  orders per customer keeping everyone (the starter's WHERE on the right table undoes the LEFT JOIN; the replay's
+  WHERE note shows the 5 NULL rows dropped).
+- The FROM frame marks NULL-filled rows in violet.
