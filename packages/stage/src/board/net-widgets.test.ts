@@ -52,3 +52,32 @@ describe("headers widget", () => {
     expect(caption(root)).toBe("one frame: 1,518 bytes, 58 of them headers");
   });
 });
+
+const ipbits: BoardWidget = { kind: "custom", name: "ipbits" };
+const addr = (prefixLen: number, v6 = 0) => ({ ipA: 192, ipB: 168, ipC: 1, ipD: 42, prefixLen, v6 });
+
+describe("ipbits widget", () => {
+  it("writes the address as 32 bits, network bits first", () => {
+    const root = mount(ipbits, addr(24));
+    const cells = [...root.querySelectorAll<HTMLElement>(".tx-ip-bits i")];
+    expect(cells).toHaveLength(32);
+    expect(cells.filter((c) => c.classList.contains("net"))).toHaveLength(24);
+    expect(cells.slice(24).map((c) => c.textContent).join("")).toBe("00101010");
+    expect(root.querySelector(".tx-ip-dec")!.textContent).toBe("192.168.1.42");
+    expect(root.querySelector(".tx-ip-cap")!.textContent).toBe("mask 255.255.255.0 · network 192.168.1.0/24");
+  });
+
+  it("moves the split with the prefix, even inside a number", () => {
+    expect(mount(ipbits, addr(26)).querySelector(".tx-ip-cap")!.textContent).toBe("mask 255.255.255.192 · network 192.168.1.0/26");
+    const root = mount(ipbits, addr(20));
+    expect(root.querySelector(".tx-ip-cap")!.textContent).toBe("mask 255.255.240.0 · network 192.168.0.0/20");
+    expect([...root.querySelectorAll(".tx-ip-bits i.net")]).toHaveLength(20);
+  });
+
+  it("shows an IPv6 address as eight groups instead", () => {
+    const root = mount(ipbits, addr(24, 1));
+    expect(root.querySelector<HTMLElement>(".tx-ip-bits")!.hidden).toBe(true);
+    expect(root.querySelector(".tx-ip-dec")!.textContent).toBe("2001:0db8:0000:0042:0000:8a2e:0370:7334");
+    expect(root.querySelector(".tx-ip-cap")!.textContent).toBe("128 bits · network /64 · device 64 bits");
+  });
+});
