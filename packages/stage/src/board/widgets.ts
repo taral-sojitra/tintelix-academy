@@ -8,6 +8,11 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Disks holding one object's copies or pieces (up to 18); one more disk dies each second of a 5 s cycle, up to what the scheme survives. */
+const EC_SLOTS = 18;
+const EC_CYCLE_SEC = 5;
+const EC_KILL_ORDER = [1, 6, 11, 3, 8, 13, 16, 0, 5, 10];
+
 /** A file as 12 chunks with bytes inserted into the 4th: which chunks each way of cutting has to resend. Shown 1–3 s of a 3 s cycle. */
 const BS_CHUNKS = 12;
 const BS_ROWS: [string, number[]][] = [
@@ -70,6 +75,33 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** One object on separate disks (one copy, three copies, or data + parity pieces) as disks die one by one. */
+  erasure: {
+    html: (key) => `<div class="tx-ec" data-w="${key}"><div class="tx-ec-disks">${"<i></i>".repeat(EC_SLOTS)}</div><p class="tx-calc-s tx-ec-cap"></p></div>`,
+    paint(root, d, clock) {
+      const pieces = Math.min(EC_SLOTS, Math.max(1, Math.round(d.pieces ?? 1)));
+      const dataPieces = Math.min(pieces, Math.max(1, Math.round(d.dataPieces ?? 1)));
+      const tolerance = Math.max(0, Math.round(d.tolerance ?? 0));
+      const erasure = (d.erasure ?? 0) > 0;
+      const kills = Math.min(Math.max(1, tolerance), pieces, Math.floor(Math.max(0, clock) % EC_CYCLE_SEC));
+      const order = EC_KILL_ORDER.filter((n) => n < pieces).concat([...Array(pieces).keys()].filter((n) => !EC_KILL_ORDER.includes(n)));
+      const dead = new Set(order.slice(0, kills));
+      root.querySelectorAll<HTMLElement>(".tx-ec-disks i").forEach((cell, n) => {
+        cell.hidden = n >= pieces;
+        cell.classList.toggle("par", erasure && n >= dataPieces && n < pieces);
+        cell.classList.toggle("dead", dead.has(n));
+      });
+      const left = pieces - kills;
+      const lost = kills > tolerance;
+      root.classList.toggle("lost", lost);
+      let text: string;
+      if (kills === 0) text = erasure ? `${dataPieces} data + ${pieces - dataPieces} parity, on ${pieces} disks` : pieces === 1 ? "1 copy, on 1 disk" : `${pieces} copies, on ${pieces} disks`;
+      else if (lost) text = pieces === 1 ? "the only copy is gone" : "too many lost · object gone";
+      else text = erasure ? `${left} of ${pieces} left · any ${dataPieces} rebuild it` : `${left} of ${pieces} copies left · copying again`;
+      const cap = root.querySelector(".tx-ec-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** Bytes inserted near the start of a file: fixed-size chunks shift and resend the rest; content-defined chunks resend two. */
   blocksync: {
     html: (key) =>
