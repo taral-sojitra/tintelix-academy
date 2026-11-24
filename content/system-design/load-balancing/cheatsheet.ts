@@ -14,7 +14,10 @@ export const lbCheatsheet: Lesson["cheatsheet"] = [
   },
   {
     heading: "Layer 4 vs layer 7",
-    text: ["Layer 4 sees IP addresses and ports and moves connections unread: cheap and fast. Layer 7 reads each request: it can route by path, header or cookie and report per-request status, at more cost per request."],
+    text: [
+      "Layer 4 sees IP addresses and ports and moves connections unread: cheap and fast. Layer 7 reads each request: it can route by path, header or cookie and report per-request status, at more cost per request.",
+      "A layer 7 balancer ends the client's TCP and TLS connections (so it holds the certificate) and opens its own to the server; a layer 4 one passes a single connection, TLS and all, straight through.",
+    ],
   },
   {
     heading: "The fails-fast trap",

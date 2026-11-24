@@ -64,6 +64,20 @@ export const lbSteps: Step[] = [
     live: "LIVE · routing by path",
   },
   {
+    id: "what-each-reads",
+    tag: "technique",
+    title: "What a layer 4 or layer 7 balancer reads",
+    short: "What each reads",
+    text: [
+      "The numbers are the network layers. A **layer 4** balancer reads only the IP and TCP headers: addresses and ports. It picks a server when a connection opens and passes every packet of that connection to the same server, unread. The client's TCP handshake and its TLS go straight through to the server.",
+      "A **layer 7** balancer ends the connection itself. It does the TCP and TLS handshakes with the client, so it must hold the site's certificate, reads each HTTP request, and sends it on over its own connection to a server. That's two connections instead of one and more work per request, but it can route by path, header or cookie, retry a failed request on another server, and pass on the client's address in an X-Forwarded-For header.",
+    ],
+    note: { kind: "next", text: "Layers, handshakes and TLS are taught step by step in the Computer Networks subject." },
+    sim: { mode: "steady", speed: 1 },
+    model: { policy: POLICY.byPath },
+    live: "LIVE · what each reads",
+  },
+  {
     id: "recap",
     tag: "recap",
     title: "What balancing taught us",
