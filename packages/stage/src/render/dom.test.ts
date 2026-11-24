@@ -44,6 +44,16 @@ describe("buildStage", () => {
   });
 });
 
+describe("slim nodes", () => {
+  it("marks a slim node so it draws as one line with no icon", () => {
+    const host = document.createElement("div");
+    const slim: SceneSpec = { ...spec, nodes: { ...spec.nodes, l4: { x: 10, y: 130, w: 160, h: 36, kind: "services", label: "4 Transport", sub: "TCP, UDP", slim: true } } };
+    buildStage(host, slim, { legend: [], chartLabel: "", nodeBody: () => "" });
+    expect(host.querySelector("[data-node=l4]")!.classList.contains("tx-slim")).toBe(true);
+    expect(host.querySelector("[data-node=users]")!.classList.contains("tx-slim")).toBe(false);
+  });
+});
+
 describe("renderTiles", () => {
   it("marks long values so they take a smaller size and break between words", () => {
     const hud = document.createElement("div");

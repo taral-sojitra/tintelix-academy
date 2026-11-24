@@ -458,6 +458,13 @@
 .tx-met { overflow-wrap: break-word; }
 @container (max-width: 500px) { .tx-v { font-size: 16px; } .tx-v.long { font-size: 13px; } .tx-k { font-size: 9.5px; letter-spacing: 0.04em; } .tx-d { font-size: 10.5px; } }
 .tx-node.tx-noicon .tx-tile { display: none; }
+/* Slim boxes: one line, no icon, for stacks such as the seven network layers. */
+.tx-node.tx-slim { padding: 6px 12px; justify-content: center; border-radius: 10px; }
+.tx-node.tx-slim .tx-tile { display: none; }
+.tx-node.tx-slim .tx-nh > div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; width: 100%; }
+.tx-node.tx-slim .tx-nh { width: 100%; }
+.tx-node.tx-slim b { font-size: 14px; }
+.tx-node.tx-slim .tx-sub { font-size: 11px; }
 
 /* Case-study boards: lit cells and the short-code counter. */
 .tx-cells i.on { background: var(--cyan); }
@@ -695,3 +702,17 @@
 .tx-ob-row.bid:nth-of-type(4) { margin-top: 3px; }
 .tx-ob-in { margin: 3px 0 0; min-height: 1.2em; font-family: var(--mono); color: var(--cyan); }
 .tx-ob-cap { margin: 0; font-family: var(--mono); }
+
+/* Networks: each layer's view of one segment, a header added on the way down and removed on the way up. */
+.tx-env { margin-top: 8px; display: grid; gap: 4px; }
+.tx-env-row { display: grid; grid-template-columns: 58px 50px 40px 48px minmax(0, 1fr) 42px; gap: 3px; align-items: center; }
+.tx-env-row[hidden] { display: none; }
+.tx-env-row em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-env-row span { font-family: var(--mono); font-size: 10.5px; line-height: 22px; text-align: center; border-radius: 5px; color: var(--node-ink); white-space: nowrap; overflow: hidden; }
+.tx-env-row span.gap { visibility: hidden; }
+.tx-env-row .p-0, .tx-env-row .p-4 { background: color-mix(in srgb, var(--amber) 30%, transparent); }
+.tx-env-row .p-1 { background: color-mix(in srgb, var(--violet) 30%, transparent); }
+.tx-env-row .p-2 { background: color-mix(in srgb, var(--cyan) 30%, transparent); }
+.tx-env-row .p-3 { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.tx-env-row.new em { color: var(--node-ink); font-weight: 650; }
+.tx-env-cap { margin: 6px 0 0; font-family: var(--mono); color: var(--cyan); }

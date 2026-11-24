@@ -98,9 +98,10 @@ export function createBoardScene(o: { fx: Effects; rand: () => number; scene: Sc
       const total = flows.reduce((a, f) => a + f.weight, 0);
       if (total <= 0) return;
       for (const f of flows) {
-        const fl = f.flow.float;
-        if (!fl || fl.at !== e.node) continue;
-        if (rand() < fl.chance * (f.weight / total)) fx.float(e.at[0] + 12, e.at[1] - 34, fillOutputs(fl.text, live()), fl.color);
+        for (const fl of [f.flow.float, ...(f.flow.floats ?? [])]) {
+          if (!fl || fl.at !== e.node) continue;
+          if (rand() < fl.chance * (f.weight / total)) fx.float(e.at[0] + 12, e.at[1] - 34, fillOutputs(fl.text, live()), fl.color);
+        }
       }
     },
 

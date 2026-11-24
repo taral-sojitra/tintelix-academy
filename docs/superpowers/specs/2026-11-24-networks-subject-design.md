@@ -46,3 +46,11 @@ Practice questions (Practice isn't built), real packet capture, and a terminal (
 
 Numbers that don't come from the model; animations that show an order the protocol doesn't follow; copying System
 Design lessons instead of linking to them.
+
+## Build notes
+
+- **PR 1**: flows also take `floats`, one label per stop, so a message can show "+ TCP header" at layer 4 and
+  "+ IP header" at layer 3 on the same trip. Scene nodes take `slim: true` for one-line boxes with no icon; the
+  OSI stacks are fourteen of them. The stage audit walks Networks lessons as well as System Design's.
+- **OSI numbers**: Ethernet MTU 1,500, so MSS 1,460; each segment carries 58 bytes of headers (TCP 20, IP 20,
+  Ethernet 14 + 4-byte check). The preamble and inter-frame gap are left out: no software ever sees them.
