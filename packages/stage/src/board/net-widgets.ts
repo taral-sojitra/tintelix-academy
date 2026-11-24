@@ -82,6 +82,18 @@ const MAC_LEARN: [number, string][] = [
 const MAC_STEP_SEC = 1.4;
 const MAC_CYCLE_SEC = 6;
 
+/** R2's routing table in the routing lesson: [prefix, next hop, prefix length]. */
+const RT_ROUTES: [string, string, number][] = [["0.0.0.0/0", "R3", 0], ["198.51.100.0/24", "R4", 24], ["198.51.100.128/25", "R5", 25]];
+/** The routers traceroute names on each route (`routeIdx` 0 via R3, 1 via R4, 2 via R5), then the server. */
+const TR_PATHS = [
+  ["R1 home router", "R2 ISP", "R3 backbone", "R6 far away", "203.0.113.9"],
+  ["R1 home router", "R2 ISP", "R4", "198.51.100.42"],
+  ["R1 home router", "R2 ISP", "R5", "198.51.100.200"],
+];
+/** One more hop each second (TTL 1, 2, 3...), then the whole path holds; a 7 s cycle. */
+const TR_STEP_SEC = 1;
+const TR_CYCLE_SEC = 7;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -429,6 +441,49 @@ export const NET_CUSTOM: Record<string, Custom> = {
         "A1 → B1: another network, so the frame goes to the router's MAC, port 4",
       ][stage]!;
       setText(root.querySelector(".tx-mac-now")!, text);
+    },
+  },
+  /**
+   * Longest-prefix match on R2's table for 198.51.100.`destD`, or for 203.0.113.9 when `destOutside` is 1:
+   * every matching route is marked, the longest is picked.
+   */
+  routetable: {
+    html: (key) =>
+      `<div class="tx-rt" data-w="${key}">${'<p class="tx-rt-row"><em></em><span></span></p>'.repeat(RT_ROUTES.length)}<p class="tx-calc-s tx-rt-cap"></p></div>`,
+    paint(root, d) {
+      const outside = Math.round(num(d, "destOutside", 0)) === 1;
+      const last = Math.min(255, Math.max(0, Math.round(num(d, "destD", 200))));
+      const dest = outside ? "203.0.113.9" : `198.51.100.${last}`;
+      const matches = RT_ROUTES.map(([, , len]) => len === 0 || (!outside && (len === 24 || last >= 128)));
+      const pick = matches.lastIndexOf(true);
+      root.querySelectorAll<HTMLElement>(".tx-rt-row").forEach((row, n) => {
+        row.className = `tx-rt-row${matches[n] ? " match" : ""}${n === pick ? " pick" : ""}`;
+        setText(row.querySelector("em")!, RT_ROUTES[n]![0]);
+        setText(row.querySelector("span")!, `→ ${RT_ROUTES[n]![1]}`);
+      });
+      const count = matches.filter(Boolean).length;
+      const [, hop, len] = RT_ROUTES[pick]!;
+      const text = count === 1 ? `${dest}: only the default matches → ${hop}` : `${dest}: ${count} routes match, /${len} is longest → ${hop}`;
+      setText(root.querySelector(".tx-rt-cap")!, text);
+    },
+  },
+  /**
+   * traceroute along route `routeIdx`: one more hop each second, each the router that answered for that
+   * TTL and its round trip, `trace1Ms`…`trace5Ms`, `traceHops` in all.
+   */
+  traceroute: {
+    html: (key) => `<div class="tx-tr" data-w="${key}">${'<p class="tx-tr-row"><em></em><span></span><b></b></p>'.repeat(5)}</div>`,
+    paint(root, d, clock) {
+      const path = TR_PATHS[Math.min(2, Math.max(0, Math.round(num(d, "routeIdx", 0))))]!;
+      const hops = Math.min(path.length, Math.max(0, Math.round(num(d, "traceHops", path.length))));
+      const seen = Math.min(hops, Math.floor((Math.max(0, clock) % TR_CYCLE_SEC) / TR_STEP_SEC) + 1);
+      root.querySelectorAll<HTMLElement>(".tx-tr-row").forEach((row, n) => {
+        row.hidden = n >= seen;
+        if (n >= hops) return;
+        setText(row.querySelector("em")!, `TTL ${n + 1}`);
+        setText(row.querySelector("span")!, path[n]!);
+        setText(row.querySelector("b")!, `${Math.round(num(d, `trace${n + 1}Ms`, 0))} ms`);
+      });
     },
   },
 };
