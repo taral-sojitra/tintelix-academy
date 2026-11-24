@@ -30,6 +30,12 @@ describe("checkSqlTask", () => {
     expect(run.ok).toBe(false);
     expect(feedback).toMatchObject({ ok: false, kind: "error", message: "There's no column called nme. Check the spelling against the dataset card." });
   });
+  it("lets Postgres point out a typo in a reading task", async () => {
+    const { feedback } = await checkSqlTask(db, names, "SELEC name FROM customers");
+    expect(feedback).toMatchObject({ ok: false, kind: "error" });
+    if (!feedback.ok) expect(feedback.message).toMatch(/^There's a typo near SELEC/);
+  });
+
   it("refuses a change in a reading task without running it", async () => {
     const { feedback } = await checkSqlTask(db, names, "DELETE FROM orders");
     expect(feedback).toMatchObject({ ok: false, kind: "kind" });

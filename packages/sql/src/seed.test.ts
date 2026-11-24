@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "./db";
-import { openShop, SHOP_TABLES } from "./seed";
+import { openShop } from "./seed";
+import { SHOP_TABLES } from "./tables";
 
 let db: Db;
 const one = async (sql: string) => Number((await db.query(sql)).rows[0]?.[0]);

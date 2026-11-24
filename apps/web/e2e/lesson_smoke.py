@@ -1469,11 +1469,84 @@ async def subject_page(page):
     return "System Design lists 59 lessons in 13 modules, 59 open"
 
 
+SQL_READY = ".sql-clauses"
+
+
+async def type_sql(page, sql):
+    await page.locator(".cm-content").click()
+    await page.keyboard.press("Control+A")
+    await page.keyboard.type(sql)
+
+
+async def sql_subject(page):
+    await page.goto(BASE + "/sql", wait_until="load")
+    await expect(page.get_by_text("21 lessons in 5 modules · 1 open now")).to_be_visible()
+    await page.goto(BASE + "/", wait_until="load")
+    card = page.locator("article.s-sql")
+    await expect(card.get_by_role("link", name="1 of 21 open")).to_be_visible()
+    return "SQL lists 21 lessons in 5 modules, 1 open; its Home card links in"
+
+
+async def sql_flow(page):
+    await page.goto(BASE + "/sql/select", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Pick the columns you need")
+    await page.wait_for_selector(SQL_READY, timeout=30000)
+    await expect(page.locator(".sql-note")).to_have_text("FROM starts with every row of products: 15 rows.")
+    await expect(page.locator(".sql-clauses button")).to_have_text(["FROM", "SELECT"])
+    await expect(page.locator(".sql-status")).to_contain_text("runs in your browser")
+    run = page.get_by_role("button", name="Run", exact=True)
+    await run.click()
+    await expect(page.locator(".fb-warn")).to_contain_text("Your result has 5 columns; this task wants 2.")
+    await page.get_by_role("button", name="Show solution").click()
+    await page.get_by_role("button", name="Put it in the editor").click()
+    await run.click()
+    await expect(page.locator(".fb-ok")).to_contain_text("Task solved")
+    await expect(page.locator(".sql-tasks h3 small")).to_have_text("1 of 4 solved")
+    await expect(page.locator(".sql-clauses button")).to_have_text(["FROM", "SELECT"])
+    await page.locator(".fb-ok").get_by_role("button", name="Next task").click()
+    await expect(page.locator(".sql-now p")).to_contain_text("name and city")
+    await expect(page.locator(".sql-note")).to_have_text("FROM starts with every row of customers: 20 rows.", timeout=10000)
+    await type_sql(page, "SELEC name FROM customers")
+    await page.keyboard.press("Control+Enter")
+    await expect(page.locator(".fb-error")).to_contain_text("There's a typo near SELEC")
+    await expect(page.locator(".sql-stage")).to_contain_text("didn't run")
+    await type_sql(page, "SELECT name, city FROM customers")
+    await page.keyboard.press("Control+Enter")
+    await expect(page.locator(".fb-ok")).to_contain_text("Task solved")
+    await expect(page.locator(".sql-table-wrap").last).to_be_visible()
+    await page.reload(wait_until="load")
+    await page.wait_for_selector(SQL_READY, timeout=30000)
+    await expect(page.locator(".sql-tasks h3 small")).to_have_text("2 of 4 solved")
+    await expect(page.locator(".sql-now .eyebrow")).to_have_text("Task 3 of 4")
+    return "SELECT lesson: starter replays FROM then SELECT; a wrong query gets column feedback; the solution and a typed answer solve tasks 1 and 2; a typo gets plain words; progress survives a reload"
+
+
+async def sql_timeout(page):
+    await page.goto(BASE + "/sql/select", wait_until="load")
+    await page.wait_for_selector(SQL_READY, timeout=30000)
+    await type_sql(page, "SELECT count(*) FROM generate_series(1, 10000000000)")
+    await page.keyboard.press("Control+Enter")
+    await expect(page.locator(".fb-error")).to_contain_text("took longer than 3 seconds", timeout=10000)
+    await type_sql(page, "SELECT name, price FROM products")
+    await page.keyboard.press("Control+Enter")
+    await expect(page.locator(".fb-ok")).to_contain_text("Task solved", timeout=30000)
+    return "a runaway query is stopped after 3 seconds, and the next run works"
+
+
+async def sql_cheatsheet(page):
+    res = await page.goto(BASE + "/sql/select/cheatsheet", wait_until="load")
+    assert res and res.status == 200
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Pick the columns you need")
+    await expect(page.locator(".sheet-syntax pre")).to_contain_text("FROM table_name;")
+    await expect(page.get_by_role("heading", name="Watch out")).to_be_visible()
+    return "SELECT cheatsheet shows the syntax card and the mistake to avoid"
+
+
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

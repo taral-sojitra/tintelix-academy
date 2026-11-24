@@ -221,3 +221,9 @@ svg.i { width: 16px; height: 16px; flex: none; }
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* SQL cheatsheets: inline code and the syntax card. */
+.sheet-card code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink); }
+.sheet-syntax { grid-column: 1 / -1; }
+.sheet-syntax pre { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; }
+.sheet-syntax pre code { padding: 0; border: 0; background: none; }

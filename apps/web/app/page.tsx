@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { components, getLesson, lessonSummaries, subjects } from "@tintelix/content";
+import { components, lessonFacts, lessonSummaries, subjects } from "@tintelix/content";
 import { ContinueCard, type ContinueTarget } from "../ui/ContinueCard";
 import { Icon } from "../ui/Icon";
 import { SubjectCard } from "../ui/SubjectCard";
@@ -10,8 +10,8 @@ export default function Home() {
     return all
       .filter((l) => l.available)
       .map((l) => {
-        const lesson = getLesson(s.id, l.slug)!;
-        return { id: l.id, href: `/${s.id}/${l.slug}`, title: lesson.title, topic: lesson.topic, subject: s.title, order: l.order, total: all.length, steps: lesson.steps.length, minutes: lesson.minutes };
+        const lesson = lessonFacts(s.id, l.slug)!;
+        return { id: l.id, href: `/${s.id}/${l.slug}`, title: lesson.title, topic: lesson.topic, subject: s.title, order: l.order, total: all.length, steps: lesson.steps, unit: lesson.unit, minutes: lesson.minutes };
       });
   });
   return (

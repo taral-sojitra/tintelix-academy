@@ -3,7 +3,8 @@ import { compareResults, minus, type Feedback } from "./compare";
 import type { Db } from "./db";
 import { hasTransactionControl, runInRollback, statementKinds, type RunOutcome } from "./run";
 
-const READ = new Set(["SELECT", "WITH", "VALUES", "TABLE"]);
+/** Statements that change data or tables; a reading task refuses these. Anything else (typos included) goes to Postgres. */
+const WRITE = new Set(["INSERT", "UPDATE", "DELETE", "MERGE", "CREATE", "ALTER", "DROP", "TRUNCATE", "GRANT", "REVOKE", "COPY", "VACUUM", "REINDEX", "CLUSTER", "COMMENT", "SECURITY", "REFRESH", "LOCK"]);
 
 export interface Checked {
   run: RunOutcome;
@@ -17,7 +18,7 @@ export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promis
   const kind = task.kind ?? "read";
   const kinds = statementKinds(input);
 
-  if (kind === "read" && kinds.some((k) => !READ.has(k)) && !hasTransactionControl(kinds)) {
+  if (kind === "read" && kinds.some((k) => WRITE.has(k)) && !hasTransactionControl(kinds)) {
     const message = "This task asks you to read rows with SELECT, and that statement changes data or tables instead. Nothing was run.";
     return { run: { ok: false, message }, feedback: { ok: false, kind: "kind", message } };
   }

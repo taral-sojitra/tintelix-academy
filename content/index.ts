@@ -82,6 +82,25 @@ export function getLesson(subject: string, slug: string): Lesson | undefined {
   return lessons.find((l) => l.home === subject && l.slug === slug);
 }
 
+/** What a lesson card or the continue card needs, from either kind of lesson. */
+export interface LessonFacts {
+  title: string;
+  topic: string;
+  promise: string;
+  minutes: number;
+  /** Steps of a diagram lesson, or tasks of a SQL lesson. */
+  steps: number;
+  unit: "step" | "task";
+}
+
+export function lessonFacts(subject: string, slug: string): LessonFacts | undefined {
+  const d = getLesson(subject, slug);
+  if (d) return { title: d.title, topic: d.topic, promise: d.promise, minutes: d.minutes, steps: d.steps.length, unit: "step" };
+  const s = subject === "sql" ? getSqlLesson(slug) : undefined;
+  if (s) return { title: s.title, topic: s.topic, promise: s.promise, minutes: s.minutes, steps: s.tasks.length, unit: "task" };
+  return undefined;
+}
+
 export interface LessonSummary {
   id: string;
   slug: string;

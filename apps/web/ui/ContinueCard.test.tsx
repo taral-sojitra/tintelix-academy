@@ -35,6 +35,13 @@ describe("ContinueCard", () => {
     expect(screen.queryByText(/Start here/)).toBeNull();
   });
 
+  it("counts tasks, not steps, for a finished SQL lesson", async () => {
+    const select: ContinueTarget = { ...caching, id: "sql-select", href: "/sql/select", title: "Pick the columns you need", topic: "SELECT", subject: "SQL", steps: 4, unit: "task" };
+    await getStore().saveStep("sql-select", 3, 4);
+    render(<ContinueCard lessons={[select]} />);
+    expect(await screen.findByText(/all 4 tasks done/)).toBeTruthy();
+  });
+
   it("moves on to the next lesson once Caching is finished", async () => {
     await getStore().saveStep("caching", 5, 6);
     render(<ContinueCard lessons={[caching, cdn]} />);

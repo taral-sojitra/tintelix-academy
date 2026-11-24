@@ -4,7 +4,7 @@ import type { Checked, Replay, RunOutcome } from "@tintelix/sql";
 /** The part of a Worker the client uses, so tests can stand in for it. */
 export interface WorkerLike {
   onmessage: ((e: MessageEvent) => void) | null;
-  onerror?: ((e: unknown) => void) | null;
+  onerror?: ((e: ErrorEvent) => void) | null;
   postMessage(message: unknown): void;
   terminate(): void;
 }
