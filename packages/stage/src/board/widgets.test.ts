@@ -178,6 +178,24 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("blocksync widget shows an insert resending the rest of the file with fixed chunks, and two chunks with content-defined ones", () => {
+    const w: BoardWidget = { kind: "custom", name: "blocksync" };
+    const root = mount(w, { contentDefined: 0 }, 0);
+    const changed = (row: number) => root.querySelectorAll(`.tx-bs-row:nth-of-type(${row + 1}) i.chg`).length;
+    const rows = () => [...root.querySelectorAll(".tx-bs-row")].map((r) => [r.querySelector("em")!.textContent, r.querySelector("b")!.textContent, r.classList.contains("on")]);
+    expect(root.querySelectorAll(".tx-bs-row i")).toHaveLength(24);
+    expect(changed(0) + changed(1)).toBe(0);
+    expect(rows()).toEqual([["fixed", "", true], ["by content", "", false]]);
+    paintWidget(root, w, { contentDefined: 0 }, 1.5);
+    expect(changed(0)).toBe(9);
+    expect(changed(1)).toBe(2);
+    expect(rows()).toEqual([["fixed", "9 of 12 resent", true], ["by content", "2 of 12 resent", false]]);
+    paintWidget(root, w, { contentDefined: 1 }, 1.5);
+    expect(rows().map((r) => r[2])).toEqual([false, true]);
+    paintWidget(root, w, { contentDefined: 1 }, 3.2);
+    expect(changed(0) + changed(1)).toBe(0);
+  });
+
   it("transcode widget encodes every segment at every quality in parallel, then says when it can play", () => {
     const w: BoardWidget = { kind: "custom", name: "transcode" };
     const d = { segments: 900, parallelSec: 38 };
