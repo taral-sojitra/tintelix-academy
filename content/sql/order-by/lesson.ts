@@ -1,0 +1,75 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const orderBy: SqlLesson = {
+  id: "sql-order-by",
+  home: "sql",
+  slug: "order-by",
+  topic: "ORDER BY",
+  title: "Who comes first?",
+  promise: "Sort rows the way you mean, break ties on purpose, and decide where the NULLs go.",
+  minutes: 9,
+  level: 1,
+  explain: [
+    "Without **ORDER BY**, Postgres hands rows back in whatever order is quickest for it, and that order can change. If the order matters, ask for it.",
+    "`ORDER BY price` sorts low to high; add **DESC** for high to low. Text sorts A to Z and dates oldest first. NULLs come last going up and first going down; `NULLS FIRST` or `NULLS LAST` moves them.",
+    "When two rows tie on the first column, their order is still Postgres's choice. Add a second column to break the tie: `ORDER BY price DESC, name`.",
+  ],
+  syntax: {
+    code: "SELECT name, price\nFROM products\nORDER BY price DESC, name;",
+    notes: [
+      "ORDER BY runs after SELECT, so it can use a name you gave with AS.",
+      "Each column gets its own direction: `price DESC, name ASC`. ASC is the default.",
+      "`NULLS FIRST` and `NULLS LAST` say where missing values go.",
+    ],
+  },
+  mistake: "Trusting the order you happen to see. A query without ORDER BY can come back in a different order tomorrow, after an update or on a bigger table. And a sort with ties is only half a sort: add a tiebreaker.",
+  tasks: [
+    {
+      id: "cheapest",
+      prompt: "List every product's **name** and **price**, cheapest first. Where two cost the same, sort them A to Z by name.",
+      starter: "SELECT name, price\nFROM products;",
+      hint: "ORDER BY price, name: the second column only matters when the first ties.",
+      solution: "SELECT name, price\nFROM products\nORDER BY price, name;",
+      ordered: true,
+    },
+    {
+      id: "newest",
+      prompt: "Show each order's **id**, **ordered_at** and **total**, newest first. For two orders on the same day, the higher id first.",
+      starter: "SELECT id, ordered_at, total\nFROM orders\nORDER BY ordered_at;",
+      hint: "Both columns need DESC: ORDER BY ordered_at DESC, id DESC.",
+      solution: "SELECT id, ordered_at, total\nFROM orders\nORDER BY ordered_at DESC, id DESC;",
+      ordered: true,
+    },
+    {
+      id: "ties",
+      prompt: "List products' **name**, **price** and **stock**, most expensive first. Three prices tie; for those, put the one with more **stock** first.",
+      starter: "SELECT name, price, stock\nFROM products\nORDER BY price DESC;",
+      hint: "Add a second sort key after a comma, with its own DESC.",
+      solution: "SELECT name, price, stock\nFROM products\nORDER BY price DESC, stock DESC;",
+      ordered: true,
+    },
+    {
+      id: "nulls-first",
+      prompt: "List customers' **name** and **city**, A to Z by city, with the customers who have no city at the **top**. Break ties by name.",
+      starter: "SELECT name, city\nFROM customers\nORDER BY city, name;",
+      hint: "Going up, NULLs come last. NULLS FIRST after city moves them to the top.",
+      solution: "SELECT name, city\nFROM customers\nORDER BY city NULLS FIRST, name;",
+      ordered: true,
+    },
+    {
+      id: "by-alias",
+      prompt: "Show each order's **id** and its total with 18% GST as `with_tax` (rounded to the paisa), largest first, lowest id first on a tie.",
+      starter: "SELECT id, ROUND(total * 1.18, 2) AS with_tax\nFROM orders;",
+      hint: "ORDER BY can use the new name: ORDER BY with_tax DESC, id.",
+      solution: "SELECT id, ROUND(total * 1.18, 2) AS with_tax\nFROM orders\nORDER BY with_tax DESC, id;",
+      ordered: true,
+      namedColumns: ["id", "with_tax"],
+    },
+  ],
+  buildsOn: ["sql-select"],
+  cheatsheet: [
+    { heading: "Sort", text: ["`ORDER BY price` sorts low to high; `ORDER BY price DESC` high to low.", "Text sorts A to Z, dates oldest first."] },
+    { heading: "Break ties", text: ["`ORDER BY price DESC, name` uses name only where prices tie.", "No tiebreaker means tied rows come back in any order."] },
+    { heading: "NULLs and names", text: ["NULLs sort last going up, first going down; `NULLS FIRST` or `NULLS LAST` overrides.", "ORDER BY runs after SELECT, so `ORDER BY with_tax` works."] },
+  ],
+};
