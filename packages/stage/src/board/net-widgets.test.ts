@@ -81,3 +81,36 @@ describe("ipbits widget", () => {
     expect(root.querySelector(".tx-ip-cap")!.textContent).toBe("128 bits · network /64 · device 64 bits");
   });
 });
+
+const subnets: BoardWidget = { kind: "custom", name: "subnets" };
+const split = (subPrefix: number, hostB = 100) => ({ subPrefix, hostA: 42, hostB });
+
+describe("subnets widget", () => {
+  it("splits the /24 into subnets and marks which one each host is in", () => {
+    const root = mount(subnets, split(26));
+    const segs = [...root.querySelectorAll<HTMLElement>(".tx-sn-seg")];
+    expect(segs.map((s) => s.textContent)).toEqual([".0", ".64", ".128", ".192"]);
+    expect(segs.map((s) => s.classList.contains("a"))).toEqual([true, false, false, false]);
+    expect(segs.map((s) => s.classList.contains("b"))).toEqual([false, true, false, false]);
+    expect(root.querySelector<HTMLElement>(".tx-sn-mark.b")!.style.left).toBe(`${(100.5 / 256) * 100}%`);
+    expect([...root.querySelectorAll(".tx-sn-and")].map((l) => l.textContent)).toEqual([
+      "A 192.168.1.42 AND 255.255.255.192 = 192.168.1.0",
+      "B 192.168.1.100 AND 255.255.255.192 = 192.168.1.64",
+    ]);
+    expect(root.querySelector(".tx-sn-cap")!.textContent).toBe("different subnets: A sends it to the router");
+  });
+
+  it("one /24 is one subnet, so A sends straight to B", () => {
+    const root = mount(subnets, split(24));
+    expect(root.querySelectorAll(".tx-sn-seg")).toHaveLength(1);
+    expect(root.querySelector(".tx-sn-cap")!.textContent).toBe("same subnet: A sends straight to B");
+  });
+
+  it("drops the labels when the subnets get too small to name", () => {
+    const root = mount(subnets, split(30, 43));
+    const segs = [...root.querySelectorAll<HTMLElement>(".tx-sn-seg")];
+    expect(segs).toHaveLength(64);
+    expect(segs.every((s) => s.textContent === "")).toBe(true);
+    expect(root.querySelector(".tx-sn-cap")!.textContent).toBe("same subnet: A sends straight to B");
+  });
+});

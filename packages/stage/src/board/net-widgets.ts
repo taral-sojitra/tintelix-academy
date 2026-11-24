@@ -115,4 +115,34 @@ export const NET_CUSTOM: Record<string, Custom> = {
       setText(cap, `mask ${mask.join(".")} · network ${network.join(".")}/${prefix}`);
     },
   },
+  /**
+   * Subnetting 192.168.1.0/24: the block cut into subnets of `subPrefix`, hosts A (`hostA`) and B
+   * (`hostB`) marked on it, each address ANDed with the mask, and whether A can send to B directly.
+   */
+  subnets: {
+    html: (key) =>
+      `<div class="tx-sn" data-w="${key}"><div class="tx-sn-bar"><div class="tx-sn-segs"></div><i class="tx-sn-mark a">A</i><i class="tx-sn-mark b">B</i></div><p class="tx-sn-and"></p><p class="tx-sn-and"></p><p class="tx-calc-s tx-sn-cap"></p></div>`,
+    paint(root, d) {
+      const prefix = Math.min(30, Math.max(24, Math.round(num(d, "subPrefix", 24))));
+      const a = Math.min(255, Math.max(0, Math.round(num(d, "hostA", 42))));
+      const b = Math.min(255, Math.max(0, Math.round(num(d, "hostB", 100))));
+      const size = 2 ** (32 - prefix);
+      const count = 256 / size;
+      const segs = root.querySelector<HTMLElement>(".tx-sn-segs")!;
+      if (segs.childElementCount !== count) segs.innerHTML = '<span class="tx-sn-seg"></span>'.repeat(count);
+      segs.querySelectorAll<HTMLElement>(".tx-sn-seg").forEach((seg, n) => {
+        setText(seg, count <= 8 ? `.${n * size}` : "");
+        seg.classList.toggle("a", Math.floor(a / size) === n);
+        seg.classList.toggle("b", Math.floor(b / size) === n);
+      });
+      root.querySelector<HTMLElement>(".tx-sn-mark.a")!.style.left = `${((a + 0.5) / 256) * 100}%`;
+      root.querySelector<HTMLElement>(".tx-sn-mark.b")!.style.left = `${((b + 0.5) / 256) * 100}%`;
+      const last = (256 - size) & 0xff;
+      const lines = root.querySelectorAll(".tx-sn-and");
+      setText(lines[0]!, `A 192.168.1.${a} AND 255.255.255.${last} = 192.168.1.${a & last}`);
+      setText(lines[1]!, `B 192.168.1.${b} AND 255.255.255.${last} = 192.168.1.${b & last}`);
+      const same = (a & last) === (b & last);
+      setText(root.querySelector(".tx-sn-cap")!, same ? "same subnet: A sends straight to B" : "different subnets: A sends it to the router");
+    },
+  },
 };
