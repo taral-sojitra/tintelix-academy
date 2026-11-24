@@ -13,6 +13,8 @@ export const LessonStub = z.object({
   title: z.string().max(40).optional(),
   summary: z.string(),
   buildsOn: z.array(z.string()),
+  /** The subject the lesson lives in, when another subject lists it too (a shared lesson). */
+  home: SubjectId.optional(),
 });
 export type LessonStub = z.infer<typeof LessonStub>;
 

@@ -77,7 +77,7 @@ export function buildStage(host: HTMLElement, scene: SceneSpec, opts: StageOptio
   const nodes: Record<string, HTMLElement> = {};
   for (const [id, n] of Object.entries(scene.nodes)) {
     const el = document.createElement("div");
-    el.className = `tx-node k-${n.kind}`;
+    el.className = `tx-node k-${n.kind}${n.slim ? " tx-slim" : ""}`;
     el.dataset.node = id;
     Object.assign(el.style, { left: `${n.x}px`, top: `${n.y}px`, width: `${n.w}px`, height: `${n.h}px` });
     el.innerHTML = opts.nodeBody(id, n);

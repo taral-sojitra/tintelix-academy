@@ -1,4 +1,4 @@
-"""Stage layout check: walks every open System Design lesson, step by step, at desktop and phone
+"""Stage layout check: walks every open System Design and Networks diagram lesson, step by step, at desktop and phone
 sizes, and fails if anything overlaps: dots or floating labels over boxes, text sticking out of
 its box, boxes behind the chart or other overlays, cut-off tile text, or a page that scrolls sideways.
 
@@ -19,26 +19,31 @@ SAMPLES, EVERY_MS, WORKERS = 8, 400, 4
 CHROME = "/usr/bin/google-chrome" if os.path.exists("/usr/bin/google-chrome") else None
 
 
+SUBJECTS = ["system-design", "networks"]
+
+
 async def lessons(browser):
+    """Open diagram lessons of each subject, as "subject/slug" paths; a shared lesson is listed once."""
     page = await browser.new_page()
-    await page.goto(BASE + "/system-design", wait_until="load")
-    hrefs = await page.eval_on_selector_all("a[href^='/system-design/']", "els => els.map(e => e.getAttribute('href'))")
+    paths = []
+    for subject in SUBJECTS:
+        await page.goto(f"{BASE}/{subject}", wait_until="load")
+        hrefs = await page.eval_on_selector_all("main a[href]", "els => els.map(e => e.getAttribute('href'))")
+        for h in hrefs:
+            m = re.fullmatch(r"/((?:system-design|networks)/[a-z0-9-]+)", h or "")
+            if m and m.group(1) not in paths:
+                paths.append(m.group(1))
     await page.close()
-    slugs = []
-    for h in hrefs:
-        m = re.fullmatch(r"/system-design/([a-z0-9-]+)", h or "")
-        if m and m.group(1) not in slugs:
-            slugs.append(m.group(1))
-    return [s for s in slugs if not ONLY or s in ONLY]
+    return [p for p in paths if not ONLY or p in ONLY or p.split("/")[1] in ONLY]
 
 
-async def check(browser, slug):
+async def check(browser, path):
     found = []
     for vp, w, h in VIEWPORTS:
         ctx = await browser.new_context(viewport={"width": w, "height": h})
         await ctx.add_init_script(AUDIT)
         page = await ctx.new_page()
-        await page.goto(f"{BASE}/system-design/{slug}", wait_until="load")
+        await page.goto(f"{BASE}/{path}", wait_until="load")
         await page.wait_for_selector(".stage-host[data-ready='true']", timeout=15000)
         last = None
         for step in range(1, 13):
@@ -52,7 +57,7 @@ async def check(browser, slug):
                     key = (i["kind"], i["where"], re.sub(r"[\d.]+px|covers \d+%", "", i["detail"]))
                     if key not in seen:
                         seen.add(key)
-                        found.append(f"{slug} [{vp}] step {step}: {i['kind']} at {i['where']}: {i['detail']}")
+                        found.append(f"{path} [{vp}] step {step}: {i['kind']} at {i['where']}: {i['detail']}")
                 await page.wait_for_timeout(EVERY_MS)
             last = title
             await page.locator("body").click(position={"x": 2, "y": 2})

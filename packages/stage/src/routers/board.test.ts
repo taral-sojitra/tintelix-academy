@@ -19,7 +19,32 @@ function run(state: Partial<BoardRouterState>, sec = 30) {
   return sim;
 }
 
+/** The first wire of each packet, in the order the router sent them. */
+function sentOrder(state: Partial<BoardRouterState>, spawnsWanted: number) {
+  const s: BoardRouterState = { flows: () => [], failShare: () => 0, ...state };
+  const sim = new Sim({ wires, router: board(s), rand: rng(7), ratePerSec: 4, speed: 600 });
+  const seen = new Map<number, string>();
+  while (seen.size < spawnsWanted) {
+    sim.step(1 / 30);
+    for (const p of sim.packets) if (!seen.has(p.id) && p.route[0]) seen.set(p.id, p.route[0].wire);
+  }
+  return [...seen.entries()].sort((x, y) => x[0] - y[0]).map(([, wire]) => wire);
+}
+
+const a: BoardFlow = { path: [{ wire: "u_a", dir: 1, at: "app" }], color: "cyan" };
+const b: BoardFlow = { from: "app", path: [{ wire: "a_c", dir: 1, at: "cache" }], color: "amber" };
+const c: BoardFlow = { from: "app", path: [{ wire: "a_d", dir: 1, at: "db" }], color: "green" };
+
 describe("board router", () => {
+  it("plays a sequence's flows in the order listed", () => {
+    const sent = sentOrder({ ordered: () => true, flows: () => [{ id: "a", flow: a, weight: 1 }, { id: "b", flow: b, weight: 1 }, { id: "c", flow: c, weight: 1 }] }, 5);
+    expect(sent).toEqual(["u_a", "a_c", "a_d", "u_a", "a_c"]);
+  });
+  it("skips a flow with no weight in a sequence", () => {
+    const sent = sentOrder({ ordered: () => true, flows: () => [{ id: "a", flow: a, weight: 1 }, { id: "b", flow: b, weight: 0 }, { id: "c", flow: c, weight: 1 }] }, 4);
+    expect(sent).toEqual(["u_a", "a_d", "u_a", "a_d"]);
+  });
+
   it("sends packets along the flow's path and back", () => {
     const sim = run({});
     expect(count(sim, "pass", "app")).toBe(spawns(sim));

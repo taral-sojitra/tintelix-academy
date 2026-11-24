@@ -55,12 +55,12 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
                   <li key={l.id} className={l.available ? "open" : "soon"}>
                     <span className="lesson-no">{l.order}</span>
                     <div className="lesson-text">
-                      {l.available ? <Link href={`/${id}/${l.slug}`}>{l.title ?? l.topic}</Link> : <b>{l.title ?? l.topic}</b>}
+                      {l.available ? <Link href={l.href}>{l.title ?? l.topic}</Link> : <b>{l.title ?? l.topic}</b>}
                       {l.title && <span className="lesson-topic">{l.topic}</span>}
                       <p>{l.summary}</p>
                     </div>
                     {l.available ? (
-                      <Link className="btn primary sm" href={`/${id}/${l.slug}`} aria-label={`Start ${l.title ?? l.topic}`}>
+                      <Link className="btn primary sm" href={l.href} aria-label={`Start ${l.title ?? l.topic}`}>
                         Start <Icon name="arrowRight" />
                       </Link>
                     ) : (

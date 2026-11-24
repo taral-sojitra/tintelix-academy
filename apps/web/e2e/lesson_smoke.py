@@ -1469,6 +1469,31 @@ async def subject_page(page):
     return "System Design lists 59 lessons in 13 modules, 59 open"
 
 
+async def net_flow(page):
+    await page.goto(BASE + "/networks", wait_until="load")
+    await expect(page.get_by_text("20 lessons in 6 modules · 2 open now")).to_be_visible()
+    await expect(page.locator("main a[href='/system-design/load-balancing']").first).to_be_visible()
+    await page.goto(BASE + "/networks/osi-model", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Seven layers, one message")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("3,000 bytes")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Down the stack, a header at each layer")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("1,518 bytes", timeout=8000)
+    await expect(page.locator("[data-node='frame'] .tx-env-row.new")).to_have_count(1, timeout=8000)
+    for _ in range(4):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Every segment pays for its headers")
+    size = page.locator("section.try", has=page.locator("#ctl-payloadBytes"))
+    await set_range(page, "#ctl-payloadBytes", 100)
+    await expect(size.locator(".try-readout")).to_contain_text("37%")
+    res = await page.goto(BASE + "/networks/osi-model/cheatsheet", wait_until="load")
+    assert res and res.status == 200, "osi cheatsheet"
+    return "Networks lists 20 lessons in 6 modules, 2 open, with Load balancers linking to System Design; the OSI lesson wraps a 3,000-byte message into 1,518-byte frames, and a 100-byte message spends 37% on headers"
+
+
 SQL_READY = ".sql-clauses, .sql-stage.empty .sql-stage-msg"
 # Every written SQL lesson: slug, hook title, and what the stage says for the first task's starter.
 SQL_LESSONS = [
@@ -1595,7 +1620,7 @@ async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

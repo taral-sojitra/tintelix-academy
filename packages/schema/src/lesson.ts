@@ -50,6 +50,8 @@ export const SceneNode = Rect.extend({
   label: z.string(),
   sub: z.string(),
   hidden: z.boolean().optional(),
+  /** One line, no icon: for rows of small boxes such as the layers of a network stack. */
+  slim: z.boolean().optional(),
 });
 export type SceneNode = z.infer<typeof SceneNode>;
 

@@ -17,6 +17,8 @@ export function testCond(c: Cond, outputs: Outputs): boolean {
   return true;
 }
 
+const Float = z.object({ at: z.string(), text: z.string(), color: Hue, chance: z.number().min(0).max(1) });
+
 /** One kind of request: the wires it travels, the node each wire reaches, and how it ends. */
 export const BoardFlow = z.object({
   /** The node the flow starts from, where it replies when it comes back; users when left out. */
@@ -29,7 +31,9 @@ export const BoardFlow = z.object({
   /** Where some of these requests fail, and the …Pct output (0–100) that says how many. */
   fail: z.object({ at: z.string(), share: z.string() }).optional(),
   /** A floating label when a request reaches a node, on a share (0–1) of arrivals. */
-  float: z.object({ at: z.string(), text: z.string(), color: Hue, chance: z.number().min(0).max(1) }).optional(),
+  float: Float.optional(),
+  /** More labels, one per stop, such as a header added at each layer. */
+  floats: z.array(Float).optional(),
 });
 export type BoardFlow = z.infer<typeof BoardFlow>;
 
@@ -62,6 +66,8 @@ export type BoardWidget = z.infer<typeof BoardWidget>;
 /** What runs in one mode: which flows, in what proportions (a number or an output's name), and the tiles. */
 export const BoardMode = z.object({
   flows: z.array(z.object({ flow: z.string(), weight: z.union([z.number(), z.string()]) })),
+  /** Play the flows in turn, in the order listed, like messages in a protocol exchange (SYN, SYN-ACK, ACK). */
+  sequence: z.boolean().optional(),
   rate: z.number().positive().optional(),
   tiles: z.array(BoardTile),
 });
@@ -102,7 +108,7 @@ export function boardTexts(b: Board, mode: number): string[] {
     ...(m?.tiles ?? []).flatMap((t) => [t.value, t.note]),
     ...widgetTexts,
     ...Object.values(b.subs ?? {}),
-    ...Object.values(b.flows).map((f) => f.float?.text ?? ""),
+    ...Object.values(b.flows).flatMap((f) => [f.float?.text ?? "", ...(f.floats ?? []).map((x) => x.text)]),
   ];
 }
 

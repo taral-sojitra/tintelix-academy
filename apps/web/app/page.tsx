@@ -8,10 +8,10 @@ export default function Home() {
   const targets: ContinueTarget[] = subjects.flatMap((s) => {
     const all = lessonSummaries(s.id);
     return all
-      .filter((l) => l.available)
+      .filter((l) => l.available && l.home === s.id)
       .map((l) => {
         const lesson = lessonFacts(s.id, l.slug)!;
-        return { id: l.id, href: `/${s.id}/${l.slug}`, title: lesson.title, topic: lesson.topic, subject: s.title, order: l.order, total: all.length, steps: lesson.steps, unit: lesson.unit, minutes: lesson.minutes };
+        return { id: l.id, href: l.href, title: lesson.title, topic: lesson.topic, subject: s.title, order: l.order, total: all.length, steps: lesson.steps, unit: lesson.unit, minutes: lesson.minutes };
       });
   });
   return (

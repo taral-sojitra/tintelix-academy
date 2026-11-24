@@ -2,8 +2,9 @@ import { testCond, type BoardWidget, type Outputs } from "@tintelix/schema";
 import { fillOutputs } from "@tintelix/schema/format";
 import { esc } from "../render/dom";
 import { toBase62 } from "./base62";
+import { NET_CUSTOM } from "./net-widgets";
 
-type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, clock: number): void };
+export type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, clock: number): void };
 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
@@ -700,6 +701,7 @@ export const CUSTOM: Record<string, Custom> = {
       root.querySelector(".tx-calc-s")!.textContent = fits ? `${len} characters` : `${len} characters: out of codes`;
     },
   },
+  ...NET_CUSTOM,
 };
 
 /** The markup for one widget; its root carries data-w="<key>". */

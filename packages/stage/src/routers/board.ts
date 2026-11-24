@@ -7,6 +7,8 @@ export interface BoardRouterState {
   flows(): { id: string; flow: BoardFlow; weight: number }[];
   /** The share (0–1) of requests that fail, read from the named …Pct output. */
   failShare(output: string): number;
+  /** True when the flows play in turn, in the order listed (a protocol exchange), instead of at random. */
+  ordered?(): boolean;
 }
 
 interface Trip {
@@ -57,6 +59,12 @@ function pick(flows: { id: string; flow: BoardFlow; weight: number }[], r: numbe
  */
 export function board(state: BoardRouterState): Router {
   const trips = new Map<number, Trip>();
+  let turn = 0;
+  /** The next flow in turn, skipping any with no weight. */
+  const next = (flows: { id: string; flow: BoardFlow; weight: number }[]) => {
+    const live = flows.filter((f) => Number.isFinite(f.weight) && f.weight > 0);
+    return live.length ? live[turn++ % live.length]! : null;
+  };
   const finish = (p: Packet) => {
     p.dead = true;
     trips.delete(p.id);
@@ -72,7 +80,7 @@ export function board(state: BoardRouterState): Router {
   };
   return {
     spawn(p: Packet, sim: Sim) {
-      const chosen = pick(state.flows(), sim.rand());
+      const chosen = state.ordered?.() ? next(state.flows()) : pick(state.flows(), sim.rand());
       if (!chosen) return;
       const { flow } = chosen;
       trips.set(p.id, { flow, id: chosen.id });
