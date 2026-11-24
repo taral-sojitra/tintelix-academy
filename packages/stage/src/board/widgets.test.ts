@@ -118,4 +118,20 @@ describe("board widgets", () => {
     expect(rows()[0]![2]).toBe("in 0.5 s");
     expect(rows()[2]![2]).toBe("ready");
   });
+  it("trie widget walks the typed prefix and shows the top five cached at that node", () => {
+    const w: BoardWidget = { kind: "custom", name: "trie" };
+    const root = mount(w, {}, 0);
+    const typed = () => root.querySelector(".tx-trie-typed")!.textContent;
+    const top = () => [...root.querySelectorAll(".tx-trie li")].map((li) => li.textContent);
+    expect(typed()).toBe("c");
+    expect(top()).toEqual(["cricket score", "chatgpt", "cheap flights", "cat videos", "calculator"]);
+    paintWidget(root, w, {}, 1.7);
+    expect(typed()).toBe("ca");
+    expect(top()[0]).toBe("cat videos");
+    paintWidget(root, w, {}, 3.3);
+    expect(typed()).toBe("cat");
+    expect(top()).toHaveLength(5);
+    paintWidget(root, w, {}, 4.9);
+    expect(typed()).toBe("c");
+  });
 });

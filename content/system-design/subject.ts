@@ -91,7 +91,7 @@ export const systemDesign: Subject = {
         l("distributed-rate-limiter", "Design a distributed rate limiter", "Enforce one limit per user when their requests land on a thousand different servers.", ["rate-limiting", "api-gateway"], "One limit across a thousand servers"),
         l("web-crawler", "Design a web crawler", "Fetch billions of pages without hammering any one site or reading the same page twice.", ["bloom-filters", "message-queues"], "Read the whole web, politely"),
         l("search-engine", "Design a search engine", "Build an inverted index over billions of pages and answer a query in a fraction of a second.", ["indexing", "sharding", "web-crawler"], "Find it among a billion pages"),
-        l("search-autocomplete", "Design search autocomplete", "Suggest the top completions after two keystrokes, from a trie kept small and served from memory.", ["caching", "sharding"]),
+        l("search-autocomplete", "Design search autocomplete", "Suggest the top completions after two keystrokes, from a trie kept small and served from memory.", ["caching", "sharding"], "Guess the query after two letters"),
       ],
     },
     {

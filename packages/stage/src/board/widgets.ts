@@ -8,6 +8,14 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Sample autocomplete: a prefix and the top five completions cached at its trie node. */
+const TRIE_DEMO: [string, string[]][] = [
+  ["c", ["cricket score", "chatgpt", "cheap flights", "cat videos", "calculator"]],
+  ["ca", ["cat videos", "calculator", "cab near me", "canva", "calendar"]],
+  ["cat", ["cat videos", "catfish", "catering", "category", "cat food"]],
+];
+const TRIE_STEP_SEC = 1.6;
+
 /** Sample sites in the crawler's frontier: name, URLs waiting, and where in its wait it starts (0–1). */
 const FRONTIER_HOSTS: [string, number, number][] = [["news.example", 5, 0], ["blog.example", 2, 0.25], ["shop.example", 3, 0.5], ["wiki.example", 1, 0.75]];
 
@@ -16,6 +24,18 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A trie lookup as someone types: the prefix so far and the top five completions stored at its node. */
+  trie: {
+    html: (key) => `<div class="tx-trie" data-w="${key}"><p class="tx-calc-s">typed: <span class="tx-trie-typed"></span></p><ol>${"<li></li>".repeat(5)}</ol></div>`,
+    paint(root, _d, clock) {
+      const [prefix, top] = TRIE_DEMO[Math.floor(Math.max(0, clock) / TRIE_STEP_SEC) % TRIE_DEMO.length]!;
+      const typed = root.querySelector(".tx-trie-typed")!;
+      if (typed.textContent !== prefix) {
+        typed.textContent = prefix;
+        root.querySelectorAll("li").forEach((li, i) => (li.textContent = top[i] ?? ""));
+      }
+    },
+  },
   /** A crawler's per-host queues: how many URLs each site has waiting and when it may be fetched next. */
   frontier: {
     html: (key) =>

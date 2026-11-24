@@ -497,3 +497,9 @@
 .tx-hq-row i { width: 10px; height: 12px; border-radius: 2px; border: 1px solid var(--node-stroke); }
 .tx-hq-row i.on { background: color-mix(in srgb, var(--cyan) 55%, transparent); }
 .tx-hq-row b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); text-align: right; white-space: nowrap; }
+.tx-trie { margin-top: 6px; }
+.tx-trie .tx-calc-s { margin: 0 0 4px; }
+.tx-trie-typed { font-family: var(--mono); color: var(--node-ink); border-bottom: 2px solid var(--cyan); padding: 0 2px; }
+.tx-trie ol { margin: 0; padding-left: 20px; display: grid; gap: 2px; }
+.tx-trie li { font-family: var(--mono); font-size: 11px; color: var(--node-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-trie li:first-child { color: var(--node-ink); }
