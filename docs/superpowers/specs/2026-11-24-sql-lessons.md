@@ -129,3 +129,15 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   prompt invites deleting the orders alone to see Postgres refuse); USB-C lines only from cancelled orders.
 - Error: a delete blocked by a foreign key now says "Rows in order_items still point at the orders rows you're
   removing. Delete or change those first."; an insert or update pointing at nothing names the table and constraint.
+
+## 17. CREATE TABLE: Make a new table
+
+- Tasks build coupons step by step (columns; PRIMARY KEY and NOT NULL; a CHECK and a date column), then reviews with a
+  REFERENCES link and a CHECK, then coupons created and filled in one run.
+- Checking: `describeTable(name)` (in `@tintelix/sql/tables`, which content can import without pulling in PGlite) is
+  the verify query. It lists each column's name, type, NOT NULL and the kinds of constraint on it, so
+  `CHECK (x BETWEEN 1 AND 5)` and `CHECK (x >= 1 AND x <= 5)`, or serial and an identity column, compare equal.
+  Feedback on a table definition speaks of columns.
+- Replay: CREATE TABLE gets a frame listing the new table's columns, types and rules in SQL words ("PRIMARY KEY,
+  counts up by itself", "NOT NULL, REFERENCES products(id)"). The content check now requires every task's solution
+  to replay, define tasks included. Error: an unknown type names it and lists common ones.

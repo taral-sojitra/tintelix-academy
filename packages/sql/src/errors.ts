@@ -17,6 +17,7 @@ const RULES: Record<string, (message: string) => string> = {
   "42P20": () => "Window functions can't go in WHERE, because they're worked out after it. Number the rows in a WITH step, then filter in the main query.",
   "42702": (m) => `${quoted(m)} is in more than one table here. Say which one you mean, like o.id or c.id.`,
   "42883": (m) => `Postgres has no function or operator that fits here (${m}). The types may not match: text and numbers don't mix.`,
+  "42704": (m) => (/^type /.test(m) ? `There's no type called ${quoted(m)}. Common ones: integer, numeric(10,2), text, date, boolean.` : `Postgres says: ${m}`),
   "42P07": (m) => `There's already a table called ${quoted(m)}.`,
   "42701": (m) => `There's already a column called ${quoted(m)}.`,
   "22012": () => "The query divided by zero. Postgres stops rather than guess.",

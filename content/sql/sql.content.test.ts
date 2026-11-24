@@ -55,7 +55,7 @@ describe.each(sqlLessons.map((l) => [l.slug, l] as const))("SQL lesson %s", (_, 
       expect(task.answer ?? task.solution, "an ordered task's answer sorts").toMatch(/ORDER\s+BY/i);
       expect(await sortTies(db, task.answer ?? task.solution), "an ordered task's answer sorts to one order only").toBe(0);
     }
-    if ((task.kind ?? "read") !== "define") {
+    {
       const replay = await buildReplay(db, task.solution);
       expect(replay.supported ? "" : replay.reason, "the solution can be replayed").toBe("");
     }

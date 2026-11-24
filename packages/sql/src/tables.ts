@@ -53,3 +53,19 @@ export const SHOP_TABLES: ShopTable[] = [
     ],
   },
 ];
+
+const quote = (s: string) => `'${s.replace(/'/g, "''")}'`;
+
+/**
+ * A verify query for define tasks: each column's name, type, NOT NULL and the kinds of constraint on it
+ * (p primary key, u unique, f foreign key, c check), so rules compare equal however they're written.
+ */
+export function describeTable(table: string): string {
+  return `SELECT a.attname::text AS column_name, format_type(a.atttypid, a.atttypmod) AS type, a.attnotnull AS not_null,
+  coalesce((SELECT string_agg(c.contype::text, '' ORDER BY c.contype::text) FROM pg_constraint c
+            WHERE c.conrelid = a.attrelid AND a.attnum = ANY (c.conkey) AND c.contype <> 'n'), '') AS rules
+FROM pg_attribute a
+WHERE a.attrelid = to_regclass(quote_ident(${quote(table)})) AND a.attnum > 0 AND NOT a.attisdropped
+ORDER BY a.attnum`;
+}
+

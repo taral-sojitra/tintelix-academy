@@ -6,3 +6,4 @@ export * from "./run";
 export * from "./check";
 export * from "./frames";
 export * from "./ties";
+export * from "./ddl";
