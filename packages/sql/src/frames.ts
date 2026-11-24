@@ -7,7 +7,7 @@ import type { Db, QueryResult } from "./db";
  * Every frame is the result of real SQL run in PGlite, and the last frame is the real result.
  */
 
-export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT";
+export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT";
 /** pass, fail, unknown: what WHERE or HAVING said. filled and plain: whether an outer join filled the row with NULLs. */
 export type Mark = "pass" | "fail" | "unknown" | "filled" | "plain";
 
@@ -88,9 +88,14 @@ function checkSelect(ast: Statement): SelectFromStatement | string {
   if (Array.isArray(ast.distinct)) return "The replay can't follow DISTINCT ON yet, so here's just its result.";
   if (ast.having && !ast.groupBy?.length) return "The replay can't follow HAVING without GROUP BY, so here's just its result.";
   let problem = "";
-  walk(ast, (n) => {
+  // Window functions are followed in the SELECT list only.
+  walk({ ...ast, columns: undefined }, (n) => {
     if (n.type && NESTED.has(n.type)) problem = "The replay can't follow a query inside a query yet, so here's just its result.";
-    else if (n.type === "call" && n.over) problem = "The replay can't follow window functions yet, so here's just its result.";
+    else if (n.type === "call" && n.over) problem = "The replay follows window functions in the SELECT list only, so here's just its result.";
+    return !problem;
+  });
+  walk(ast.columns, (n) => {
+    if (n.type && NESTED.has(n.type)) problem = "The replay can't follow a query inside a query yet, so here's just its result.";
     return !problem;
   });
   return problem || ast;
@@ -304,6 +309,42 @@ async function frames(db: Db, sql: string, { main: ast, around }: Shape, text: (
       });
       remaining = kept;
     }
+  }
+
+  // OVER: a window function's rows, split into groups and sorted the way the window sees them.
+  const windows: Node[] = [];
+  walk(selected, (n) => {
+    if (n.type === "call" && n.over) { windows.push(n); return false; }
+  });
+  if (windows.length) {
+    const win = windows[0]!;
+    const spec = win.over as { partitionBy?: Expr[]; orderBy?: { by: Expr; order?: string; nulls?: string }[] };
+    const parts = spec.partitionBy ?? [];
+    const sortBy = spec.orderBy ?? [];
+    const rank = { type: "call", function: { name: "dense_rank" }, args: [], over: { orderBy: parts.map((by) => ({ by })) } } as unknown as Expr;
+    const rw = await q(db, stmt({ columns: [...selected, ...(parts.length ? [{ expr: rank, alias: { name: "__g" } }] : [])], distinct: undefined, limit: undefined, orderBy: parts.length || sortBy.length ? ([...parts.map((by) => ({ by })), ...sortBy] as SelectFromStatement["orderBy"]) : undefined }));
+    const width = parts.length ? rw.fields.length - 1 : rw.fields.length;
+    const groups = parts.length ? rw.rows.map((r) => Number(r[width]) - 1) : undefined;
+    const fn = ((win.function as { name: string }).name ?? "").toLowerCase();
+    const sorted = sortBy.map((o) => text(o.by) + (o.order === "DESC" ? " DESC" : "")).join(", ");
+    const what =
+      fn === "row_number" ? `numbered the rows from 1${parts.length ? " in each group" : ""}`
+      : fn === "rank" ? "ranked them; ties share a rank"
+      : fn === "dense_rank" ? "ranked them; ties share a rank and no numbers are skipped"
+      : AGGREGATES.has(fn) ? (sortBy.length ? `worked out a running ${fn}` : parts.length ? `put each group's ${fn} on its rows` : `put the ${fn} of all of them on every row`)
+      : `worked out ${text(win)} for every row`;
+    const count = groups ? new Set(groups).size : 0;
+    const note = parts.length
+      ? `OVER split the ${plural(rw.rows.length, "row")} into ${plural(count, "group")} by ${parts.map(text).join(", ")}${sortBy.length ? `, sorted each by ${sorted}` : ""}, and ${what}.`
+      : `OVER ${sortBy.length ? `sorted the ${plural(rw.rows.length, "row")} by ${sorted} and` : `looked at all ${plural(rw.rows.length, "row")} at once and`} ${what}.`;
+    out.push({
+      clause: "OVER",
+      note,
+      columns: rw.fields.slice(0, width).map((x) => x.name),
+      rows: cap(rw.rows.map((r) => r.slice(0, width))),
+      total: rw.rows.length,
+      ...(groups ? { groups: cap(groups) } : {}),
+    });
   }
 
   // SELECT: the columns, before DISTINCT, ORDER BY and LIMIT.

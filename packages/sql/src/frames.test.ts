@@ -156,11 +156,43 @@ describe("buildReplay", () => {
     await endsOnRealResult(sql, r);
   });
 
+  it("splits, sorts and numbers rows for a window function", async () => {
+    const sql = "SELECT customer_id, id, ordered_at, row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, id DESC) AS rn FROM orders";
+    const r = await buildReplay(db, sql);
+    expect(clauses(r)).toEqual(["FROM", "OVER", "SELECT"]);
+    const over = frame(r, "OVER");
+    expect(new Set(over.groups).size).toBe(15);
+    expect(over.columns).toEqual(["customer_id", "id", "ordered_at", "rn"]);
+    // Each group starts at 1 and counts up.
+    over.rows.forEach((row, i) => {
+      const start = i === 0 || over.groups![i - 1] !== over.groups![i];
+      expect(Number(row[3])).toBe(start ? 1 : Number(over.rows[i - 1]![3]) + 1);
+    });
+    expect(over.note).toBe("OVER split the 60 rows into 15 groups by customer_id, sorted each by ordered_at DESC, id DESC, and numbered the rows from 1 in each group.");
+    await endsOnRealResult(sql, r);
+  });
+
+  it("follows a window over the whole result", async () => {
+    const sql = "SELECT name, price, rank() OVER (ORDER BY price DESC) AS r FROM products ORDER BY r, name";
+    const r = await buildReplay(db, sql);
+    expect(clauses(r)).toEqual(["FROM", "OVER", "SELECT", "ORDER BY"]);
+    expect(frame(r, "OVER").groups).toBeUndefined();
+    expect(frame(r, "OVER").note).toBe("OVER sorted the 15 rows by price DESC and ranked them; ties share a rank.");
+    await endsOnRealResult(sql, r);
+  });
+
+  it("follows a window over everything at once", async () => {
+    const sql = "SELECT id, sum(total) OVER () AS everything FROM orders";
+    const r = await buildReplay(db, sql);
+    expect(frame(r, "OVER").note).toBe("OVER looked at all 60 rows at once and put the sum of all of them on every row.");
+    await endsOnRealResult(sql, r);
+  });
+
   it("shows only the result for shapes it can't follow yet", async () => {
     for (const sql of [
       "WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i + 1 FROM n WHERE i < 3) SELECT i FROM n",
       "SELECT name FROM customers WHERE id IN (SELECT customer_id FROM orders)",
-      "SELECT id, row_number() OVER (ORDER BY total) FROM orders",
+      "SELECT id FROM orders ORDER BY row_number() OVER (ORDER BY total)",
       "SELECT 1 UNION SELECT 2",
       "SELECT 1 + 1",
       "UPDATE products SET stock = 0",

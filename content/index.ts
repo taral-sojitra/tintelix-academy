@@ -12,6 +12,7 @@ import { caseWhen } from "./sql/case-when/lesson";
 import { innerJoin } from "./sql/inner-join/lesson";
 import { leftJoin } from "./sql/left-join/lesson";
 import { cte } from "./sql/cte/lesson";
+import { rowNumber } from "./sql/row-number/lesson";
 import { subjects } from "./subjects";
 import { caching } from "./system-design/caching/lesson";
 import { cdn } from "./system-design/cdn/lesson";
@@ -79,7 +80,7 @@ export { components, subjects };
 export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange];
 
 /** Every written SQL lesson (task lessons, not diagram lessons). */
-export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset, aggregates, groupBy, having, caseWhen, innerJoin, leftJoin, cte];
+export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset, aggregates, groupBy, having, caseWhen, innerJoin, leftJoin, cte, rowNumber];
 
 export function getSqlLesson(slug: string): SqlLesson | undefined {
   return sqlLessons.find((l) => l.slug === slug);
