@@ -1496,6 +1496,12 @@ SQL_LESSONS = [
 ]
 
 
+async def sql_ready(page):
+    """Postgres has started in the page's worker (the stage alone can show before it has)."""
+    await page.wait_for_selector(SQL_READY, timeout=30000)
+    await expect(page.locator(".sql-status")).not_to_contain_text("Starting", timeout=30000)
+
+
 async def type_sql(page, sql):
     await page.locator(".cm-content").click()
     await page.keyboard.press("Control+A")
@@ -1566,7 +1572,7 @@ async def sql_flow(page):
 
 async def sql_timeout(page):
     await page.goto(BASE + "/sql/select", wait_until="load")
-    await page.wait_for_selector(SQL_READY, timeout=30000)
+    await sql_ready(page)
     await type_sql(page, "SELECT count(*) FROM generate_series(1, 10000000000)")
     await page.keyboard.press("Control+Enter")
     await expect(page.locator(".fb-error")).to_contain_text("took longer than 3 seconds", timeout=10000)
