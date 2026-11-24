@@ -1,0 +1,86 @@
+import type { Step } from "@tintelix/schema";
+
+export const dhcpSteps: Step[] = [
+  {
+    id: "no-address",
+    tag: "problem",
+    title: "A phone with no address",
+    short: "No address",
+    text: [
+      "A phone joins a café's Wi-Fi. It has a MAC address, but no IP address. It doesn't know the network's size, which router to send through, or which DNS server to ask for names. It can't even use ARP, because it doesn't know what to ask for.",
+      "Nobody is going to type those settings into every customer's phone. The network has to hand them out.",
+    ],
+    sim: { mode: "none", speed: 1 },
+    model: { mode: 0 },
+    live: "NO ADDRESS",
+  },
+  {
+    id: "dora",
+    tag: "technique",
+    title: "Discover, offer, request, acknowledge",
+    short: "Four messages",
+    text: [
+      "**DHCP** (Dynamic Host Configuration Protocol) takes four messages. **Discover**: the phone, with no address of its own, broadcasts to everyone: is there a DHCP server? **Offer**: the server picks a free address from its pool and offers it, 192.168.1.101.",
+      "**Request**: the phone broadcasts again, \"I'll take .101\", so any other server that made an offer knows it lost. **Ack**: the server confirms. The address is the phone's for a **{leaseHours}-hour lease**.",
+    ],
+    note: { kind: "tip", text: "Discover, Offer, Request, Ack: people remember it as DORA." },
+    changed: [{ kind: "add", label: "DHCP", value: "4 messages" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · four messages",
+  },
+  {
+    id: "what-it-gets",
+    tag: "solution",
+    title: "Four settings and a lease",
+    short: "What it gets",
+    text: [
+      "The ACK carries more than an address. The phone leaves with its **IP** (192.168.1.101), the **mask** (255.255.255.0, so it knows its subnet), the **default gateway** (192.168.1.1, where everything off the subnet goes) and a **DNS server** to turn names into addresses.",
+      "Now it can do everything from the last two lessons: AND addresses with the mask, ARP for the gateway's MAC, and send its first packet.",
+    ],
+    note: { kind: "next", text: "The DNS server it was given gets its own lesson in the Application module." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · what it gets",
+  },
+  {
+    id: "lease",
+    tag: "technique",
+    title: "Lent, not given",
+    short: "The lease",
+    text: [
+      "The address is **lent**. Halfway through the lease, at **{renewHours} hours**, the phone asks the server directly to keep it, and usually gets the same address for another {leaseHours} hours. If the phone leaves, it stops renewing, and the address goes back to the pool when the lease runs out.",
+      "That's how a network with a hundred addresses can serve thousands of people over a week, as long as they don't all come at once.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · the lease",
+  },
+  {
+    id: "the-pool",
+    tag: "problem",
+    title: "Long leases run the pool dry",
+    short: "The pool",
+    text: [
+      "The café's pool has **{poolSize}** addresses and **{visitorsPerDay}** visitors a day, each staying under an hour. An address stays taken for the whole lease after its visitor arrives, gone or not. With {leaseHours}-hour leases about **{held}** are held at once: **{poolUsedPct}** of the pool.",
+      "Stretch the lease to a day and departed customers' leases pile up: **{failPct}** of newcomers find no address left. Busy guest networks use short leases; an office, where the same laptops come back daily, can use long ones.",
+    ],
+    note: { kind: "turn", text: "Drag the lease up to 24 hours and watch newcomers start failing." },
+    controls: ["leaseHours", "visitorsPerDay"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · the pool",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "An address for a newcomer",
+    short: "Recap",
+    text: [
+      "A new device gets its settings in four messages: discover, offer, request, ack. It leaves with an IP, a mask, a gateway and a DNS server, on a lease it renews at the halfway point. Lease length trades churn for pool size: short for busy guest networks, long where the same devices return.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "RECAP",
+  },
+];

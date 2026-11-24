@@ -142,3 +142,36 @@ describe("arp widget", () => {
     expect(cache(root)).toBe("192.168.1.1 → 02:aa:bb:cc:dd:01 · 55 s left");
   });
 });
+
+const dhcp: BoardWidget = { kind: "custom", name: "dhcp" };
+const msgs = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-dhcp-msg")].filter((l) => !l.hidden).map((l) => l.textContent);
+const settings = (root: HTMLElement) => [...root.querySelectorAll(".tx-dhcp-set b")].map((b) => b.textContent);
+
+describe("dhcp widget", () => {
+  it("starts with no settings at all", () => {
+    const root = mount(dhcp, { dhcpStage: 0, leaseHours: 4 }, 3);
+    expect(msgs(root)).toEqual([]);
+    expect(settings(root)).toEqual(["—", "—", "—", "—", "—"]);
+  });
+
+  it("plays discover, offer, request, acknowledge, then fills in the settings", () => {
+    const root = mount(dhcp, { dhcpStage: 1, leaseHours: 4 }, 0.5);
+    expect(msgs(root)).toEqual(["DISCOVER → everyone: is there a DHCP server?"]);
+    paintWidget(root, dhcp, { dhcpStage: 1, leaseHours: 4 }, 2.6);
+    expect(msgs(root)).toEqual([
+      "DISCOVER → everyone: is there a DHCP server?",
+      "OFFER → phone: you can have 192.168.1.101",
+      "REQUEST → everyone: I'll take 192.168.1.101",
+    ]);
+    expect(settings(root)[0]).toBe("—");
+    paintWidget(root, dhcp, { dhcpStage: 1, leaseHours: 4 }, 5);
+    expect(msgs(root)[3]).toBe("ACK → phone: it's yours for 4 h");
+    expect(settings(root)).toEqual(["192.168.1.101", "255.255.255.0", "192.168.1.1", "192.168.1.1", "4 h"]);
+  });
+
+  it("once settled, shows when the phone will renew", () => {
+    const root = mount(dhcp, { dhcpStage: 2, leaseHours: 4 }, 1);
+    expect(msgs(root)).toEqual(["at 2 h: REQUEST → server: may I keep 192.168.1.101?"]);
+    expect(settings(root)[4]).toBe("4 h");
+  });
+});

@@ -32,6 +32,12 @@ const ARP_REPLY_SEC = 1.2;
 const ARP_CACHE_SEC = 2.4;
 const ARP_CYCLE_SEC = 4;
 
+/** DHCP: one message every 1.2 s of a 6 s cycle; the settings fill in once the ACK has arrived. */
+const DHCP_STEP_SEC = 1.2;
+const DHCP_CYCLE_SEC = 6;
+const DHCP_IP = "192.168.1.101";
+const hours = (h: number) => `${Number.isInteger(h) ? h : h.toFixed(1)} h`;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -176,6 +182,36 @@ export const NET_CUSTOM: Record<string, Custom> = {
       const el = root.querySelector(".tx-arp-row")!;
       setText(el, row);
       el.classList.toggle("known", known);
+    },
+  },
+  /**
+   * DHCP from the newcomer's side: the four messages (`dhcpStage` 1 plays them), the settings the phone
+   * ends up with, and (stage 2) when it will renew, at half of `leaseHours`.
+   */
+  dhcp: {
+    html: (key) =>
+      `<div class="tx-dhcp" data-w="${key}"><div class="tx-dhcp-msgs">${'<p class="tx-dhcp-msg"></p>'.repeat(5)}</div><dl class="tx-dhcp-set">${["IP", "mask", "gateway", "DNS", "lease"].map((k) => `<div><dt>${k}</dt><b></b></div>`).join("")}</dl></div>`,
+    paint(root, d, clock) {
+      const stage = Math.round(num(d, "dhcpStage", 0));
+      const lease = Math.max(0, num(d, "leaseHours", 4));
+      const t = Math.max(0, clock) % DHCP_CYCLE_SEC;
+      const seen = stage === 1 ? Math.min(4, Math.floor(t / DHCP_STEP_SEC) + 1) : 0;
+      const lines = [
+        "DISCOVER → everyone: is there a DHCP server?",
+        `OFFER → phone: you can have ${DHCP_IP}`,
+        `REQUEST → everyone: I'll take ${DHCP_IP}`,
+        `ACK → phone: it's yours for ${hours(lease)}`,
+        `at ${hours(lease / 2)}: REQUEST → server: may I keep ${DHCP_IP}?`,
+      ];
+      root.querySelectorAll<HTMLElement>(".tx-dhcp-msg").forEach((p, n) => {
+        p.hidden = n < 4 ? n >= seen : stage !== 2;
+        p.className = `tx-dhcp-msg ${n === 1 || n === 3 ? "down" : "up"}`;
+        setText(p, lines[n]!);
+      });
+      const known = stage === 2 || (stage === 1 && t >= 4 * DHCP_STEP_SEC);
+      const values = [DHCP_IP, "255.255.255.0", "192.168.1.1", "192.168.1.1", hours(lease)];
+      root.querySelectorAll(".tx-dhcp-set b").forEach((b, n) => setText(b, known ? values[n]! : "—"));
+      root.querySelector(".tx-dhcp-set")!.classList.toggle("known", known);
     },
   },
 };
