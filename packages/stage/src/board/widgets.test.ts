@@ -104,4 +104,18 @@ describe("board widgets", () => {
     paintWidget(root, w, { replicas: 3, writeQuorum: 3, readQuorum: 1, downReplica: 2 }, 0);
     expect(root.querySelector(".tx-calc-s")!.textContent).toBe("Only 2 of 3 replicas up: writes need 3");
   });
+  it("frontier widget shows per-host queues and when each site may be fetched next", () => {
+    const w: BoardWidget = { kind: "custom", name: "frontier" };
+    const root = mount(w, { politeDelay: 1 }, 0);
+    const rows = () => [...root.querySelectorAll(".tx-hq-row")].map((r) => [r.querySelector("em")!.textContent, r.querySelectorAll("i.on").length, r.querySelector("b")!.textContent]);
+    expect(rows()).toEqual([
+      ["news.example", 5, "ready"],
+      ["blog.example", 2, "in 0.8 s"],
+      ["shop.example", 3, "in 0.5 s"],
+      ["wiki.example", 1, "in 0.3 s"],
+    ]);
+    paintWidget(root, w, { politeDelay: 1 }, 0.5);
+    expect(rows()[0]![2]).toBe("in 0.5 s");
+    expect(rows()[2]![2]).toBe("ready");
+  });
 });

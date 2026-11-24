@@ -8,11 +8,28 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Sample sites in the crawler's frontier: name, URLs waiting, and where in its wait it starts (0–1). */
+const FRONTIER_HOSTS: [string, number, number][] = [["news.example", 5, 0], ["blog.example", 2, 0.25], ["shop.example", 3, 0.5], ["wiki.example", 1, 0.75]];
+
 /** The seven steps of a design interview and the minutes each gets out of 45. */
 const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API", 5], ["data", 5], ["design", 10], ["deep dive", 10], ["bottlenecks", 5]];
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A crawler's per-host queues: how many URLs each site has waiting and when it may be fetched next. */
+  frontier: {
+    html: (key) =>
+      `<div class="tx-hq" data-w="${key}">${FRONTIER_HOSTS.map(([host]) => `<div class="tx-hq-row"><em>${esc(host)}</em><span>${"<i></i>".repeat(5)}</span><b></b></div>`).join("")}</div>`,
+    paint(root, d, clock) {
+      const delay = Math.max(0.1, d.politeDelay ?? 1);
+      root.querySelectorAll<HTMLElement>(".tx-hq-row").forEach((row, i) => {
+        const [, n, offset] = FRONTIER_HOSTS[i]!;
+        row.querySelectorAll("i").forEach((c, k) => c.classList.toggle("on", k < n));
+        const wait = (delay - ((Math.max(0, clock) + offset * delay) % delay)) % delay;
+        row.querySelector("b")!.textContent = wait < 0.05 ? "ready" : `in ${wait.toFixed(1)} s`;
+      });
+    },
+  },
   /** N replica slots, with the W a write waits for and the R a read asks, and whether they must overlap. */
   quorum: {
     html: (key) =>
