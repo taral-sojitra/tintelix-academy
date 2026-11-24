@@ -794,3 +794,13 @@
 .tx-lad-row.r span::after { right: -2px; border-left: 8px solid var(--cyan); border-right: 0; }
 .tx-lad-row.l span::after { left: -2px; border-right: 8px solid var(--green); border-left: 0; }
 .tx-lad-cap { margin: 2px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a server's socket table, listening programs and connections. */
+.tx-sock { margin-top: 8px; display: grid; gap: 3px; }
+.tx-sock-head, .tx-sock-row { display: grid; grid-template-columns: 46px 112px minmax(0, 1fr) 70px; gap: 6px; font-family: var(--mono); font-size: 10.5px; }
+.tx-sock-head { color: var(--node-sub); }
+.tx-sock-row { padding: 2px 4px; margin: 0 -4px; border-radius: 4px; color: var(--node-ink); }
+.tx-sock-row[hidden] { display: none; }
+.tx-sock-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-sock-row.pick { background: color-mix(in srgb, var(--amber) 26%, transparent); }
+.tx-sock-cap { margin: 4px 0 0; font-family: var(--mono); color: var(--cyan); }

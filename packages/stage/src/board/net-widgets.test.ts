@@ -245,3 +245,40 @@ describe("ladder widget", () => {
     expect(ladCap(root)).toBe("closed: each side sent a FIN and got an ACK");
   });
 });
+
+const sockets: BoardWidget = { kind: "custom", name: "sockets" };
+const sockRows = (root: HTMLElement) =>
+  [...root.querySelectorAll<HTMLElement>(".tx-sock-row")].filter((r) => !r.hidden).map((r) => [...r.querySelectorAll("span")].map((c) => c.textContent));
+const sockCap = (root: HTMLElement) => root.querySelector(".tx-sock-cap")!.textContent;
+
+describe("sockets widget", () => {
+  it("lists the three listening programs before any connection", () => {
+    const root = mount(sockets, { sockStage: 0 });
+    expect(sockRows(root)).toEqual([
+      ["LISTEN", "*:443", "", "web server"],
+      ["LISTEN", "*:22", "", "SSH"],
+      ["LISTEN", "*:5432", "", "database"],
+    ]);
+    expect(sockCap(root)).toBe("3 programs listening, one port each");
+  });
+
+  it("tells five connections to one address apart by their ends", () => {
+    const root = mount(sockets, { sockStage: 1 });
+    const rows = sockRows(root);
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toEqual(["TCP", "203.0.113.5:443", "198.51.100.7:51000", "web server"]);
+    expect(rows[1]).toEqual(["TCP", "203.0.113.5:443", "198.51.100.7:51001", "web server"]);
+    const picked = [...root.querySelectorAll<HTMLElement>(".tx-sock-row.pick")].map((r) => r.querySelector("span:nth-child(3)")!.textContent);
+    expect(picked).toEqual(["198.51.100.7:51000", "198.51.100.7:51001"]);
+    expect(sockCap(root)).toBe("5 connections, 1 address: told apart by protocol and both ends' IP and port");
+  });
+
+  it("gives the app server a fresh source port for every new connection", () => {
+    const root = mount(sockets, { sockStage: 2 }, 0);
+    const port = () => root.querySelector(".tx-sock-row.pick span:nth-child(3)")!.textContent;
+    expect(port()).toBe("198.51.100.30:40000");
+    paintWidget(root, sockets, { sockStage: 2 }, 2);
+    expect(port()).toBe("198.51.100.30:40010");
+    expect(sockCap(root)).toBe("each new connection from the app server takes a fresh source port");
+  });
+});
