@@ -40,3 +40,12 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Replay: a summary over a column now says how many NULLs it skipped ("count(city) skipped 4 NULLs"), the HLD's
   point for this lesson.
 - Feedback: a one-row answer with the wrong value now reads "One row, as expected, but its values are different."
+
+## 7. GROUP BY: Who spends the most?
+
+- Tasks: orders per status; products and stock per category; spend per customer without cancelled orders, biggest
+  first (the HLD mock-up's hook); orders per month (the starter groups by day, 55 groups instead of 10); customers per
+  country and city, where missing cities form their own group.
+- Call: the first starter is `SELECT status FROM orders`, not the erroring `SELECT status, count(*)`, because the HLD
+  says starters always run. The hint invites the learner to try count(*) without GROUP BY and read the plain-word
+  error, and the content check now enforces "starters run" for every lesson.
