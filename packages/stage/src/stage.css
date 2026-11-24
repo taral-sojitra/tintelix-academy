@@ -830,3 +830,13 @@
 .tx-wf-bar .r, .tx-wf-key .r::before { background: color-mix(in srgb, var(--cyan) 55%, transparent); }
 .tx-wf-key { margin: 0; display: flex; gap: 14px; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
 .tx-wf-key span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 2px; vertical-align: -1px; }
+
+/* Networks: a switch's MAC table and what it does with the current frame. */
+.tx-mac { margin-top: 6px; display: grid; gap: 6px; }
+.tx-mac-rows { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tx-mac-row { margin: 0; display: flex; justify-content: space-between; gap: 6px; padding: 4px 8px; border-radius: 6px; font-family: var(--mono); font-size: 11.5px; background: color-mix(in srgb, var(--cyan) 18%, transparent); }
+.tx-mac-row[hidden] { display: none; }
+.tx-mac-row em { font-style: normal; color: var(--node-ink); }
+.tx-mac-row span { color: var(--node-sub); }
+.tx-mac-row.new { background: color-mix(in srgb, var(--amber) 28%, transparent); }
+.tx-mac-now { margin: 0; font-family: var(--mono); color: var(--cyan); }

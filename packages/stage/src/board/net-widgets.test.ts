@@ -340,3 +340,33 @@ describe("waterfall widget", () => {
     expect(rows[2]!.querySelector<HTMLElement>(".tx-wf-bar i")!.style.width).toBe("10%");
   });
 });
+
+const mactable: BoardWidget = { kind: "custom", name: "mactable" };
+const macRows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-mac-row")].filter((r) => !r.hidden).map((r) => [r.querySelector("em")!.textContent, r.querySelector("span")!.textContent]);
+const macNow = (root: HTMLElement) => root.querySelector(".tx-mac-now")!.textContent;
+
+describe("mactable widget", () => {
+  it("starts with an empty table", () => {
+    const root = mount(mactable, { macStage: 0 });
+    expect(macRows(root)).toEqual([]);
+    expect(macNow(root)).toBe("table empty: the switch knows nobody yet");
+  });
+
+  it("learns from each frame's source and floods until it knows the destination", () => {
+    const root = mount(mactable, { macStage: 1 }, 0.5);
+    expect(macRows(root)).toEqual([["A1", "port 1"]]);
+    expect(macNow(root)).toBe("A1 → A2: learn A1 is on port 1; A2 unknown, so flood every port");
+    paintWidget(root, mactable, { macStage: 1 }, 2);
+    expect(macRows(root)).toEqual([["A1", "port 1"], ["A2", "port 2"]]);
+    expect(macNow(root)).toBe("A2 → A1: learn A2 is on port 2; A1 known, so port 1 only");
+    paintWidget(root, mactable, { macStage: 1 }, 3.4);
+    expect(macNow(root)).toBe("A1 → A2: A2 known, so port 2 only");
+  });
+
+  it("once full, sends every frame out of one port, and off-network ones to the router", () => {
+    const full = mount(mactable, { macStage: 2 });
+    expect(macRows(full)).toEqual([["A1", "port 1"], ["A2", "port 2"], ["A3", "port 3"], ["router", "port 4"]]);
+    expect(macNow(full)).toBe("every frame goes out of one port");
+    expect(macNow(mount(mactable, { macStage: 3 }))).toBe("A1 → B1: another network, so the frame goes to the router's MAC, port 4");
+  });
+});
