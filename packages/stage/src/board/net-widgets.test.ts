@@ -114,3 +114,31 @@ describe("subnets widget", () => {
     expect(root.querySelector(".tx-sn-cap")!.textContent).toBe("same subnet: A sends straight to B");
   });
 });
+
+const arp: BoardWidget = { kind: "custom", name: "arp" };
+const shownText = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-arp-line")].filter((l) => !l.hidden).map((l) => l.textContent);
+const cache = (root: HTMLElement) => root.querySelector(".tx-arp-row")!.textContent;
+
+describe("arp widget", () => {
+  it("starts with nothing cached for the router", () => {
+    const root = mount(arp, { arpStage: 0, cacheSec: 60 }, 2);
+    expect(shownText(root)).toEqual([]);
+    expect(cache(root)).toBe("192.168.1.1 → ?");
+  });
+
+  it("asks everyone, hears the router's answer, then caches it", () => {
+    const root = mount(arp, { arpStage: 1, cacheSec: 60 }, 0.5);
+    expect(shownText(root)).toEqual(["to ff:ff:ff:ff:ff:ff (everyone): who has 192.168.1.1? tell 192.168.1.42"]);
+    expect(cache(root)).toBe("192.168.1.1 → ?");
+    paintWidget(root, arp, { arpStage: 1, cacheSec: 60 }, 1.6);
+    expect(shownText(root)[1]).toBe("to 02:1a:2b:3c:4d:5e: 192.168.1.1 is at 02:aa:bb:cc:dd:01");
+    paintWidget(root, arp, { arpStage: 1, cacheSec: 60 }, 3);
+    expect(cache(root)).toBe("192.168.1.1 → 02:aa:bb:cc:dd:01");
+  });
+
+  it("sends straight to the cached address while the entry lasts", () => {
+    const root = mount(arp, { arpStage: 2, cacheSec: 60 }, 5.2);
+    expect(shownText(root)).toEqual(["to 02:aa:bb:cc:dd:01 directly: no broadcast"]);
+    expect(cache(root)).toBe("192.168.1.1 → 02:aa:bb:cc:dd:01 · 55 s left");
+  });
+});
