@@ -14,8 +14,6 @@ import { QueryEditor } from "./QueryEditor";
 import { ReplayStage } from "./Replay";
 import { ResultTable } from "./ResultTable";
 
-const NOT_YET = "The replay for this kind of statement comes in a later lesson; the result is on the right.";
-
 function status(checked: Checked | null, busy: boolean, booted: boolean): string {
   if (busy) return booted ? "Running…" : "Starting Postgres in your browser…";
   if (!checked) return booted ? "Postgres is ready · runs in your browser" : "Starting Postgres in your browser…";
@@ -48,9 +46,8 @@ export function SqlLessonView({ slug }: { slug: string }) {
   const setDraft = useCallback((sql: string) => setDrafts((d) => ({ ...d, [task.id]: sql })), [task.id]);
 
   /** Replays a query that already ran, or says why there's nothing to replay. */
-  const replayOf = useCallback(async (sql: string, kind: string | undefined, ok: boolean) => {
+  const replayOf = useCallback(async (sql: string, ok: boolean) => {
     if (!ok) return setReplay({ supported: false, reason: "Your query didn't run, so there's nothing to replay. The message on the right says why." });
-    if ((kind ?? "read") !== "read") return setReplay({ supported: false, reason: NOT_YET });
     setReplay(await client.current!.replay(sql));
   }, []);
 
@@ -68,7 +65,7 @@ export function SqlLessonView({ slug }: { slug: string }) {
       setCurrent(first);
       if (!(await store.getProgress(lesson.id))) void store.saveStep(lesson.id, 0, lesson.tasks.length);
       const t = lesson.tasks[first]!;
-      const r = (t.kind ?? "read") === "read" ? await c.replay(t.starter) : { supported: false as const, reason: NOT_YET };
+      const r = await c.replay(t.starter);
       if (!live) return;
       setReplay(r);
       setBooted(true);
@@ -95,7 +92,7 @@ export function SqlLessonView({ slug }: { slug: string }) {
       void store.setPref(prefKey, next);
       void store.saveStep(lesson.id, next.length - 1, lesson.tasks.length);
     }
-    await replayOf(draft, task.kind, result.run.ok);
+    await replayOf(draft, result.run.ok);
     setBusy(false);
   }, [busy, draft, lesson, prefKey, replayOf, solved, task]);
 
@@ -108,7 +105,7 @@ export function SqlLessonView({ slug }: { slug: string }) {
       setHelp({ hint: false, solution: false });
       if (client.current && !busy) {
         setBusy(true);
-        await replayOf(drafts[t.id] ?? t.starter, t.kind, true);
+        await replayOf(drafts[t.id] ?? t.starter, true);
         setBusy(false);
       }
     },

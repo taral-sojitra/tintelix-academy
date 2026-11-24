@@ -65,6 +65,10 @@
 .sql-table tr.m-fail td, .sql-table tr.m-unknown td { animation: sql-drop .5s .45s ease both; }
 .sql-table tr.m-unknown td { background: var(--amber-soft); }
 .sql-table tr.m-filled td { background: var(--violet-soft); }
+.sql-table tr.m-new td { background: var(--green-soft); animation: sql-new .6s .3s ease both; }
+.sql-table tr.m-changed td { background: var(--amber-soft); }
+.sql-table tr.m-gone td { background: var(--red-soft); animation: sql-drop .5s .45s ease both; }
+@keyframes sql-new { from { opacity: 0; transform: translateX(-8px); } }
 .sql-table tr.m-filled .null { color: var(--violet); font-style: normal; font-weight: 600; }
 @keyframes sql-drop { to { opacity: .35; text-decoration: line-through; } }
 .sql-table tr.g-start td { border-top: 2px solid var(--border-strong); }

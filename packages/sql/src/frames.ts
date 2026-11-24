@@ -1,4 +1,5 @@
 import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement, type Statement, type WithStatement } from "pgsql-ast-parser";
+import { changeFrames } from "./changes";
 import { normalise } from "./compare";
 import type { Db, QueryResult } from "./db";
 
@@ -7,9 +8,12 @@ import type { Db, QueryResult } from "./db";
  * Every frame is the result of real SQL run in PGlite, and the last frame is the real result.
  */
 
-export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT";
-/** pass, fail, unknown: what WHERE or HAVING said. filled and plain: whether an outer join filled the row with NULLs. */
-export type Mark = "pass" | "fail" | "unknown" | "filled" | "plain";
+export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE";
+/**
+ * pass, fail, unknown: what WHERE or HAVING said. filled: a row an outer join filled with NULLs.
+ * new, changed, gone: what INSERT, UPDATE or DELETE did to a row. plain: nothing to mark.
+ */
+export type Mark = "pass" | "fail" | "unknown" | "filled" | "new" | "changed" | "gone" | "plain";
 
 export interface Frame {
   clause: Clause;
@@ -60,15 +64,7 @@ interface Shape {
   around?: WithStatement;
 }
 
-function readShape(sql: string): Shape | string {
-  let statements;
-  try {
-    statements = parse(sql, { locationTracking: true });
-  } catch {
-    return "The replay can't read this query yet, so here's just its result.";
-  }
-  if (statements.length !== 1) return "The replay follows one query at a time; this shows the last result.";
-  const ast = statements[0]!;
+function readShape(ast: Statement): Shape | string {
   if (ast.type === "with recursive") return "The replay can't follow WITH RECURSIVE yet, so here's just its result.";
   if (ast.type === "with") {
     const main = checkSelect(ast.in);
@@ -145,17 +141,35 @@ async function joinNote(
   return parts.length ? " " + parts.join(" ") : "";
 }
 
+/**
+ * Replays the last statement of what the learner ran; any statements before it run first, in the same
+ * transaction, which is rolled back afterwards.
+ */
 export async function buildReplay(db: Db, sql: string): Promise<Replay> {
-  const shape = readShape(sql);
-  if (typeof shape === "string") return no(shape);
+  let statements: Statement[];
+  try {
+    statements = parse(sql, { locationTracking: true });
+  } catch {
+    return no("The replay can't read this query yet, so here's just its result.");
+  }
+  const last = statements[statements.length - 1];
+  if (!last) return no("There's nothing to replay.");
+  // Each statement's text runs from its start to the next one's (the parser's end positions can fall short).
+  const starts = statements.map((n) => (n as Located)._location?.start ?? 0);
+  const source = (i: number) => sql.slice(starts[i], starts[i + 1] ?? sql.length).trim().replace(/;$/, "");
+  const first = statements.slice(0, -1).map((_, i) => source(i)).join(";\n");
   const text = (n: unknown): string => {
     const loc = (n as Located)._location;
     return loc ? sql.slice(loc.start, loc.end).trim() : toSql.expr(n as Expr);
   };
+  const shape = last.type === "insert" || last.type === "update" || last.type === "delete" ? null : readShape(last);
+  if (typeof shape === "string") return no(shape);
 
   await db.exec("BEGIN");
   try {
-    return await frames(db, sql, shape, text);
+    if (first) await db.exec(first);
+    if (last.type === "insert" || last.type === "update" || last.type === "delete") return await changeFrames(db, last);
+    return await frames(db, source(statements.length - 1), shape!, text);
   } catch {
     return no("The replay couldn't follow this query, so here's just its result.");
   } finally {
