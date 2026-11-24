@@ -10,11 +10,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@electric-sql/pglite": "^0.6.0",
     "@fontsource/bricolage-grotesque": "^5.2.10",
     "@fontsource/ibm-plex-mono": "^5.2.7",
     "@fontsource/inter": "^5.2.8",
     "@tintelix/content": "workspace:*",
     "@tintelix/schema": "workspace:*",
+    "@tintelix/sql": "workspace:*",
     "@tintelix/stage": "workspace:*",
     "@tintelix/store": "workspace:*",
     "@tintelix/theme": "workspace:*",
