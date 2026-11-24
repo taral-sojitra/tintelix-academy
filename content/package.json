@@ -4,5 +4,6 @@
   "private": true,
   "type": "module",
   "exports": { ".": "./index.ts" },
-  "dependencies": { "@tintelix/schema": "workspace:*" }
+  "dependencies": { "@tintelix/schema": "workspace:*" },
+  "devDependencies": { "@tintelix/sql": "workspace:*" }
 }

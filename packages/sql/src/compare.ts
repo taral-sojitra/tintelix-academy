@@ -87,7 +87,10 @@ export function compareResults(
       extra.length ? `${missing.length ? extra.length : plural(extra.length, "row")} shouldn't be there` : "",
     ].filter(Boolean);
     const lead = `Your query returned ${plural(actual.rows.length, "row")}; the answer has ${expected.rows.length}.`;
-    return { ok: false, kind: "rows", message: `${lead} ${parts.join(" and ")}.`, missing: missing.slice(0, 3), extra: extra.slice(0, 3) };
+    const message = actual.rows.length === expected.rows.length
+      ? `You have the right number of rows (${expected.rows.length}), but ${missing.length} ${missing.length === 1 ? "has" : "have"} different values.`
+      : `${lead} ${parts.join(" and ")}.`;
+    return { ok: false, kind: "rows", message, missing: missing.slice(0, 3), extra: extra.slice(0, 3) };
   }
 
   if (opts.ordered) {

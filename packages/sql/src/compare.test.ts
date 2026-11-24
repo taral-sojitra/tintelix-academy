@@ -51,6 +51,11 @@ describe("compareResults", () => {
       expect(g.message).toBe("Your query returned 4 rows; the answer has 5. 5 rows are missing and 4 shouldn't be there.");
     }
   });
+  it("says how many rows have different values when the count is right", () => {
+    const f = compareResults(rs(["x"], [[1], [2], [3]]), rs(["x"], [[1], [5], [6]]), { ordered: false });
+    expect(f).toMatchObject({ ok: false, kind: "rows" });
+    if (!f.ok) expect(f.message).toBe("You have the right number of rows (3), but 2 have different values.");
+  });
   it("says where each row should be when only the order is wrong", () => {
     const want = rs(["x"], [[1], [2], [3]]);
     const f = compareResults(want, rs(["x"], [[3], [1], [2]]), { ordered: true });

@@ -90,6 +90,10 @@ importers:
       '@tintelix/schema':
         specifier: workspace:*
         version: link:../packages/schema
+    devDependencies:
+      '@tintelix/sql':
+        specifier: workspace:*
+        version: link:../packages/sql
 
   packages/schema:
     dependencies:
