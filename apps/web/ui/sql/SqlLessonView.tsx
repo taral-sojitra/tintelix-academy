@@ -13,18 +13,7 @@ import { Md } from "./Md";
 import { QueryEditor } from "./QueryEditor";
 import { ReplayStage } from "./Replay";
 import { ResultTable } from "./ResultTable";
-
-function status(checked: Checked | null, busy: boolean, booted: boolean): string {
-  if (busy) return booted ? "Running…" : "Starting Postgres in your browser…";
-  if (!checked) return booted ? "Postgres is ready · runs in your browser" : "Starting Postgres in your browser…";
-  const run = checked.run;
-  if (!run.ok) return "Didn't run · runs in your browser";
-  const ms = run.ms < 1 ? "under 1 ms" : `${Math.round(run.ms)} ms`;
-  const rows = run.result.columns.length
-    ? `${run.rowCount} ${run.rowCount === 1 ? "row" : "rows"}`
-    : `${run.command} · ${run.rowCount} ${run.rowCount === 1 ? "row" : "rows"} changed`;
-  return `${rows} · ${ms} · runs in your browser`;
-}
+import { runStatus } from "./status";
 
 /** A SQL task lesson: explanation and tasks, the replay and editor, then feedback, result and dataset. */
 export function SqlLessonView({ slug }: { slug: string }) {
@@ -220,7 +209,7 @@ export function SqlLessonView({ slug }: { slug: string }) {
         </div>
         <ReplayStage replay={replay} waiting={booted ? undefined : "Starting Postgres in your browser…"} />
         <p className="sql-status" role="status">
-          {status(checked, busy, booted)}
+          {runStatus(checked, busy, booted)}
         </p>
         <QueryEditor value={draft} onChange={setDraft} onRun={() => void run()} />
         <div className="sql-runbar">

@@ -1,8 +1,8 @@
 /* SQL task lessons: learn | work (replay + editor) | check (feedback, result, dataset). */
 .sql-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; grid-template-areas: "learn work check"; gap: 20px; align-items: start; }
 .sql-learn { grid-area: learn; display: grid; gap: 14px; }
-.sql-work { grid-area: work; display: grid; gap: 10px; min-width: 0; }
-.sql-check { grid-area: check; display: grid; gap: 14px; min-width: 0; }
+.sql-work { grid-area: work; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+.sql-check { grid-area: check; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 
 .sql-grid code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink); }
 .sql-grid pre { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.55; }
@@ -33,7 +33,7 @@
 .sql-now p { font-size: 15.5px; color: var(--ink); margin-top: 2px; }
 
 /* The stage */
-.sql-stage { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--stage); border: 1px solid var(--border); min-height: 240px; align-content: start; }
+.sql-stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; border-radius: 14px; background: var(--stage); border: 1px solid var(--border); min-height: 240px; align-content: start; }
 .sql-stage.empty { place-content: center; text-align: center; }
 .sql-stage-msg { color: var(--label); font-size: 14px; max-width: 46ch; }
 .sql-stage-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
