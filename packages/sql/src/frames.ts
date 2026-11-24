@@ -9,7 +9,7 @@ import type { Db, QueryResult } from "./db";
  * Every frame is the result of real SQL run in PGlite, and the last frame is the real result.
  */
 
-export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE" | "CREATE TABLE";
+export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE" | "CREATE TABLE" | "ALTER TABLE" | "AFTER";
 /**
  * pass, fail, unknown: what WHERE or HAVING said. filled: a row an outer join filled with NULLs.
  * new, changed, gone: what INSERT, UPDATE or DELETE did to a row. plain: nothing to mark.
@@ -38,7 +38,7 @@ export type Replay = { supported: true; frames: Frame[] } | { supported: false; 
 export const MAX_FRAME_ROWS = 200;
 const AGGREGATES = new Set(["count", "sum", "avg", "min", "max", "string_agg", "array_agg", "bool_and", "bool_or", "every"]);
 /** Statements that make or change tables, replayed by ddl.ts. */
-const DDL = new Set(["create table"]);
+const DDL = new Set(["create table", "alter table"]);
 const NESTED = new Set(["select", "union", "union all", "with", "with recursive", "values"]);
 const TEXT_TYPES = new Set([19, 25, 1042, 1043]);
 const DATE_TYPES = new Set([1082, 1114, 1184]);

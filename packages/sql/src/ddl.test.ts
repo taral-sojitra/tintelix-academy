@@ -40,3 +40,27 @@ describe("CREATE TABLE replay", () => {
     ]);
   });
 });
+
+describe("ALTER TABLE replay", () => {
+  it("shows the columns before and after, and what the rows got", async () => {
+    const r = await buildReplay(db, "ALTER TABLE products ADD COLUMN discount numeric(5,2) NOT NULL DEFAULT 0");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames.map((f) => f.clause)).toEqual(["BEFORE", "ALTER TABLE", "AFTER"]);
+    expect(r.frames[0]!.note).toBe("products has 5 columns and 15 rows.");
+    const alter = r.frames[1]!;
+    expect(alter.note).toBe("ALTER TABLE added discount to products.");
+    expect(alter.marks).toEqual(["plain", "plain", "plain", "plain", "plain", "new"]);
+    expect(r.frames[2]!.note).toBe("All 15 rows got discount = 0.00.");
+    expect(r.frames[2]!.columns).toContain("discount");
+  });
+
+  it("marks dropped and renamed columns", async () => {
+    const r = await buildReplay(db, "ALTER TABLE orders DROP COLUMN coupon");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames[0]!.marks?.[5]).toBe("gone");
+    expect(r.frames[1]!.note).toBe("ALTER TABLE dropped coupon from orders.");
+    const n = await buildReplay(db, "ALTER TABLE customers ADD COLUMN points integer");
+    if (!n.supported) throw new Error(n.reason);
+    expect(n.frames[2]!.note).toBe("All 20 rows have NULL in points, because it has no default.");
+  });
+});

@@ -24,6 +24,10 @@ describe("plainError", () => {
   it("names the unknown type and suggests real ones", () => {
     expect(plainError("42704", 'type "strng" does not exist')).toBe("There's no type called strng. Common ones: integer, numeric(10,2), text, date, boolean.");
   });
+  it("explains why a new required column needs a default", () => {
+    expect(plainError("23502", 'column "points" of relation "customers" contains null values'))
+      .toBe("points can't be NOT NULL yet: the rows already in customers would have NULL in it. Give it a DEFAULT so they get a value.");
+  });
   it("names the unknown column", () => {
     expect(plainError("42703", 'column "nme" does not exist')).toBe("There's no column called nme. Check the spelling against the dataset card.");
   });

@@ -1,6 +1,6 @@
 import type { Statement } from "pgsql-ast-parser";
 import type { Db } from "./db";
-import type { Frame, Replay } from "./frames";
+import type { Frame, Mark, Replay } from "./frames";
 import { describeTable } from "./tables";
 
 export { describeTable };
@@ -9,6 +9,20 @@ export { describeTable };
 
 const quote = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const listing = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+const ident = (s: string) => `"${s.replace(/"/g, '""')}"`;
+
+/** Every row of a table, sorted by primary key (or physical order), at most 200. */
+async function tableRows(db: Db, table: string) {
+  const key = await db.query(
+    `SELECT a.attname::text FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+     WHERE i.indrelid = ${regclass(table)} AND i.indisprimary ORDER BY array_position(i.indkey::int2[], a.attnum)`,
+  );
+  const order = key.rows.length ? key.rows.map((r) => ident(String(r[0]))).join(", ") : "ctid";
+  const all = await db.query(`SELECT * FROM ${ident(table)} ORDER BY ${order} LIMIT 200`);
+  const total = Number((await db.query(`SELECT count(*) FROM ${ident(table)}`)).rows[0]?.[0]);
+  return { columns: all.fields.map((f) => f.name), rows: all.rows, total };
+}
 const regclass = (table: string) => `to_regclass(quote_ident(${quote(table)}))`;
 
 /** A table's columns as rows of [column, type, rules], in plain SQL words. */
@@ -73,5 +87,69 @@ export async function ddlFrames(db: Db, st: Statement, sql: string): Promise<Rep
     };
     return { supported: true, frames: [frame] };
   }
+  if (st.type === "alter table") return alterFrames(db, st.table.name, st.changes as unknown as AlterChange[], sql);
   return null;
+}
+
+type AlterChange = { type: string; column?: { name: string }; to?: { name: string } };
+
+/** ALTER TABLE: the columns before, the columns after (new, changed or gone), then the rows and what they got. */
+async function alterFrames(db: Db, name: string, changes: AlterChange[], sql: string): Promise<Replay> {
+  const before = await tableColumns(db, name);
+  const rowCount = Number((await db.query(`SELECT count(*) FROM ${ident(name)}`)).rows[0]?.[0]);
+  await db.exec(sql);
+  const now = changes.find((c) => c.type === "rename")?.to?.name ?? name;
+  const after = await tableColumns(db, now);
+  const renames = changes.filter((c) => c.type === "rename column" && c.column && c.to).map((c) => [c.column!.name, c.to!.name] as const);
+  const was = (n: unknown) => renames.find(([, to]) => to === n)?.[0] ?? n;
+  const beforeNames = before.map((r) => r[0]);
+  const afterNames = after.map((r) => was(r[0]));
+  const added = after.filter((r) => !beforeNames.includes(was(r[0]))).map((r) => String(r[0]));
+  const dropped = before.filter((r) => !afterNames.includes(r[0])).map((r) => String(r[0]));
+  const changed = after
+    .filter((r) => { const b = before.find((x) => x[0] === was(r[0])); return b && (b[1] !== r[1] || b[2] !== r[2]); })
+    .map((r) => String(r[0]));
+
+  const parts = [
+    ...(now !== name ? [`renamed ${name} to ${now}`] : []),
+    ...renames.map(([from, to]) => `renamed ${from} to ${to}`),
+    ...(added.length ? [`added ${listing(added)} to ${now}`] : []),
+    ...(dropped.length ? [`dropped ${listing(dropped)} from ${now}`] : []),
+    ...(changed.length ? [`changed the rules of ${listing(changed)}`] : []),
+  ];
+  const rows = await tableRows(db, now);
+  const notes: string[] = [];
+  for (const col of added) {
+    const r = (await db.query(`SELECT count(*), count(${ident(col)}), count(DISTINCT ${ident(col)}), min(${ident(col)})::text FROM ${ident(now)}`)).rows[0] ?? [];
+    const [total, filled, kinds, value] = [Number(r[0]), Number(r[1]), Number(r[2]), r[3]];
+    if (!total) notes.push(`${now} has no rows yet.`);
+    else if (!filled) notes.push(`All ${total} rows have NULL in ${col}, because it has no default.`);
+    else if (kinds === 1 && filled === total) notes.push(`All ${total} rows got ${col} = ${value}.`);
+    else notes.push(`${col} has values in ${filled} of ${total} rows.`);
+  }
+  if (!added.length) {
+    if (dropped.length) notes.push(`Its ${plural(rows.total, "row")} lost their ${listing(dropped)} values for good.`);
+    else if (renames.length || now !== name) notes.push(`Its ${plural(rows.total, "row")} keep their values under the new name.`);
+    else notes.push(`All ${plural(rows.total, "row")} pass the new rules.`);
+  }
+  const frames: Frame[] = [
+    {
+      clause: "BEFORE",
+      note: `${name} has ${plural(before.length, "column")} and ${plural(rowCount, "row")}.`,
+      columns: COLUMN_HEADS,
+      rows: before,
+      total: before.length,
+      marks: before.map((r): Mark => (dropped.includes(String(r[0])) ? "gone" : "plain")),
+    },
+    {
+      clause: "ALTER TABLE",
+      note: `ALTER TABLE ${parts.join("; ") || `left ${now} as it was`}.`,
+      columns: COLUMN_HEADS,
+      rows: after,
+      total: after.length,
+      marks: after.map((r): Mark => (added.includes(String(r[0])) ? "new" : changed.includes(String(r[0])) ? "changed" : "plain")),
+    },
+    { clause: "AFTER", note: notes.join(" "), columns: rows.columns, rows: rows.rows, total: rows.total },
+  ];
+  return { supported: true, frames };
 }
