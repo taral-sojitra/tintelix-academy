@@ -35,7 +35,7 @@ export function SubjectCard({ subject, lessons }: { subject: Subject; lessons: L
         <ul className="subject-lessons">
           {preview.map((l) => (
             <li key={l.id} className={l.available ? "open" : ""}>
-              {l.available ? <Link href={`/${subject.id}/${l.slug}`}>{l.title ?? l.topic}</Link> : <span>{l.title ?? l.topic}</span>}
+              {l.available ? <Link href={l.href}>{l.title ?? l.topic}</Link> : <span>{l.title ?? l.topic}</span>}
               <small>
                 {l.topic}
                 {!l.available && " · soon"}

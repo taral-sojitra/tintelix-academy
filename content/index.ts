@@ -130,6 +130,10 @@ export interface LessonSummary {
   module: string;
   order: number;
   available: boolean;
+  /** The subject the lesson lives in: this one, or another for a shared lesson. */
+  home: string;
+  /** Where the lesson's page is. */
+  href: string;
 }
 
 /** Lessons of a subject in teaching order, numbered from 1. */
@@ -147,6 +151,8 @@ export function lessonSummaries(subjectId: string): LessonSummary[] {
       module: m.title,
       order: ++order,
       available: lessons.some((l) => l.id === stub.id) || sqlLessons.some((l) => l.id === stub.id),
+      home: stub.home ?? subjectId,
+      href: `/${stub.home ?? subjectId}/${stub.slug}`,
     })),
   );
 }

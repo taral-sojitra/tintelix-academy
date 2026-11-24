@@ -22,7 +22,7 @@ export function LessonList({ subject, title, lessons, current }: { subject: stri
                 <li key={l.id} className={`${l.id === current ? "cur" : ""}${l.available ? "" : " soon"}`}>
                   <span className="dot" aria-hidden="true" />
                   {l.available ? (
-                    <Link href={`/${subject}/${l.slug}`} aria-current={l.id === current ? "page" : undefined}>
+                    <Link href={l.href} aria-current={l.id === current ? "page" : undefined}>
                       {l.title ?? l.topic}
                       {l.title && <small>{l.topic}</small>}
                     </Link>
