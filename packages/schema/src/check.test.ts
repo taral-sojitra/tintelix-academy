@@ -205,6 +205,14 @@ describe("board scenes", () => {
     const problems = check(boardLesson({ flows: { read: { path: [{ wire: "u_a", dir: 1, at: "app" }], color: "cyan", fail: { at: "app", share: "dbBusy" } } } }));
     expect(problems).toContain("caching: board flow read fail share dbBusy must be a …Pct output");
   });
+  it("a label at a stop the flow never reaches is reported", () => {
+    const path = [{ wire: "u_a", dir: 1 as const, at: "app" }, { wire: "a_d", dir: 1 as const, at: "db" }];
+    const one = check(boardLesson({ flows: { read: { path, color: "cyan", float: { at: "users", text: "hi", color: "cyan", chance: 1 } } } }));
+    expect(one).toContain("caching: board flow read labels users, a stop it never reaches");
+    const many = check(boardLesson({ flows: { read: { path, color: "cyan", floats: [{ at: "db", text: "ok", color: "cyan", chance: 1 }, { at: "dbb", text: "typo", color: "cyan", chance: 1 }] } } }));
+    expect(many).toContain("caching: board flow read labels dbb, a stop it never reaches");
+    expect(many.filter((p) => p.includes("labels db,"))).toEqual([]);
+  });
   it("a step whose mode has no board mode is reported", () => {
     const lesson = boardLesson();
     lesson.steps[0]!.model = { mode: 3 };

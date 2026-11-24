@@ -79,6 +79,10 @@ export function checkContent(input: { subjects: Subject[]; lessons: Lesson[]; co
         }
         if (f.fail && !f.fail.share.endsWith("Pct")) problems.push(`${id}: board flow ${fid} fail share ${f.fail.share} must be a …Pct output`);
         if (f.fail && !(f.fail.at in nodes)) problems.push(`${id}: board flow ${fid} fails at unknown node ${f.fail.at}`);
+        const stops = new Set(f.path.map((hop) => hop.at));
+        for (const label of [f.float, ...(f.floats ?? [])]) {
+          if (label && !stops.has(label.at)) problems.push(`${id}: board flow ${fid} labels ${label.at}, a stop it never reaches`);
+        }
       }
       for (const [i, m] of board.modes.entries()) {
         for (const f of m.flows) if (!(f.flow in board.flows)) problems.push(`${id}: board mode ${i} runs unknown flow ${f.flow}`);
