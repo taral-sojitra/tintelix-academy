@@ -1469,7 +1469,12 @@ async def subject_page(page):
     return "System Design lists 59 lessons in 13 modules, 59 open"
 
 
-SQL_READY = ".sql-clauses"
+SQL_READY = ".sql-clauses, .sql-stage.empty .sql-stage-msg"
+# Every written SQL lesson: slug, hook title, and what the stage says for the first task's starter.
+SQL_LESSONS = [
+    ("select", "Pick the columns you need", "FROM starts with every row of products: 15 rows."),
+    ("where", "Only the rows that match", "FROM starts with every row of products: 15 rows."),
+]
 
 
 async def type_sql(page, sql):
@@ -1480,11 +1485,30 @@ async def type_sql(page, sql):
 
 async def sql_subject(page):
     await page.goto(BASE + "/sql", wait_until="load")
-    await expect(page.get_by_text("21 lessons in 5 modules · 1 open now")).to_be_visible()
+    n = len(SQL_LESSONS)
+    await expect(page.get_by_text(f"21 lessons in 5 modules · {n} open now")).to_be_visible()
     await page.goto(BASE + "/", wait_until="load")
     card = page.locator("article.s-sql")
-    await expect(card.get_by_role("link", name="1 of 21 open")).to_be_visible()
-    return "SQL lists 21 lessons in 5 modules, 1 open; its Home card links in"
+    await expect(card.get_by_role("link", name=f"{n} of 21 open")).to_be_visible()
+    return f"SQL lists 21 lessons in 5 modules, {n} open; its Home card links in"
+
+
+async def sql_lessons(page):
+    """Each later SQL lesson: the starter replays, a first run gets feedback, the solution solves task 1."""
+    for slug, title, note in SQL_LESSONS[1:]:
+        await page.goto(BASE + f"/sql/{slug}", wait_until="load")
+        await expect(page.get_by_role("heading", level=1)).to_have_text(title)
+        await page.wait_for_selector(".sql-clauses, .sql-stage.empty .sql-stage-msg", timeout=30000)
+        await expect(page.locator(".sql-stage")).to_contain_text(note, timeout=10000)
+        await page.get_by_role("button", name="Run", exact=True).click()
+        await expect(page.locator(".fb-warn, .fb-error, .fb-ok")).to_be_visible(timeout=10000)
+        await page.get_by_role("button", name="Show solution").click()
+        await page.get_by_role("button", name="Put it in the editor").click()
+        await page.get_by_role("button", name="Run", exact=True).click()
+        await expect(page.locator(".fb-ok")).to_contain_text("Task solved", timeout=10000)
+        res = await page.goto(BASE + f"/sql/{slug}/cheatsheet", wait_until="load")
+        assert res and res.status == 200, f"{slug} cheatsheet"
+    return f"SQL lessons {', '.join(s for s, _, _ in SQL_LESSONS[1:])}: starter replays, feedback, solution solves task 1, cheatsheet opens"
 
 
 async def sql_flow(page):
@@ -1546,7 +1570,7 @@ async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []
