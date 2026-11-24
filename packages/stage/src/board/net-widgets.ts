@@ -67,6 +67,10 @@ const SOCK_CONNS: string[][] = [
 /** In the port-exhaustion step the app server opens 5 new connections a second, each from the next port. */
 const SOCK_NEW_PER_SEC = 5;
 
+/** The DNS walk: one more answer every second, then the cache fills in; a 7 s cycle. */
+const DNS_STEP_SEC = 1;
+const DNS_CYCLE_SEC = 7;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -327,6 +331,43 @@ export const NET_CUSTOM: Record<string, Custom> = {
         "each new connection from the app server takes a fresh source port",
       ][stage]!;
       setText(root.querySelector(".tx-sock-cap")!, text);
+    },
+  },
+  /**
+   * A DNS lookup for www.example.com from the resolver's side: `dnsStage` 1 walks root, .com and
+   * example.com's name server, with each leg's time; 2 answers from the cache while the TTL runs down.
+   */
+  dnswalk: {
+    html: (key) =>
+      `<div class="tx-dns" data-w="${key}">${'<p class="tx-dns-row"><em></em><span></span></p>'.repeat(5)}<p class="tx-dns-cache"><em>resolver's cache</em><span></span></p></div>`,
+    paint(root, d, clock) {
+      const stage = Math.min(2, Math.max(0, Math.round(num(d, "dnsStage", 0))));
+      const ms = (k: string, fallback: number) => `${Math.round(num(d, k, fallback))} ms`;
+      const ttl = Math.round(num(d, "ttlSec", 300));
+      const walk: [string, string][] = [
+        ["laptop", "where is www.example.com?"],
+        ["root", `don't know; ask the .com servers · ${ms("rootMs", 30)}`],
+        [".com", `don't know; ask ns1.example.com · ${ms("tldMs", 40)}`],
+        ["ns1.example.com", `203.0.113.80, keep it ${ttl} s · ${ms("authMs", 80)}`],
+        ["resolver", `203.0.113.80 after ${ms("coldMs", 170)}`],
+      ];
+      const rows: [string, string][] = stage === 1 ? walk : stage === 2 ? [["resolver", `203.0.113.80 from its cache · ${ms("resolverMs", 20)}`]] : [];
+      const t = Math.max(0, clock) % DNS_CYCLE_SEC;
+      const seen = stage === 1 ? Math.min(walk.length, Math.floor(t / DNS_STEP_SEC) + 1) : rows.length;
+      root.querySelectorAll<HTMLElement>(".tx-dns-row").forEach((row, n) => {
+        const r = rows[n];
+        row.hidden = !r || n >= seen;
+        if (!r) return;
+        row.classList.toggle("answer", n === rows.length - 1);
+        setText(row.querySelector("em")!, r[0]);
+        setText(row.querySelector("span")!, r[1]);
+      });
+      const cached = stage === 2 || (stage === 1 && seen === walk.length);
+      const left = Math.max(0, ttl - Math.floor(Math.max(0, clock)));
+      const text = !cached ? "empty" : stage === 2 ? `www.example.com → 203.0.113.80 · ${left} s left` : `www.example.com → 203.0.113.80 · ${ttl} s`;
+      const cache = root.querySelector(".tx-dns-cache span")!;
+      setText(cache, text);
+      cache.classList.toggle("known", cached);
     },
   },
 };

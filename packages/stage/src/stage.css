@@ -804,3 +804,15 @@
 .tx-sock-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-sock-row.pick { background: color-mix(in srgb, var(--amber) 26%, transparent); }
 .tx-sock-cap { margin: 4px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a DNS lookup from the resolver's side, and its cache. */
+.tx-dns { margin-top: 6px; display: grid; gap: 4px; }
+.tx-dns-row { margin: 0; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; font-family: var(--mono); font-size: 11.5px; padding: 2px 8px; border-radius: 5px; background: color-mix(in srgb, var(--violet) 14%, transparent); }
+.tx-dns-row[hidden] { display: none; }
+.tx-dns-row em { font-style: normal; color: var(--node-sub); }
+.tx-dns-row span { color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-dns-row.answer { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.tx-dns-cache { margin: 2px 0 0; display: flex; gap: 10px; font-family: var(--mono); font-size: 11.5px; }
+.tx-dns-cache em { font-style: normal; color: var(--node-sub); }
+.tx-dns-cache span { color: var(--node-sub); }
+.tx-dns-cache span.known { color: var(--green); }

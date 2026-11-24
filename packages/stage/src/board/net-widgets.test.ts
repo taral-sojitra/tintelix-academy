@@ -282,3 +282,37 @@ describe("sockets widget", () => {
     expect(sockCap(root)).toBe("each new connection from the app server takes a fresh source port");
   });
 });
+
+const dnswalk: BoardWidget = { kind: "custom", name: "dnswalk" };
+const dnsOut = (stage: number) => ({ dnsStage: stage, resolverMs: 20, rootMs: 30, tldMs: 40, authMs: 80, coldMs: 170, ttlSec: 300 });
+const dnsRows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-dns-row")].filter((r) => !r.hidden).map((r) => [r.querySelector("em")!.textContent, r.querySelector("span")!.textContent]);
+const dnsCache = (root: HTMLElement) => root.querySelector(".tx-dns-cache span")!.textContent;
+
+describe("dnswalk widget", () => {
+  it("knows nothing before the first lookup", () => {
+    const root = mount(dnswalk, dnsOut(0), 3);
+    expect(dnsRows(root)).toEqual([]);
+    expect(dnsCache(root)).toBe("empty");
+  });
+
+  it("walks root, .com and example.com's server one at a time, then caches", () => {
+    const root = mount(dnswalk, dnsOut(1), 1.5);
+    expect(dnsRows(root)).toEqual([
+      ["laptop", "where is www.example.com?"],
+      ["root", "don't know; ask the .com servers · 30 ms"],
+    ]);
+    paintWidget(root, dnswalk, dnsOut(1), 5.5);
+    expect(dnsRows(root).slice(2)).toEqual([
+      [".com", "don't know; ask ns1.example.com · 40 ms"],
+      ["ns1.example.com", "203.0.113.80, keep it 300 s · 80 ms"],
+      ["resolver", "203.0.113.80 after 170 ms"],
+    ]);
+    expect(dnsCache(root)).toBe("www.example.com → 203.0.113.80 · 300 s");
+  });
+
+  it("answers from the cache, counting the TTL down", () => {
+    const root = mount(dnswalk, dnsOut(2), 12.4);
+    expect(dnsRows(root)).toEqual([["resolver", "203.0.113.80 from its cache · 20 ms"]]);
+    expect(dnsCache(root)).toBe("www.example.com → 203.0.113.80 · 288 s left");
+  });
+});
