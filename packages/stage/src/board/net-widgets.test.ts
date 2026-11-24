@@ -472,3 +472,33 @@ describe("fwrules widget", () => {
     expect(fwNow(stateful)).toBe("reply to the web server's update check · rule 3: allowed");
   });
 });
+
+const tunnel: BoardWidget = { kind: "custom", name: "tunnel" };
+const tunParts = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-tun-pkt span")].map((p) => [p.textContent, p.className]);
+const tunSees = (root: HTMLElement) => [...root.querySelectorAll(".tx-tun-sees p span")].map((p) => p.textContent);
+
+describe("tunnel widget", () => {
+  it("shows a plain HTTPS packet and who sees what", () => {
+    const root = mount(tunnel, { tunStage: 0 });
+    expect(tunParts(root)).toEqual([["IP 203.0.113.10 → 203.0.113.80", "o"], ["TCP :443", "o"], ["TLS: the page", "s"]]);
+    expect(tunSees(root)).toEqual(["you're talking to 203.0.113.80", "your café's address, 203.0.113.10"]);
+  });
+
+  it("wraps the whole packet for the VPN server", () => {
+    const root = mount(tunnel, { tunStage: 1 });
+    expect(tunParts(root)).toEqual([
+      ["IP 203.0.113.10 → 198.51.100.20", "o"],
+      ["UDP :51820", "o"],
+      ["sealed: IP 10.8.0.2 → 10.0.0.5 · TCP :443 · data", "s"],
+    ]);
+    expect(tunSees(root)[0]).toBe("only a tunnel to 198.51.100.20");
+  });
+
+  it("sends a full tunnel's web traffic out of the office, and a proxy's only for the browser", () => {
+    expect(tunSees(mount(tunnel, { tunStage: 2 }))[1]).toBe("the VPN server, 198.51.100.20");
+    expect(tunSees(mount(tunnel, { tunStage: 3 }))[1]).toBe("your café's address: web traffic skips the tunnel");
+    const proxy = mount(tunnel, { tunStage: 4 });
+    expect(tunParts(proxy).map((p) => p[0])).toEqual(["IP 203.0.113.10 → 198.51.100.30", "TCP :3128", "CONNECT example.com:443", "TLS: the page"]);
+    expect(tunSees(proxy)).toEqual(["a connection to the proxy", "the proxy, 198.51.100.30; other apps go direct"]);
+  });
+});

@@ -114,6 +114,19 @@ const FW_PACKETS: [string, number][] = [
 ];
 const FW_STEP_SEC = 1.5;
 
+/**
+ * The proxies and VPNs lesson by `tunStage` (0 plain, 1 VPN to the office, 2 full tunnel, 3 split tunnel,
+ * 4 proxy): the packet as it crosses the café's Wi-Fi ([text, "o" readable or "s" sealed]), what the
+ * Wi-Fi sees, and what the far end sees as your address.
+ */
+const TUN_STAGES: { pkt: [string, string][]; wifi: string; far: string; farLabel: string }[] = [
+  { pkt: [["IP 203.0.113.10 → 203.0.113.80", "o"], ["TCP :443", "o"], ["TLS: the page", "s"]], wifi: "you're talking to 203.0.113.80", far: "your café's address, 203.0.113.10", farLabel: "example.com sees" },
+  { pkt: [["IP 203.0.113.10 → 198.51.100.20", "o"], ["UDP :51820", "o"], ["sealed: IP 10.8.0.2 → 10.0.0.5 · TCP :443 · data", "s"]], wifi: "only a tunnel to 198.51.100.20", far: "10.8.0.2, a VPN address inside the office", farLabel: "office app sees" },
+  { pkt: [["IP 203.0.113.10 → 198.51.100.20", "o"], ["UDP :51820", "o"], ["sealed: IP 10.8.0.2 → 203.0.113.80 · TCP :443 · TLS", "s"]], wifi: "only a tunnel to 198.51.100.20", far: "the VPN server, 198.51.100.20", farLabel: "example.com sees" },
+  { pkt: [["IP 203.0.113.10 → 198.51.100.20", "o"], ["UDP :51820", "o"], ["sealed: IP 10.8.0.2 → 10.0.0.5 · TCP :443 · data", "s"]], wifi: "the tunnel, plus your direct web traffic", far: "your café's address: web traffic skips the tunnel", farLabel: "example.com sees" },
+  { pkt: [["IP 203.0.113.10 → 198.51.100.30", "o"], ["TCP :3128", "o"], ["CONNECT example.com:443", "o"], ["TLS: the page", "s"]], wifi: "a connection to the proxy", far: "the proxy, 198.51.100.30; other apps go direct", farLabel: "example.com sees" },
+];
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -554,6 +567,21 @@ export const NET_CUSTOM: Record<string, Custom> = {
       });
       const text = stage === 0 ? `${what} · no firewall: let in` : `${what} · rule ${on.indexOf(hit) + 1}: ${hit === 3 ? "dropped" : "allowed"}`;
       setText(root.querySelector(".tx-fw-now")!, text);
+    },
+  },
+  /** A packet as it crosses the café Wi-Fi, plain, tunneled or proxied, and who sees what (see TUN_STAGES). */
+  tunnel: {
+    html: (key) =>
+      `<div class="tx-tun" data-w="${key}"><p class="tx-tun-pkt"></p><div class="tx-tun-sees"><p><em>café Wi-Fi sees</em><span></span></p><p><em></em><span></span></p></div></div>`,
+    paint(root, d) {
+      const st = TUN_STAGES[Math.min(TUN_STAGES.length - 1, Math.max(0, Math.round(num(d, "tunStage", 0))))]!;
+      const pkt = root.querySelector<HTMLElement>(".tx-tun-pkt")!;
+      const html = st.pkt.map(([t, c]) => `<span class="${c}">${t}</span>`).join("");
+      if (pkt.innerHTML !== html) pkt.innerHTML = html;
+      const [wifi, far] = [...root.querySelectorAll(".tx-tun-sees p")];
+      setText(wifi!.querySelector("span")!, st.wifi);
+      setText(far!.querySelector("em")!, st.farLabel);
+      setText(far!.querySelector("span")!, st.far);
     },
   },
 };

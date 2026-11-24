@@ -16,6 +16,7 @@ import { switchLesson } from "./networks/switches-routers/lesson";
 import { routingLesson } from "./networks/routing/lesson";
 import { natLesson } from "./networks/nat/lesson";
 import { firewallLesson } from "./networks/firewalls/lesson";
+import { vpnLesson } from "./networks/proxies-vpns/lesson";
 import { select } from "./sql/select/lesson";
 import { where } from "./sql/where/lesson";
 import { orderBy } from "./sql/order-by/lesson";
@@ -101,7 +102,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange, osiLesson, tcpIpLesson, ipLesson, subnetLesson, arpLesson, dhcpLesson, tcpUdpLesson, handshakeLesson, portsLesson, dnsLesson, httpLesson, tlsLesson, switchLesson, routingLesson, natLesson, firewallLesson];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange, osiLesson, tcpIpLesson, ipLesson, subnetLesson, arpLesson, dhcpLesson, tcpUdpLesson, handshakeLesson, portsLesson, dnsLesson, httpLesson, tlsLesson, switchLesson, routingLesson, natLesson, firewallLesson, vpnLesson];
 
 /** Every written SQL lesson (task lessons, not diagram lessons). */
 export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset, aggregates, groupBy, having, caseWhen, innerJoin, leftJoin, cte, rowNumber, insert, update, remove, createTable, alterTable, createIndex, dropTable, truncate];
