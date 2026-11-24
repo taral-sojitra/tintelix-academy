@@ -613,3 +613,18 @@
 .tx-rup-bars i.mn { background: var(--violet); }
 .tx-rup-bars i.hr { background: var(--amber); }
 .tx-rup-cap { margin: 0; font-family: var(--mono); }
+
+/* Click aggregation: one-minute windows, clicks by event time, and the watermark. */
+.tx-wm { margin-top: 6px; display: grid; gap: 6px; }
+.tx-wm-axis { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); height: 58px; }
+.tx-wm-win { border: 1px solid var(--node-stroke); border-right: none; padding: 3px 5px; display: flex; justify-content: space-between; align-items: flex-start; }
+.tx-wm-win:nth-child(3) { border-right: 1px solid var(--node-stroke); }
+.tx-wm-win em { font-style: normal; font-family: var(--mono); font-size: 10px; color: var(--node-sub); }
+.tx-wm-win b { font-weight: 400; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-wm-win.closed { background: color-mix(in srgb, var(--green) 10%, transparent); }
+.tx-wm-win.closed b { color: var(--green); }
+.tx-wm-axis i { position: absolute; bottom: 10px; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 50%; background: var(--cyan); }
+.tx-wm-axis i[hidden] { display: none; }
+.tx-wm-axis i.late { background: var(--red); bottom: 26px; }
+.tx-wm-line { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--amber); transition: left .3s; }
+.tx-wm-cap { margin: 0; font-family: var(--mono); }
