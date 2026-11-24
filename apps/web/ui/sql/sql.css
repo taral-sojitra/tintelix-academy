@@ -1,6 +1,7 @@
 /* SQL task lessons: learn | work (replay + editor) | check (feedback, result, dataset). */
 .sql-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; grid-template-areas: "learn work check"; gap: 20px; align-items: start; }
 .sql-learn { grid-area: learn; display: grid; gap: 14px; }
+.sql-intro, .sql-taskside { display: grid; gap: 14px; }
 .sql-work { grid-area: work; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
 .sql-check { grid-area: check; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 
@@ -132,6 +133,10 @@
 @media (max-width: 1600px) {
   .sql-grid { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: "learn work" "learn check"; }
 }
+/* Phones: read the explanation, then do the task; the task list and the mistake note come after the feedback. */
 @media (max-width: 980px) {
-  .sql-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "learn" "work" "check"; }
+  .sql-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "work" "check" "taskside"; }
+  .sql-learn { display: contents; }
+  .sql-intro { grid-area: intro; }
+  .sql-taskside { grid-area: taskside; }
 }

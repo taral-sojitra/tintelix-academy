@@ -26,6 +26,8 @@ export class SqlClient {
     private readonly make: () => WorkerLike,
     private readonly timeoutMs = 3000,
     private readonly bootMs = 60000,
+    /** A replay reruns the query once per clause, so it gets longer than one run. */
+    private readonly replayMs = 10000,
   ) {}
 
   private get timeoutMessage() {
@@ -73,12 +75,12 @@ export class SqlClient {
     for (const done of waiting) done({ ok: false, error });
   }
 
-  private call(op: string, body: object): Promise<Reply> {
+  private call(op: string, body: object, ms = this.timeoutMs): Promise<Reply> {
     const job = this.queue.then(async (): Promise<Reply> => {
       if (!this.worker) this.start();
       const warmed = await this.warm!;
       if (!warmed.ok) { this.stop("boot"); return { ok: false, error: "boot" }; }
-      return this.send(op, body, this.timeoutMs);
+      return this.send(op, body, ms);
     });
     this.queue = job.catch(() => undefined);
     return job;
@@ -97,8 +99,9 @@ export class SqlClient {
   }
 
   async replay(sql: string): Promise<Replay> {
-    const r = await this.call("replay", { sql });
-    return r.ok ? (r.data as Replay) : { supported: false, reason: this.why(r) };
+    const r = await this.call("replay", { sql }, this.replayMs);
+    if (r.ok) return r.data as Replay;
+    return { supported: false, reason: r.error === "timeout" ? "The replay took too long to build, so here's just the result." : this.why(r) };
   }
 
   dispose() {
