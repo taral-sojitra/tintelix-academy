@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
-  transpilePackages: ["@tintelix/content", "@tintelix/schema", "@tintelix/stage", "@tintelix/store", "@tintelix/theme"],
+  transpilePackages: ["@tintelix/content", "@tintelix/schema", "@tintelix/sql", "@tintelix/stage", "@tintelix/store", "@tintelix/theme"],
   reactStrictMode: true,
   poweredByHeader: false,
 };
