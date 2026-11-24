@@ -63,3 +63,12 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Tasks: size labels on orders; price bands where the starter's broad rule comes first (four products land in the
   wrong band); a place label where the starter repeats lesson 2's `= NULL` trap inside CASE; counting delivered and
   cancelled orders in one row with `count(CASE … END)`; a custom sort order with CASE in ORDER BY.
+
+## 10. INNER JOIN: Whose order is this?
+
+- Tasks: each order with its customer's name; Pune customers' orders (WHERE after JOIN); order 19's lines with product
+  names; customers with a cancelled order, where the starter joins `c.id = o.id`; revenue per category across
+  order_items and products.
+- Replay: the FROM frame of a join now says which rows had no match and were left out ("5 rows of customers had no
+  match"); for the wrong-join starter it reads "40 rows of orders had no match", which shows the bug. Outer joins say
+  which rows they kept with NULLs and mark them (used in lesson 11).

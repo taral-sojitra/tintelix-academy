@@ -123,6 +123,20 @@ describe("buildReplay", () => {
     await endsOnRealResult(sql, r);
   });
 
+  it("says which rows a join left out", async () => {
+    const r = await buildReplay(db, "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.customer_id");
+    expect(frame(r, "FROM").note).toBe("FROM joined orders and customers into 60 rows. 5 rows of customers had no match, so they're left out.");
+  });
+
+  it("says which rows a LEFT JOIN kept with NULLs, and marks them", async () => {
+    const sql = "SELECT c.name, o.id FROM customers c LEFT JOIN orders o ON o.customer_id = c.id";
+    const r = await buildReplay(db, sql);
+    const from = frame(r, "FROM");
+    expect(from.note).toBe("FROM joined customers and orders into 65 rows. 5 had no match in orders, so LEFT JOIN kept them with NULLs.");
+    expect(from.marks?.filter((m) => m === "filled")).toHaveLength(5);
+    await endsOnRealResult(sql, r);
+  });
+
   it("shows only the result for shapes it can't follow yet", async () => {
     for (const sql of [
       "WITH big AS (SELECT * FROM orders WHERE total > 5000) SELECT count(*) FROM big",
