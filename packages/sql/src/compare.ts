@@ -34,7 +34,7 @@ const rowKey = (row: unknown[]) => JSON.stringify(row.map(normalise));
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** Multiset difference: rows of `a` not matched by a row of `b`, duplicates counted. */
-function minus(a: unknown[][], b: unknown[][]): unknown[][] {
+export function minus(a: unknown[][], b: unknown[][]): unknown[][] {
   const left = new Map<string, number>();
   for (const r of b) left.set(rowKey(r), (left.get(rowKey(r)) ?? 0) + 1);
   const out: unknown[][] = [];

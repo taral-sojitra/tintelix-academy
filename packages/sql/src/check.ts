@@ -1,0 +1,49 @@
+import type { SqlTask } from "@tintelix/schema";
+import { compareResults, minus, type Feedback } from "./compare";
+import type { Db } from "./db";
+import { hasTransactionControl, runInRollback, statementKinds, type RunOutcome } from "./run";
+
+const READ = new Set(["SELECT", "WITH", "VALUES", "TABLE"]);
+
+export interface Checked {
+  run: RunOutcome;
+  feedback: Feedback;
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** Runs the learner's SQL for a task and says whether it's right, and if not, what's wrong. */
+export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promise<Checked> {
+  const kind = task.kind ?? "read";
+  const kinds = statementKinds(input);
+
+  if (kind === "read" && kinds.some((k) => !READ.has(k)) && !hasTransactionControl(kinds)) {
+    const message = "This task asks you to read rows with SELECT, and that statement changes data or tables instead. Nothing was run.";
+    return { run: { ok: false, message }, feedback: { ok: false, kind: "kind", message } };
+  }
+
+  if (kind === "read") {
+    const mine = await runInRollback(db, input);
+    if (!mine.outcome.ok) return { run: mine.outcome, feedback: { ok: false, kind: "error", message: mine.outcome.message } };
+    const want = await runInRollback(db, task.answer ?? task.solution);
+    if (!want.outcome.ok) throw new Error(`Task ${task.id}: the answer fails: ${want.outcome.message}`);
+    return { run: mine.outcome, feedback: compareResults(want.outcome.result, mine.outcome.result, { ordered: task.ordered, namedColumns: task.namedColumns }) };
+  }
+
+  const mine = await runInRollback(db, input, task.verify);
+  if (!mine.outcome.ok) return { run: mine.outcome, feedback: { ok: false, kind: "error", message: mine.outcome.message } };
+  if (!mine.after?.ok) {
+    const why = mine.after && !mine.after.ok ? mine.after.message : "";
+    return { run: mine.outcome, feedback: { ok: false, kind: "error", message: `Your statement ran, but afterwards the check couldn't: ${why}` } };
+  }
+  const want = await runInRollback(db, task.solution, task.verify);
+  if (!want.outcome.ok || !want.after?.ok) throw new Error(`Task ${task.id}: the solution or its verify query fails`);
+  const feedback = compareResults(want.after.result, mine.after.result, { ordered: task.ordered });
+  if (!feedback.ok && feedback.kind === "rows") {
+    const missing = minus(want.after.result.rows, mine.after.result.rows).length;
+    const extra = minus(mine.after.result.rows, want.after.result.rows).length;
+    const parts = [missing ? `${plural(missing, "row")} missing` : "", extra ? `${plural(extra, "row")} that shouldn't be there` : ""].filter(Boolean);
+    feedback.message = `After your statement, the check finds ${parts.join(" and ")}.`;
+  }
+  return { run: mine.outcome, feedback };
+}
