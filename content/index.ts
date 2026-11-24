@@ -5,6 +5,22 @@ import { where } from "./sql/where/lesson";
 import { orderBy } from "./sql/order-by/lesson";
 import { distinct } from "./sql/distinct/lesson";
 import { limitOffset } from "./sql/limit-offset/lesson";
+import { aggregates } from "./sql/aggregates/lesson";
+import { groupBy } from "./sql/group-by/lesson";
+import { having } from "./sql/having/lesson";
+import { caseWhen } from "./sql/case-when/lesson";
+import { innerJoin } from "./sql/inner-join/lesson";
+import { leftJoin } from "./sql/left-join/lesson";
+import { cte } from "./sql/cte/lesson";
+import { rowNumber } from "./sql/row-number/lesson";
+import { insert } from "./sql/insert/lesson";
+import { update } from "./sql/update/lesson";
+import { remove } from "./sql/delete/lesson";
+import { createTable } from "./sql/create-table/lesson";
+import { alterTable } from "./sql/alter-table/lesson";
+import { createIndex } from "./sql/create-index/lesson";
+import { dropTable } from "./sql/drop-table/lesson";
+import { truncate } from "./sql/truncate/lesson";
 import { subjects } from "./subjects";
 import { caching } from "./system-design/caching/lesson";
 import { cdn } from "./system-design/cdn/lesson";
@@ -72,7 +88,7 @@ export { components, subjects };
 export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange];
 
 /** Every written SQL lesson (task lessons, not diagram lessons). */
-export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset];
+export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset, aggregates, groupBy, having, caseWhen, innerJoin, leftJoin, cte, rowNumber, insert, update, remove, createTable, alterTable, createIndex, dropTable, truncate];
 
 export function getSqlLesson(slug: string): SqlLesson | undefined {
   return sqlLessons.find((l) => l.slug === slug);

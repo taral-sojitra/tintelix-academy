@@ -1,0 +1,78 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const groupBy: SqlLesson = {
+  id: "sql-group-by",
+  home: "sql",
+  slug: "group-by",
+  topic: "GROUP BY",
+  title: "Who spends the most?",
+  promise: "Put rows into buckets and fold each bucket into one row: orders per status, spend per customer, sales per month.",
+  minutes: 10,
+  level: 2,
+  explain: [
+    "**GROUP BY** puts rows into buckets, one bucket per different value, then folds each bucket into one row. `GROUP BY customer_id` gives one row per customer.",
+    "Every column in SELECT must be in GROUP BY or inside a summary like `sum(total)`. Otherwise Postgres can't know which of a bucket's many values to show, so it stops with an error.",
+    "It runs after WHERE, so WHERE drops rows before they're bucketed. Group by several columns for one bucket per combination; NULLs share a bucket of their own.",
+  ],
+  syntax: {
+    code: "SELECT customer_id, count(*) AS orders, sum(total) AS spent\nFROM orders\nWHERE status <> 'cancelled'\nGROUP BY customer_id\nORDER BY spent DESC;",
+    notes: [
+      "One output row per group.",
+      "Every selected column is in GROUP BY or inside a summary.",
+      "ORDER BY runs after grouping, so it can sort by a summary like spent.",
+    ],
+  },
+  mistake: "Selecting a column that's neither grouped nor summarised, like `SELECT status, count(*) FROM orders` without GROUP BY. Postgres stops, because the count covers many statuses. Add the column to GROUP BY, or put it inside a summary.",
+  tasks: [
+    {
+      id: "per-status",
+      prompt: "How many orders are there in each **status**? Show the status and the count.",
+      starter: "SELECT status\nFROM orders;",
+      hint: "Add count(*) to the SELECT list and GROUP BY status after FROM. Try count(*) without GROUP BY first and read the error.",
+      solution: "SELECT status, count(*)\nFROM orders\nGROUP BY status;",
+      ordered: false,
+    },
+    {
+      id: "per-category",
+      prompt: "For each **category**, show how many products it has as `products` and how much stock it holds as `stock`.",
+      starter: "SELECT category, count(*) AS products\nFROM products\nGROUP BY category;",
+      hint: "Add sum(stock) AS stock to the SELECT list.",
+      solution: "SELECT category, count(*) AS products, sum(stock) AS stock\nFROM products\nGROUP BY category;",
+      ordered: false,
+      namedColumns: ["category", "products", "stock"],
+    },
+    {
+      id: "top-spenders",
+      prompt: "Who spends the most? Show each **customer_id** with their spend as `spent`, biggest first (lower id first on a tie), and leave out cancelled orders.",
+      starter: "SELECT customer_id, sum(total) AS spent\nFROM orders\nGROUP BY customer_id\nORDER BY spent DESC;",
+      hint: "WHERE status <> 'cancelled' goes before GROUP BY. Add customer_id as a tiebreaker.",
+      solution: "SELECT customer_id, sum(total) AS spent\nFROM orders\nWHERE status <> 'cancelled'\nGROUP BY customer_id\nORDER BY spent DESC, customer_id;",
+      ordered: true,
+      namedColumns: ["customer_id", "spent"],
+    },
+    {
+      id: "per-month",
+      prompt: "Orders per month: show the month number as `month` and the count as `orders`, earliest month first. The starter groups by day instead.",
+      starter: "SELECT extract(month FROM ordered_at) AS month, count(*) AS orders\nFROM orders\nGROUP BY ordered_at\nORDER BY month;",
+      hint: "Group by the month, not the date: GROUP BY month (or the extract expression itself).",
+      solution: "SELECT extract(month FROM ordered_at) AS month, count(*) AS orders\nFROM orders\nGROUP BY month\nORDER BY month;",
+      ordered: true,
+      namedColumns: ["month", "orders"],
+    },
+    {
+      id: "country-city",
+      prompt: "Count customers for each **country** and **city** pair as `customers`: most first, then country and city A to Z. Missing cities make their own group.",
+      starter: "SELECT country, count(*) AS customers\nFROM customers\nGROUP BY country\nORDER BY customers DESC, country;",
+      hint: "Add city to both the SELECT list and GROUP BY, and to the ORDER BY.",
+      solution: "SELECT country, city, count(*) AS customers\nFROM customers\nGROUP BY country, city\nORDER BY customers DESC, country, city;",
+      ordered: true,
+      namedColumns: ["country", "city", "customers"],
+    },
+  ],
+  buildsOn: ["sql-aggregates"],
+  cheatsheet: [
+    { heading: "One row per group", text: ["`GROUP BY customer_id` folds each customer's orders into one row.", "`GROUP BY country, city` makes one group per pair."] },
+    { heading: "The rule", text: ["Every selected column is in GROUP BY or inside a summary like `sum(total)`.", "Break it and Postgres says the column must appear in GROUP BY."] },
+    { heading: "Order of work", text: ["FROM → WHERE → GROUP BY → SELECT → ORDER BY.", "WHERE drops rows before grouping; ORDER BY can sort by a summary."] },
+  ],
+};

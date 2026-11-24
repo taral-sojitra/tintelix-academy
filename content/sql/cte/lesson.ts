@@ -1,0 +1,70 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const cte: SqlLesson = {
+  id: "sql-cte",
+  home: "sql",
+  slug: "cte",
+  topic: "WITH (CTE)",
+  title: "Name a step, use it later",
+  promise: "Break a hard query into named steps you can read top to bottom, then build on each one.",
+  minutes: 10,
+  level: 2,
+  explain: [
+    "**WITH** names a query and lets the next part use it like a table: `WITH spend AS (SELECT …) SELECT … FROM spend`. These named steps are called CTEs, common table expressions.",
+    "The main query reads each step's result. One tangled query becomes small steps you can read top to bottom, and a summary from one step becomes a plain column the next step can filter with WHERE.",
+    "Separate steps with commas; each one can use the steps before it. A step only lives for its one query.",
+  ],
+  syntax: {
+    code: "WITH spend AS (\n  SELECT customer_id, sum(total) AS spent\n  FROM orders\n  GROUP BY customer_id\n)\nSELECT customer_id, spent\nFROM spend\nWHERE spent > 20000;",
+    notes: [
+      "A step's columns take the names you gave them, so `spent` is a real column in the main query.",
+      "More steps: `WITH a AS (…), b AS (…) SELECT …`.",
+      "No semicolon between the WITH and the main query: they're one statement.",
+    ],
+  },
+  mistake: "Putting a semicolon after a step's closing bracket. The steps and the main query are one statement; a semicolon cuts it in two, and Postgres reports a typo at the end of the first half.",
+  tasks: [
+    {
+      id: "big-spend",
+      prompt: "The `spend` step totals each customer's orders. Use it to list the customers who spent over ₹20,000: **customer_id** and `spent`.",
+      starter: "WITH spend AS (\n  SELECT customer_id, sum(total) AS spent\n  FROM orders\n  GROUP BY customer_id\n)\nSELECT customer_id, spent\nFROM spend;",
+      hint: "In the main query spent is an ordinary column, so WHERE spent > 20000 works.",
+      solution: "WITH spend AS (\n  SELECT customer_id, sum(total) AS spent\n  FROM orders\n  GROUP BY customer_id\n)\nSELECT customer_id, spent\nFROM spend\nWHERE spent > 20000;",
+      ordered: false,
+      namedColumns: ["customer_id", "spent"],
+    },
+    {
+      id: "above-average",
+      prompt: "Which customers' average order is bigger than the average order overall? Show **customer_id** and their average, rounded to the rupee, as `average`. Add a second step for the overall average.",
+      starter: "WITH per AS (\n  SELECT customer_id, avg(total) AS avg_total\n  FROM orders\n  GROUP BY customer_id\n)\nSELECT customer_id, round(avg_total) AS average\nFROM per;",
+      hint: "Add overall AS (SELECT avg(total) AS a FROM orders), then FROM per p CROSS JOIN overall o WHERE p.avg_total > o.a.",
+      solution: "WITH per AS (\n  SELECT customer_id, avg(total) AS avg_total\n  FROM orders\n  GROUP BY customer_id\n),\noverall AS (\n  SELECT avg(total) AS a\n  FROM orders\n)\nSELECT p.customer_id, round(p.avg_total) AS average\nFROM per p\nCROSS JOIN overall o\nWHERE p.avg_total > o.a;",
+      ordered: false,
+      namedColumns: ["customer_id", "average"],
+    },
+    {
+      id: "best-months",
+      prompt: "The three best months by revenue, not counting cancelled orders: `month` and `revenue`, best first. The starter's step counts cancelled orders and the main query keeps every month.",
+      starter: "WITH monthly AS (\n  SELECT extract(month FROM ordered_at) AS month, sum(total) AS revenue\n  FROM orders\n  GROUP BY month\n)\nSELECT month, revenue\nFROM monthly;",
+      hint: "Add WHERE status <> 'cancelled' inside the step, then ORDER BY revenue DESC, month LIMIT 3 in the main query.",
+      solution: "WITH monthly AS (\n  SELECT extract(month FROM ordered_at) AS month, sum(total) AS revenue\n  FROM orders\n  WHERE status <> 'cancelled'\n  GROUP BY month\n)\nSELECT month, revenue\nFROM monthly\nORDER BY revenue DESC, month\nLIMIT 3;",
+      ordered: true,
+      namedColumns: ["month", "revenue"],
+    },
+    {
+      id: "join-a-step",
+      prompt: "Join a step to a table: show the **name** of each customer with **4 or more** orders, and their count as `orders`.",
+      starter: "WITH counts AS (\n  SELECT customer_id, count(*) AS orders\n  FROM orders\n  GROUP BY customer_id\n)\nSELECT c.name, k.orders\nFROM customers c\nJOIN counts k ON k.customer_id = c.id;",
+      hint: "The step's orders column can be tested in WHERE: WHERE k.orders >= 4.",
+      solution: "WITH counts AS (\n  SELECT customer_id, count(*) AS orders\n  FROM orders\n  GROUP BY customer_id\n)\nSELECT c.name, k.orders\nFROM customers c\nJOIN counts k ON k.customer_id = c.id\nWHERE k.orders >= 4;",
+      ordered: false,
+      namedColumns: ["name", "orders"],
+    },
+  ],
+  buildsOn: ["sql-group-by"],
+  cheatsheet: [
+    { heading: "Name a step", text: ["`WITH spend AS (SELECT customer_id, sum(total) AS spent FROM orders GROUP BY customer_id)`", "Then `SELECT … FROM spend` reads it like a table."] },
+    { heading: "Chain steps", text: ["`WITH a AS (…), b AS (…) SELECT …`; b can read a.", "Join a step to a table or another step like any table."] },
+    { heading: "Why", text: ["A summary in one step is a plain column in the next, so WHERE can test it.", "Small named steps read top to bottom."] },
+  ],
+};

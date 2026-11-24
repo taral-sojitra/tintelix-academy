@@ -1,0 +1,77 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const rowNumber: SqlLesson = {
+  id: "sql-row-number",
+  home: "sql",
+  slug: "row-number",
+  topic: "ROW_NUMBER() OVER",
+  title: "Each customer's latest order",
+  promise: "Number, rank and total rows within groups without folding them, then pick the first of each group.",
+  minutes: 12,
+  level: 3,
+  explain: [
+    "A **window function** works out a value for each row from a group of rows around it, without folding them into one row the way GROUP BY does. **row_number() OVER (…)** numbers rows 1, 2, 3…",
+    "`PARTITION BY customer_id` splits the rows into one group per customer, and `ORDER BY ordered_at DESC` sorts each group. So `row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC)` gives each customer's newest order the number 1.",
+    "Windows are worked out after WHERE, so you can't test them in that query's WHERE. Number the rows in a WITH step, then keep `WHERE n = 1` in the main query. `rank()` gives ties the same number, and `sum(total) OVER (ORDER BY …)` makes a running total.",
+  ],
+  syntax: {
+    code: "SELECT customer_id, id, ordered_at,\n  row_number() OVER (\n    PARTITION BY customer_id\n    ORDER BY ordered_at DESC, id DESC\n  ) AS n\nFROM orders;",
+    notes: [
+      "PARTITION BY makes one group per value; leave it out for one group of everything.",
+      "The ORDER BY inside OVER sorts each group. It's separate from the query's own ORDER BY.",
+      "Every row stays: a window adds a column, it doesn't fold rows.",
+    ],
+  },
+  mistake: "Writing `WHERE row_number() OVER (…) = 1`. Postgres stops, because windows are worked out after WHERE. Number the rows in a WITH step and filter in the main query. And give the window's ORDER BY a tiebreaker, or two orders on the same day can swap numbers between runs.",
+  tasks: [
+    {
+      id: "number-orders",
+      prompt: "Number each customer's orders, newest first, as `n`: show **customer_id**, **id**, **ordered_at** and `n`. On the same day, the higher id comes first.",
+      starter: "SELECT customer_id, id, ordered_at\nFROM orders;",
+      hint: "row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, id DESC) AS n",
+      solution: "SELECT customer_id, id, ordered_at,\n  row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, id DESC) AS n\nFROM orders;",
+      ordered: false,
+      namedColumns: ["customer_id", "id", "ordered_at", "n"],
+    },
+    {
+      id: "latest-order",
+      prompt: "Each customer's **latest** order: **customer_id**, **id** and **ordered_at**, one row per customer. The step already numbers the orders; the main query keeps them all.",
+      starter: "WITH ranked AS (\n  SELECT customer_id, id, ordered_at,\n    row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, id DESC) AS n\n  FROM orders\n)\nSELECT customer_id, id, ordered_at\nFROM ranked;",
+      hint: "In the main query n is an ordinary column: WHERE n = 1.",
+      solution: "WITH ranked AS (\n  SELECT customer_id, id, ordered_at,\n    row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, id DESC) AS n\n  FROM orders\n)\nSELECT customer_id, id, ordered_at\nFROM ranked\nWHERE n = 1;",
+      ordered: false,
+    },
+    {
+      id: "rank-ties",
+      prompt: "Rank every product by price, dearest first, as `price_rank`, so that tied prices **share** a rank. Show **name**, **price** and `price_rank`. The starter's row_number gives tied prices different numbers.",
+      starter: "SELECT name, price,\n  row_number() OVER (ORDER BY price DESC) AS price_rank\nFROM products;",
+      hint: "rank() gives tied rows the same number and skips the next one.",
+      solution: "SELECT name, price,\n  rank() OVER (ORDER BY price DESC) AS price_rank\nFROM products;",
+      ordered: false,
+      namedColumns: ["name", "price", "price_rank"],
+    },
+    {
+      id: "running-total",
+      prompt: "Running revenue: list orders oldest first (lower id first on a day) with **id**, **ordered_at**, **total** and the running sum of totals so far as `running`. The starter's window covers every row at once.",
+      starter: "SELECT id, ordered_at, total,\n  sum(total) OVER () AS running\nFROM orders\nORDER BY ordered_at, id;",
+      hint: "An ORDER BY inside OVER turns sum into a running sum: sum(total) OVER (ORDER BY ordered_at, id).",
+      solution: "SELECT id, ordered_at, total,\n  sum(total) OVER (ORDER BY ordered_at, id) AS running\nFROM orders\nORDER BY ordered_at, id;",
+      ordered: true,
+      namedColumns: ["id", "ordered_at", "total", "running"],
+    },
+    {
+      id: "top-two",
+      prompt: "The **two** dearest products in each category: **category**, **name** and **price**. The starter keeps only one.",
+      starter: "WITH ranked AS (\n  SELECT category, name, price,\n    row_number() OVER (PARTITION BY category ORDER BY price DESC) AS n\n  FROM products\n)\nSELECT category, name, price\nFROM ranked\nWHERE n = 1;",
+      hint: "Keep numbers 1 and 2: WHERE n <= 2.",
+      solution: "WITH ranked AS (\n  SELECT category, name, price,\n    row_number() OVER (PARTITION BY category ORDER BY price DESC) AS n\n  FROM products\n)\nSELECT category, name, price\nFROM ranked\nWHERE n <= 2;",
+      ordered: false,
+    },
+  ],
+  buildsOn: ["sql-order-by", "sql-group-by"],
+  cheatsheet: [
+    { heading: "Number within groups", text: ["`row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, id DESC)`", "Each customer's newest order gets 1."] },
+    { heading: "First of each group", text: ["Number in a WITH step, then `WHERE n = 1` in the main query.", "Windows can't go in WHERE: they're worked out after it."] },
+    { heading: "Other windows", text: ["`rank()`: ties share a number. `dense_rank()`: ties share, no gaps.", "`sum(total) OVER (ORDER BY ordered_at, id)`: a running total. `OVER ()`: the whole result."] },
+  ],
+};

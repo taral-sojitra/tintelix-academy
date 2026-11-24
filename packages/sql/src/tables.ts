@@ -53,3 +53,39 @@ export const SHOP_TABLES: ShopTable[] = [
     ],
   },
 ];
+
+const quote = (s: string) => `'${s.replace(/'/g, "''")}'`;
+
+/**
+ * A verify query for define tasks: each column's name, type, NOT NULL and the kinds of constraint on it
+ * (p primary key, u unique, f foreign key, c check), so rules compare equal however they're written.
+ */
+export function describeTable(table: string): string {
+  return `SELECT a.attname::text AS column_name, format_type(a.atttypid, a.atttypmod) AS type, a.attnotnull AS not_null,
+  coalesce((SELECT string_agg(c.contype::text, '' ORDER BY c.contype::text) FROM pg_constraint c
+            WHERE c.conrelid = a.attrelid AND a.attnum = ANY (c.conkey) AND c.contype <> 'n'), '') AS rules
+FROM pg_attribute a
+WHERE a.attrelid = to_regclass(quote_ident(${quote(table)})) AND a.attnum > 0 AND NOT a.attisdropped
+ORDER BY a.attnum`;
+}
+
+
+/**
+ * A verify query for index tasks: each index other than the primary key, as its keys (columns or expressions, in
+ * order), whether it's UNIQUE and whether it's partial. Names don't matter.
+ */
+export function describeIndexes(table: string): string {
+  return `SELECT string_agg(pg_get_indexdef(i.indexrelid, k.n, true), ', ' ORDER BY k.n) AS keys,
+       i.indisunique AS is_unique, i.indpred IS NOT NULL AS partial
+FROM pg_index i, generate_series(1, i.indnkeyatts::int) AS k(n)
+WHERE i.indrelid = to_regclass(quote_ident(${quote(table)})) AND NOT i.indisprimary
+GROUP BY i.indexrelid, i.indisunique, i.indpred IS NOT NULL`;
+}
+
+/** A verify query for drop tasks: the tables and views that exist, and how many links each has to other tables. */
+export function describeRelations(): string {
+  return `SELECT c.relname::text AS name, c.relkind::text AS kind,
+       (SELECT count(*) FROM pg_constraint k WHERE k.conrelid = c.oid AND k.contype = 'f') AS links
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind IN ('r', 'v', 'm')`;
+}

@@ -1,0 +1,76 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const innerJoin: SqlLesson = {
+  id: "sql-inner-join",
+  home: "sql",
+  slug: "inner-join",
+  topic: "INNER JOIN",
+  title: "Whose order is this?",
+  promise: "Pair rows from two tables by matching columns, and see which rows a join quietly drops.",
+  minutes: 10,
+  level: 2,
+  explain: [
+    "Data is split across tables: an order holds a `customer_id`, and the customer's name lives in customers. **JOIN … ON** pairs up rows whose columns match, so each order finds its customer.",
+    "An **INNER JOIN** (plain JOIN) keeps only the pairs that match. A customer with no orders simply doesn't appear. That's often the point, and sometimes the bug.",
+    "When both tables have a column with the same name, like `id`, say which one you mean: give each table a short alias (`orders o`) and write `o.id` or `c.id`.",
+  ],
+  syntax: {
+    code: "SELECT o.id, c.name, o.total\nFROM orders o\nJOIN customers c ON c.id = o.customer_id;",
+    notes: [
+      "`orders o` gives the table a short name for this query.",
+      "ON says which columns must match.",
+      "JOIN means INNER JOIN: rows with no match are dropped. Chain more JOINs for more tables.",
+    ],
+  },
+  mistake: "Joining on the wrong columns, like `ON c.id = o.id`. It runs and returns rows, but each order gets whichever customer's id happens to equal the order's id. Join a foreign key to the key it points at: `c.id = o.customer_id`.",
+  tasks: [
+    {
+      id: "who-ordered",
+      prompt: "Show each order's **id** with the **name** of the customer who placed it.",
+      starter: "SELECT id, customer_id\nFROM orders;",
+      hint: "FROM orders o JOIN customers c ON c.id = o.customer_id, then SELECT o.id, c.name.",
+      solution: "SELECT o.id, c.name\nFROM orders o\nJOIN customers c ON c.id = o.customer_id;",
+      ordered: false,
+    },
+    {
+      id: "pune-orders",
+      prompt: "Show **id**, **ordered_at** and the customer's **city** for orders placed by customers in **Pune**.",
+      starter: "SELECT o.id, o.ordered_at, c.city\nFROM orders o\nJOIN customers c ON c.id = o.customer_id;",
+      hint: "WHERE comes after the JOIN and can test either table's columns: WHERE c.city = 'Pune'.",
+      solution: "SELECT o.id, o.ordered_at, c.city\nFROM orders o\nJOIN customers c ON c.id = o.customer_id\nWHERE c.city = 'Pune';",
+      ordered: false,
+    },
+    {
+      id: "order-lines",
+      prompt: "For order **19**, list each product's **name**, the **quantity**, and `quantity * unit_price` as `line_total`.",
+      starter: "SELECT product_id, quantity\nFROM order_items\nWHERE order_id = 19;",
+      hint: "Join order_items i to products p ON p.id = i.product_id.",
+      solution: "SELECT p.name, i.quantity, i.quantity * i.unit_price AS line_total\nFROM order_items i\nJOIN products p ON p.id = i.product_id\nWHERE i.order_id = 19;",
+      ordered: false,
+      namedColumns: ["name", "quantity", "line_total"],
+    },
+    {
+      id: "fix-the-join",
+      prompt: "List the **name** of every customer who has a **cancelled** order, once each. The starter joins on the wrong columns.",
+      starter: "SELECT DISTINCT c.name\nFROM orders o\nJOIN customers c ON c.id = o.id\nWHERE o.status = 'cancelled';",
+      hint: "An order points at its customer through customer_id, not id.",
+      solution: "SELECT DISTINCT c.name\nFROM orders o\nJOIN customers c ON c.id = o.customer_id\nWHERE o.status = 'cancelled';",
+      ordered: false,
+    },
+    {
+      id: "category-revenue",
+      prompt: "Revenue per product **category** from every order line, as `revenue` (`quantity * unit_price` added up), biggest first.",
+      starter: "SELECT p.category, count(*) AS revenue\nFROM order_items i\nJOIN products p ON p.id = i.product_id\nGROUP BY p.category\nORDER BY revenue DESC, p.category;",
+      hint: "Replace count(*) with sum(i.quantity * i.unit_price).",
+      solution: "SELECT p.category, sum(i.quantity * i.unit_price) AS revenue\nFROM order_items i\nJOIN products p ON p.id = i.product_id\nGROUP BY p.category\nORDER BY revenue DESC, p.category;",
+      ordered: true,
+      namedColumns: ["category", "revenue"],
+    },
+  ],
+  buildsOn: ["sql-select"],
+  cheatsheet: [
+    { heading: "Join two tables", text: ["`FROM orders o JOIN customers c ON c.id = o.customer_id`", "Each order is paired with the customer whose id matches."] },
+    { heading: "What INNER drops", text: ["Rows with no match on the other side vanish: customers with no orders don't appear.", "Need them? That's LEFT JOIN, next lesson."] },
+    { heading: "Names", text: ["Aliases (`o`, `c`) keep queries short.", "Write `o.id` or `c.id` when both tables have the column, or Postgres calls it ambiguous."] },
+  ],
+};

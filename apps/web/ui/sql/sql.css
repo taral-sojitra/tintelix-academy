@@ -1,8 +1,8 @@
 /* SQL task lessons: learn | work (replay + editor) | check (feedback, result, dataset). */
 .sql-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; grid-template-areas: "learn work check"; gap: 20px; align-items: start; }
 .sql-learn { grid-area: learn; display: grid; gap: 14px; }
-.sql-work { grid-area: work; display: grid; gap: 10px; min-width: 0; }
-.sql-check { grid-area: check; display: grid; gap: 14px; min-width: 0; }
+.sql-work { grid-area: work; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+.sql-check { grid-area: check; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 
 .sql-grid code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink); }
 .sql-grid pre { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.55; }
@@ -33,7 +33,7 @@
 .sql-now p { font-size: 15.5px; color: var(--ink); margin-top: 2px; }
 
 /* The stage */
-.sql-stage { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: var(--stage); border: 1px solid var(--border); min-height: 240px; align-content: start; }
+.sql-stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; border-radius: 14px; background: var(--stage); border: 1px solid var(--border); min-height: 240px; align-content: start; }
 .sql-stage.empty { place-content: center; text-align: center; }
 .sql-stage-msg { color: var(--label); font-size: 14px; max-width: 46ch; }
 .sql-stage-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -64,6 +64,12 @@
 .sql-table tr.m-pass td { background: color-mix(in srgb, var(--green) 13%, transparent); }
 .sql-table tr.m-fail td, .sql-table tr.m-unknown td { animation: sql-drop .5s .45s ease both; }
 .sql-table tr.m-unknown td { background: var(--amber-soft); }
+.sql-table tr.m-filled td { background: var(--violet-soft); }
+.sql-table tr.m-new td { background: var(--green-soft); animation: sql-new .6s .3s ease both; }
+.sql-table tr.m-changed td { background: var(--amber-soft); }
+.sql-table tr.m-gone td { background: var(--red-soft); animation: sql-drop .5s .45s ease both; }
+@keyframes sql-new { from { opacity: 0; transform: translateX(-8px); } }
+.sql-table tr.m-filled .null { color: var(--violet); font-style: normal; font-weight: 600; }
 @keyframes sql-drop { to { opacity: .35; text-decoration: line-through; } }
 .sql-table tr.g-start td { border-top: 2px solid var(--border-strong); }
 .sql-table tr[class^="g-"] td:first-child { box-shadow: inset 3px 0 0 var(--g); }

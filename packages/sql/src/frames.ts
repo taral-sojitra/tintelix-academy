@@ -1,5 +1,8 @@
-import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement } from "pgsql-ast-parser";
+import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement, type Statement, type WithStatement } from "pgsql-ast-parser";
+import { changeFrames, type Change } from "./changes";
 import { normalise } from "./compare";
+import { ddlFrames, dropFrames } from "./ddl";
+import { hasTransactionControl, splitStatements } from "./run";
 import type { Db, QueryResult } from "./db";
 
 /**
@@ -7,17 +10,23 @@ import type { Db, QueryResult } from "./db";
  * Every frame is the result of real SQL run in PGlite, and the last frame is the real result.
  */
 
-export type Clause = "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT";
-export type Mark = "pass" | "fail" | "unknown";
+export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE" | "CREATE TABLE" | "ALTER TABLE" | "AFTER" | "CREATE INDEX" | "DROP TABLE" | "DROP VIEW" | "TRUNCATE";
+/**
+ * pass, fail, unknown: what WHERE or HAVING said. filled: a row an outer join filled with NULLs.
+ * new, changed, gone: what INSERT, UPDATE or DELETE did to a row. plain: nothing to mark.
+ */
+export type Mark = "pass" | "fail" | "unknown" | "filled" | "new" | "changed" | "gone" | "plain";
 
 export interface Frame {
   clause: Clause;
+  /** Chip text when the clause alone isn't enough, like "WITH spend". */
+  label?: string;
   note: string;
   columns: string[];
   /** At most MAX_FRAME_ROWS rows; `total` is the full count. */
   rows: unknown[][];
   total: number;
-  /** WHERE and HAVING: what the test said for each row. */
+  /** WHERE and HAVING: what the test said for each row. FROM with an outer join: which rows it filled with NULLs. */
   marks?: Mark[];
   /** GROUP BY: the bucket each row fell into, counted from 0; rows come sorted by bucket. */
   groups?: number[];
@@ -29,6 +38,8 @@ export type Replay = { supported: true; frames: Frame[] } | { supported: false; 
 
 export const MAX_FRAME_ROWS = 200;
 const AGGREGATES = new Set(["count", "sum", "avg", "min", "max", "string_agg", "array_agg", "bool_and", "bool_or", "every"]);
+/** Statements that make or change tables, replayed by ddl.ts. */
+const DDL = new Set(["create table", "alter table", "create index", "drop table", "truncate table"]);
 const NESTED = new Set(["select", "union", "union all", "with", "with recursive", "values"]);
 const TEXT_TYPES = new Set([19, 25, 1042, 1043]);
 const DATE_TYPES = new Set([1082, 1114, 1184]);
@@ -51,16 +62,25 @@ function walk(root: unknown, visit: (n: Node) => boolean | void): void {
   go(root, true);
 }
 
-function readShape(sql: string): SelectFromStatement | string {
-  let statements;
-  try {
-    statements = parse(sql, { locationTracking: true });
-  } catch {
-    return "The replay can't read this query yet, so here's just its result.";
+interface Shape {
+  main: SelectFromStatement;
+  /** The WITH around the main query, if any. */
+  around?: WithStatement;
+}
+
+function readShape(ast: Statement): Shape | string {
+  if (ast.type === "with recursive") return "The replay can't follow WITH RECURSIVE yet, so here's just its result.";
+  if (ast.type === "with") {
+    const main = checkSelect(ast.in);
+    return typeof main === "string" ? main : { main, around: ast };
   }
-  if (statements.length !== 1) return "The replay follows one query at a time; this shows the last result.";
-  const ast = statements[0]!;
-  if (ast.type === "with" || ast.type === "with recursive") return "The replay can't follow WITH yet, so here's just its result.";
+  const main = checkSelect(ast);
+  return typeof main === "string" ? main : { main };
+}
+
+/** The shapes the replay can take apart: one SELECT over tables and joins, no subqueries or window functions. */
+function checkSelect(ast: Statement): SelectFromStatement | string {
+  if (ast.type === "with" || ast.type === "with recursive") return "The replay follows one WITH at a time, so here's just its result.";
   if (ast.type === "union" || ast.type === "union all") return "The replay can't follow UNION yet, so here's just its result.";
   if (ast.type !== "select") return "The replay follows SELECT queries; here's what your statement did.";
   if (!ast.from?.length) return "There's no table here to replay.";
@@ -68,9 +88,14 @@ function readShape(sql: string): SelectFromStatement | string {
   if (Array.isArray(ast.distinct)) return "The replay can't follow DISTINCT ON yet, so here's just its result.";
   if (ast.having && !ast.groupBy?.length) return "The replay can't follow HAVING without GROUP BY, so here's just its result.";
   let problem = "";
-  walk(ast, (n) => {
+  // Window functions are followed in the SELECT list only.
+  walk({ ...ast, columns: undefined }, (n) => {
     if (n.type && NESTED.has(n.type)) problem = "The replay can't follow a query inside a query yet, so here's just its result.";
-    else if (n.type === "call" && n.over) problem = "The replay can't follow window functions yet, so here's just its result.";
+    else if (n.type === "call" && n.over) problem = "The replay follows window functions in the SELECT list only, so here's just its result.";
+    return !problem;
+  });
+  walk(ast.columns, (n) => {
+    if (n.type && NESTED.has(n.type)) problem = "The replay can't follow a query inside a query yet, so here's just its result.";
     return !problem;
   });
   return problem || ast;
@@ -78,6 +103,8 @@ function readShape(sql: string): SelectFromStatement | string {
 
 interface Source {
   table: string;
+  /** A real table (it has ctid row ids); a WITH step does not. */
+  real: boolean;
   schema?: string;
   alias: string;
   columns: string[];
@@ -90,18 +117,70 @@ async function q(db: Db, sql: string): Promise<QueryResult> {
   return db.query(sql);
 }
 
+/** What a join dropped (rows with no match) and what an outer join kept with NULLs. */
+async function joinNote(
+  db: Db,
+  stmt: (over: Partial<SelectFromStatement>) => string,
+  print: (s: SelectFromStatement) => string,
+  sources: Source[],
+  filledBy: Map<number, string>,
+  rows: number,
+): Promise<string> {
+  if (sources.some((s) => !s.real)) return "";
+  const count = (arg: Expr, distinct = false) => ({ type: "call", function: { name: "count" }, args: [arg], ...(distinct ? { distinct: "distinct" } : {}) }) as unknown as Expr;
+  const cols = sources.flatMap((s, i) => [
+    { expr: count(ref("ctid", s.alias), true), alias: { name: `__d${i}` } },
+    { expr: count(ref("ctid", s.alias)), alias: { name: `__c${i}` } },
+  ]);
+  const r = (await db.query(stmt({ columns: cols, where: undefined, groupBy: undefined, having: undefined, orderBy: undefined, limit: undefined, distinct: undefined }))).rows[0] ?? [];
+  const parts: string[] = [];
+  for (const [i, s] of sources.entries()) {
+    const probe = print({ type: "select", columns: [{ expr: count(ref("*")) }], from: [{ type: "table", name: { name: s.table, schema: s.schema } }] } as SelectFromStatement);
+    const total = Number((await db.query(probe)).rows[0]?.[0]);
+    const out = total - Number(r[2 * i]);
+    if (out > 0) parts.push(`${out} ${out === 1 ? "row" : "rows"} of ${s.table} had no match, so ${out === 1 ? "it's" : "they're"} left out.`);
+    const filled = rows - Number(r[2 * i + 1]);
+    if (filled > 0) parts.push(`${filled} had no match in ${s.table}, so ${filledBy.get(i) ?? "the join"} kept ${filled === 1 ? "it" : "them"} with NULLs.`);
+  }
+  return parts.length ? " " + parts.join(" ") : "";
+}
+
+/**
+ * Replays the last statement of what the learner ran; any statements before it run first, in the same
+ * transaction, which is rolled back afterwards.
+ */
 export async function buildReplay(db: Db, sql: string): Promise<Replay> {
-  const shape = readShape(sql);
-  if (typeof shape === "string") return no(shape);
-  const ast = shape;
+  const parts = splitStatements(sql);
+  const lastPart = parts[parts.length - 1];
+  if (!lastPart) return no("There's nothing to replay.");
+  // The replay runs inside its own BEGIN … ROLLBACK; a COMMIT in the text would keep its changes.
+  if (hasTransactionControl(parts.map((p) => p.kind))) return no("Every run happens in its own transaction, so leave out BEGIN, COMMIT and ROLLBACK.");
+  const lastSql = lastPart.text;
+  const first = parts.slice(0, -1).map((p) => p.text).join(";\n");
+  // The parser can't read DROP VIEW, so that one is matched by hand.
+  const dropView = /^DROP\s+VIEW\s+(?:IF\s+EXISTS\s+)?(.+?)(?:\s+(?:CASCADE|RESTRICT))?\s*$/is.exec(lastSql.replace(/^(?:--[^\n]*\n|\s)+/, ""));
+  let last: Statement | undefined;
+  try {
+    last = parse(lastSql, { locationTracking: true })[0];
+  } catch {
+    if (!dropView) return no("The replay can't read this query yet, so here's just its result.");
+  }
   const text = (n: unknown): string => {
     const loc = (n as Located)._location;
-    return loc ? sql.slice(loc.start, loc.end).trim() : toSql.expr(n as Expr);
+    return loc ? lastSql.slice(loc.start, loc.end).trim() : toSql.expr(n as Expr);
   };
+  const ddl = !!last && DDL.has(last.type);
+  const change = last?.type === "insert" || last?.type === "update" || last?.type === "delete";
+  const shape = !last || ddl || change ? null : readShape(last);
+  if (typeof shape === "string") return no(shape);
 
   await db.exec("BEGIN");
   try {
-    return await frames(db, sql, ast, text);
+    if (first) await db.exec(first);
+    if (!last) return await dropFrames(db, "VIEW", dropView![1]!.split(",").map((n) => n.trim().replace(/^"|"$/g, "")), lastSql);
+    if (change) return await changeFrames(db, last as Change);
+    if (ddl) return (await ddlFrames(db, last, lastSql)) ?? no("The replay can't follow this statement yet; here's what it did.");
+    return await frames(db, lastSql, shape!, text);
   } catch {
     return no("The replay couldn't follow this query, so here's just its result.");
   } finally {
@@ -109,8 +188,10 @@ export async function buildReplay(db: Db, sql: string): Promise<Replay> {
   }
 }
 
-async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: unknown) => string): Promise<Replay> {
-  const stmt = (over: Partial<SelectFromStatement>) => toSql.statement({ ...ast, ...over } as SelectFromStatement);
+async function frames(db: Db, sql: string, { main: ast, around }: Shape, text: (n: unknown) => string): Promise<Replay> {
+  /** Every stage query runs inside the learner's WITH, so the main query can read its steps. */
+  const print = (s: SelectFromStatement) => toSql.statement(around ? { ...around, in: s } : s);
+  const stmt = (over: Partial<SelectFromStatement>) => print({ ...ast, ...over } as SelectFromStatement);
   const bare = { groupBy: undefined, having: undefined, orderBy: undefined, limit: undefined, distinct: undefined };
 
   // Every source table's columns, labelled by table where two tables share a name.
@@ -118,9 +199,10 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
   for (const f of ast.from!) {
     if (f.type !== "table") return no("The replay can't follow this FROM yet.");
     const name = f.name;
-    const probe = toSql.statement({ type: "select", columns: [{ expr: ref("*") }], from: [{ type: "table", name: { name: name.name, schema: name.schema } }], limit: { limit: { type: "integer", value: 0 } } } as SelectFromStatement);
+    const probe = print({ type: "select", columns: [{ expr: ref("*") }], from: [{ type: "table", name: { name: name.name, schema: name.schema } }], limit: { limit: { type: "integer", value: 0 } } } as SelectFromStatement);
     const cols = (await q(db, probe)).fields.map((x) => x.name);
-    sources.push({ table: name.name, schema: name.schema, alias: name.alias ?? name.name, columns: cols });
+    const step = !name.schema && (around?.bind ?? []).some((b) => b.alias.name === name.name);
+    sources.push({ table: name.name, real: !step, schema: name.schema, alias: name.alias ?? name.name, columns: cols });
   }
   const seen = new Map<string, number>();
   for (const s of sources) for (const c of s.columns) seen.set(c, (seen.get(c) ?? 0) + 1);
@@ -140,17 +222,43 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
   const cap = <T,>(xs: T[]) => xs.slice(0, MAX_FRAME_ROWS);
   const out: Frame[] = [];
 
+  // WITH: each named step's rows first, in the order they're written.
+  for (const b of around?.bind ?? []) {
+    const name = b.alias.name;
+    const rw = await q(db, print({ type: "select", columns: [{ expr: ref("*") }], from: [{ type: "table", name: { name } }] } as SelectFromStatement));
+    out.push({
+      clause: "WITH",
+      label: `WITH ${name}`,
+      note: `WITH made a step called ${name}: ${plural(rw.rows.length, "row")}. The main query reads it like a table.`,
+      columns: rw.fields.map((x) => x.name),
+      rows: cap(rw.rows),
+      total: rw.rows.length,
+    });
+  }
+
+  // Sources an outer join can fill with NULLs, and the join that does it.
+  const filledBy = new Map<number, string>();
+  ast.from!.forEach((f, i) => {
+    const kind = (f as { join?: { type?: string } }).join?.type;
+    if (kind === "LEFT JOIN" || kind === "FULL JOIN") filledBy.set(i, kind);
+    if (kind === "RIGHT JOIN" || kind === "FULL JOIN") for (let j = 0; j < i; j++) filledBy.set(j, kind);
+  });
+  const nullable = [...filledBy.keys()].filter((i) => sources[i]!.real);
+
   // FROM, and WHERE's verdict on each of those rows (one query, so the rows line up).
   const pass = ast.where ? [{ expr: ast.where, alias: { name: "__pass" } }] : [];
-  const r1 = await q(db, stmt({ ...bare, columns: [...all, ...pass], where: undefined }));
+  const fills = nullable.map((i) => ({ expr: { type: "unary", op: "IS NULL", operand: ref("ctid", sources[i]!.alias) } as unknown as Expr, alias: { name: `__f${i}` } }));
+  const r1 = await q(db, stmt({ ...bare, columns: [...all, ...pass, ...fills], where: undefined }));
   const fromRows = r1.rows.map((r) => r.slice(0, all.length));
   const tables = sources.map((s) => s.table);
+  const firstFill = all.length + pass.length;
   out.push({
     clause: "FROM",
-    note: sources.length === 1 ? `FROM starts with every row of ${tables[0]}: ${plural(fromRows.length, "row")}.` : `FROM joined ${listing(tables)} into ${plural(fromRows.length, "row")}.`,
+    note: sources.length === 1 ? `FROM starts with every row of ${tables[0]}: ${plural(fromRows.length, "row")}.` : `FROM joined ${listing(tables)} into ${plural(fromRows.length, "row")}.` + (await joinNote(db, stmt, print, sources, filledBy, fromRows.length)),
     columns: allLabels,
     rows: cap(fromRows),
     total: fromRows.length,
+    ...(nullable.length ? { marks: cap(r1.rows.map((r): Mark => (r.slice(firstFill).some((v) => v === true) ? "filled" : "plain"))) } : {}),
   });
   let remaining = fromRows.length;
   if (ast.where) {
@@ -228,20 +336,76 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
     }
   }
 
+  // OVER: a window function's rows, split into groups and sorted the way the window sees them.
+  const windows: Node[] = [];
+  walk(selected, (n) => {
+    if (n.type === "call" && n.over) { windows.push(n); return false; }
+  });
+  if (windows.length) {
+    const win = windows[0]!;
+    const spec = win.over as { partitionBy?: Expr[]; orderBy?: { by: Expr; order?: string; nulls?: string }[] };
+    const parts = spec.partitionBy ?? [];
+    const sortBy = spec.orderBy ?? [];
+    const rank = { type: "call", function: { name: "dense_rank" }, args: [], over: { orderBy: parts.map((by) => ({ by })) } } as unknown as Expr;
+    const rw = await q(db, stmt({ columns: [...selected, ...(parts.length ? [{ expr: rank, alias: { name: "__g" } }] : [])], distinct: undefined, limit: undefined, orderBy: parts.length || sortBy.length ? ([...parts.map((by) => ({ by })), ...sortBy] as SelectFromStatement["orderBy"]) : undefined }));
+    const width = parts.length ? rw.fields.length - 1 : rw.fields.length;
+    const groups = parts.length ? rw.rows.map((r) => Number(r[width]) - 1) : undefined;
+    const fn = ((win.function as { name: string }).name ?? "").toLowerCase();
+    const sorted = sortBy.map((o) => text(o.by) + (o.order === "DESC" ? " DESC" : "")).join(", ");
+    const what =
+      fn === "row_number" ? `numbered the rows from 1${parts.length ? " in each group" : ""}`
+      : fn === "rank" ? "ranked them; ties share a rank"
+      : fn === "dense_rank" ? "ranked them; ties share a rank and no numbers are skipped"
+      : AGGREGATES.has(fn) ? (sortBy.length ? `worked out a running ${fn}` : parts.length ? `put each group's ${fn} on its rows` : `put the ${fn} of all of them on every row`)
+      : `worked out ${text(win)} for every row`;
+    const count = groups ? new Set(groups).size : 0;
+    const note = parts.length
+      ? `OVER split the ${plural(rw.rows.length, "row")} into ${plural(count, "group")} by ${parts.map(text).join(", ")}${sortBy.length ? `, sorted each by ${sorted}` : ""}, and ${what}.`
+      : `OVER ${sortBy.length ? `sorted the ${plural(rw.rows.length, "row")} by ${sorted} and` : `looked at all ${plural(rw.rows.length, "row")} at once and`} ${what}.`;
+    out.push({
+      clause: "OVER",
+      note,
+      columns: rw.fields.slice(0, width).map((x) => x.name),
+      rows: cap(rw.rows.map((r) => r.slice(0, width))),
+      total: rw.rows.length,
+      ...(groups ? { groups: cap(groups) } : {}),
+    });
+  }
+
   // SELECT: the columns, before DISTINCT, ORDER BY and LIMIT.
   const rs = await q(db, stmt({ distinct: undefined, orderBy: keys.length ? keyOrder : undefined, limit: undefined }));
   const picked = rs.fields.map((x) => x.name);
   const star = selected.length === 1 && (selected[0]!.expr as Node).type === "ref" && (selected[0]!.expr as Node).name === "*";
   let summarised = false;
+  const overColumn: Node[] = [];
   walk(selected, (n) => {
-    if (n.type === "call" && AGGREGATES.has(((n.function as { name: string }).name ?? "").toLowerCase())) summarised = true;
+    if (n.type === "call" && AGGREGATES.has(((n.function as { name: string }).name ?? "").toLowerCase())) {
+      summarised = true;
+      const args = (n.args as Node[] | undefined) ?? [];
+      if (args.length === 1 && !(args[0]!.type === "ref" && args[0]!.name === "*")) overColumn.push(n);
+      return false;
+    }
   });
+  // A summary over a column skips its NULLs; say how many, since that's the surprise.
+  const skipped: string[] = [];
+  if (summarised && !keys.length && overColumn.length) {
+    const count = (arg: unknown) => ({ type: "call", function: { name: "count" }, args: [arg] }) as unknown as Expr;
+    const cols = overColumn.flatMap((n, i) => [
+      { expr: count(ref("*")), alias: { name: `__all${i}` } },
+      { expr: count((n.args as unknown[])[0]), alias: { name: `__has${i}` } },
+    ]);
+    const rn = await q(db, stmt({ ...bare, columns: cols }));
+    overColumn.forEach((n, i) => {
+      const gap = Number(rn.rows[0]?.[2 * i]) - Number(rn.rows[0]?.[2 * i + 1]);
+      if (gap > 0) skipped.push(`${text(n)} skipped ${plural(gap, "NULL")}`);
+    });
+  }
   out.push({
     clause: "SELECT",
     note: keys.length
       ? `SELECT made one row per group: ${plural(rs.rows.length, "row")}.`
       : summarised
-        ? `SELECT summarised ${plural(remaining, "row")} into one.`
+        ? `SELECT summarised ${plural(remaining, "row")} into one.` + (skipped.length ? ` ${skipped.join("; ")}.` : "")
         : star
           ? "SELECT * kept every column."
           : `SELECT picked ${listing(picked)}.`,

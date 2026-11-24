@@ -105,6 +105,13 @@ describe("buildReplay", () => {
     await endsOnRealResult(sql, r);
   });
 
+  it("says how many NULLs a summary skipped", async () => {
+    const sql = "SELECT count(*), count(city), count(DISTINCT city) FROM customers";
+    const r = await buildReplay(db, sql);
+    expect(frame(r, "SELECT").note).toBe("SELECT summarised 20 rows into one. count(city) skipped 4 NULLs; count(DISTINCT city) skipped 4 NULLs.");
+    await endsOnRealResult(sql, r);
+  });
+
   it("labels clashing columns by table", async () => {
     const sql = "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.customer_id";
     const r = await buildReplay(db, sql);
@@ -116,14 +123,134 @@ describe("buildReplay", () => {
     await endsOnRealResult(sql, r);
   });
 
+  it("says which rows a join left out", async () => {
+    const r = await buildReplay(db, "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.customer_id");
+    expect(frame(r, "FROM").note).toBe("FROM joined orders and customers into 60 rows. 5 rows of customers had no match, so they're left out.");
+  });
+
+  it("says which rows a LEFT JOIN kept with NULLs, and marks them", async () => {
+    const sql = "SELECT c.name, o.id FROM customers c LEFT JOIN orders o ON o.customer_id = c.id";
+    const r = await buildReplay(db, sql);
+    const from = frame(r, "FROM");
+    expect(from.note).toBe("FROM joined customers and orders into 65 rows. 5 had no match in orders, so LEFT JOIN kept them with NULLs.");
+    expect(from.marks?.filter((m) => m === "filled")).toHaveLength(5);
+    await endsOnRealResult(sql, r);
+  });
+
+  it("shows each WITH step, then the main query reading from it", async () => {
+    const sql = "WITH spend AS (SELECT customer_id, sum(total) AS spent FROM orders GROUP BY customer_id) SELECT customer_id, spent FROM spend WHERE spent > 20000 ORDER BY spent DESC";
+    const r = await buildReplay(db, sql);
+    expect(clauses(r)).toEqual(["WITH", "FROM", "WHERE", "SELECT", "ORDER BY"]);
+    const step = frame(r, "WITH");
+    expect(step).toMatchObject({ label: "WITH spend", columns: ["customer_id", "spent"], total: 15 });
+    expect(step.note).toBe("WITH made a step called spend: 15 rows. The main query reads it like a table.");
+    expect(frame(r, "FROM").note).toBe("FROM starts with every row of spend: 15 rows.");
+    await endsOnRealResult(sql, r);
+  });
+
+  it("shows several WITH steps in order", async () => {
+    const sql = "WITH books AS (SELECT id, name FROM products WHERE category = 'Books'), sold AS (SELECT i.product_id, sum(i.quantity) AS units FROM order_items i JOIN books b ON b.id = i.product_id GROUP BY i.product_id) SELECT b.name, s.units FROM books b JOIN sold s ON s.product_id = b.id";
+    const r = await buildReplay(db, sql);
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames.filter((f) => f.clause === "WITH").map((f) => f.label)).toEqual(["WITH books", "WITH sold"]);
+    await endsOnRealResult(sql, r);
+  });
+
+  it("splits, sorts and numbers rows for a window function", async () => {
+    const sql = "SELECT customer_id, id, ordered_at, row_number() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, id DESC) AS rn FROM orders";
+    const r = await buildReplay(db, sql);
+    expect(clauses(r)).toEqual(["FROM", "OVER", "SELECT"]);
+    const over = frame(r, "OVER");
+    expect(new Set(over.groups).size).toBe(15);
+    expect(over.columns).toEqual(["customer_id", "id", "ordered_at", "rn"]);
+    // Each group starts at 1 and counts up.
+    over.rows.forEach((row, i) => {
+      const start = i === 0 || over.groups![i - 1] !== over.groups![i];
+      expect(Number(row[3])).toBe(start ? 1 : Number(over.rows[i - 1]![3]) + 1);
+    });
+    expect(over.note).toBe("OVER split the 60 rows into 15 groups by customer_id, sorted each by ordered_at DESC, id DESC, and numbered the rows from 1 in each group.");
+    await endsOnRealResult(sql, r);
+  });
+
+  it("follows a window over the whole result", async () => {
+    const sql = "SELECT name, price, rank() OVER (ORDER BY price DESC) AS r FROM products ORDER BY r, name";
+    const r = await buildReplay(db, sql);
+    expect(clauses(r)).toEqual(["FROM", "OVER", "SELECT", "ORDER BY"]);
+    expect(frame(r, "OVER").groups).toBeUndefined();
+    expect(frame(r, "OVER").note).toBe("OVER sorted the 15 rows by price DESC and ranked them; ties share a rank.");
+    await endsOnRealResult(sql, r);
+  });
+
+  it("follows a window over everything at once", async () => {
+    const sql = "SELECT id, sum(total) OVER () AS everything FROM orders";
+    const r = await buildReplay(db, sql);
+    expect(frame(r, "OVER").note).toBe("OVER looked at all 60 rows at once and put the sum of all of them on every row.");
+    await endsOnRealResult(sql, r);
+  });
+
+  it("shows which rows an UPDATE picks, then the rows it changed", async () => {
+    const r = await buildReplay(db, "UPDATE products SET stock = 50 WHERE name = 'Spice Box'");
+    expect(clauses(r)).toEqual(["WHERE", "UPDATE"]);
+    const where = frame(r, "WHERE");
+    expect(where.total).toBe(15);
+    expect(where.marks?.filter((m) => m === "changed")).toHaveLength(1);
+    expect(where.note).toBe("WHERE picked 1 of 15 rows to change.");
+    const after = frame(r, "UPDATE");
+    expect(after.note).toBe("UPDATE set stock on 1 row.");
+    const i = after.marks!.indexOf("changed");
+    expect(after.rows[i]).toContain(50);
+    expect(after.rows.map((x) => x[0])).toEqual(where.rows.map((x) => x[0]));
+  });
+
+  it("warns that an UPDATE without WHERE changes every row", async () => {
+    const r = await buildReplay(db, "UPDATE products SET stock = 0");
+    expect(clauses(r)).toEqual(["BEFORE", "UPDATE"]);
+    expect(frame(r, "BEFORE").note).toBe("There's no WHERE, so UPDATE changes every row: all 15.");
+    expect(frame(r, "UPDATE").marks?.filter((m) => m === "changed")).toHaveLength(15);
+  });
+
+  it("shows the row an INSERT adds", async () => {
+    const r = await buildReplay(db, "INSERT INTO products (name, category, price, stock) VALUES ('Desk Mat', 'Home', 799, 30)");
+    expect(clauses(r)).toEqual(["BEFORE", "INSERT"]);
+    expect(frame(r, "BEFORE").note).toBe("products has 15 rows before the INSERT.");
+    const after = frame(r, "INSERT");
+    expect(after.total).toBe(16);
+    expect(after.marks?.filter((m) => m === "new")).toHaveLength(1);
+    expect(after.note).toBe("INSERT added 1 row, so products now has 16.");
+  });
+
+  it("shows the rows a DELETE removes", async () => {
+    const lines = Number((await db.query("SELECT count(*) FROM order_items WHERE order_id = 1")).rows[0]?.[0]);
+    const r = await buildReplay(db, "DELETE FROM order_items WHERE order_id = 1");
+    expect(clauses(r)).toEqual(["WHERE", "DELETE"]);
+    expect(frame(r, "WHERE").marks?.filter((m) => m === "gone")).toHaveLength(lines);
+    expect(frame(r, "WHERE").note).toBe(`WHERE picked ${lines} of 150 rows to delete.`);
+    expect(frame(r, "DELETE").total).toBe(150 - lines);
+    expect(frame(r, "DELETE").note).toBe(`DELETE removed ${lines} rows, so order_items now has ${150 - lines}.`);
+  });
+
+  it("runs earlier statements first and replays the last one", async () => {
+    const r = await buildReplay(db, "CREATE TABLE notes (id int PRIMARY KEY, body text);\nINSERT INTO notes VALUES (1, 'hi'), (2, 'there');");
+    expect(frame(r, "BEFORE").note).toBe("notes has 0 rows before the INSERT.");
+    expect(frame(r, "INSERT").total).toBe(2);
+    const s2 = await buildReplay(db, "UPDATE products SET stock = 0; SELECT name, stock FROM products WHERE stock = 0");
+    expect(frame(s2, "WHERE").note).toBe("WHERE kept 15 of 15 rows.");
+  });
+
+  it("never lets a draft's COMMIT keep its changes", async () => {
+    const r = await buildReplay(db, "DELETE FROM order_items; COMMIT; SELECT count(*) FROM order_items");
+    expect(r.supported).toBe(false);
+    expect(Number((await db.query("SELECT count(*) FROM order_items")).rows[0]?.[0])).toBe(150);
+  });
+
   it("shows only the result for shapes it can't follow yet", async () => {
     for (const sql of [
-      "WITH big AS (SELECT * FROM orders WHERE total > 5000) SELECT count(*) FROM big",
+      "WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i + 1 FROM n WHERE i < 3) SELECT i FROM n",
       "SELECT name FROM customers WHERE id IN (SELECT customer_id FROM orders)",
-      "SELECT id, row_number() OVER (ORDER BY total) FROM orders",
+      "SELECT id FROM orders ORDER BY row_number() OVER (ORDER BY total)",
       "SELECT 1 UNION SELECT 2",
       "SELECT 1 + 1",
-      "UPDATE products SET stock = 0",
+      "UPDATE orders o SET total = 0 FROM customers c WHERE c.id = o.customer_id",
     ]) {
       expect((await buildReplay(db, sql)).supported, sql).toBe(false);
     }

@@ -11,7 +11,6 @@ export interface Checked {
   feedback: Feedback;
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** Runs the learner's SQL for a task and says whether it's right, and if not, what's wrong. */
 export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promise<Checked> {
@@ -43,8 +42,14 @@ export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promis
   if (!feedback.ok && feedback.kind === "rows") {
     const missing = minus(want.after.result.rows, mine.after.result.rows).length;
     const extra = minus(mine.after.result.rows, want.after.result.rows).length;
-    const parts = [missing ? `${plural(missing, "row")} missing` : "", extra ? `${plural(extra, "row")} that shouldn't be there` : ""].filter(Boolean);
-    feedback.message = `After your statement, the check finds ${parts.join(" and ")}.`;
+    // describeTable has one row per column, describeIndexes one per index and describeRelations one per table.
+    const cols = want.after.result.columns;
+    const [unit, units] = cols[0] === "column_name" && cols.includes("rules") ? ["column", "columns"] : cols[0] === "keys" && cols.includes("is_unique") ? ["index", "indexes"] : cols[0] === "name" && cols.includes("links") ? ["table", "tables"] : ["row", "rows"];
+    const count = (n: number) => `${n} ${n === 1 ? unit : units}`;
+    const parts = [missing ? `${count(missing)} missing` : "", extra ? `${count(extra)} that shouldn't be there` : ""].filter(Boolean);
+    feedback.message = missing === extra
+      ? `After your statement, ${count(missing)} ${missing === 1 ? "doesn't" : "don't"} look the way ${missing === 1 ? "it" : "they"} should.`
+      : `After your statement, the check finds ${parts.join(" and ")}.`;
   }
   return { run: mine.outcome, feedback };
 }

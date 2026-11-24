@@ -1,0 +1,77 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const aggregates: SqlLesson = {
+  id: "sql-aggregates",
+  home: "sql",
+  slug: "aggregates",
+  topic: "COUNT, SUM, AVG",
+  title: "How many, how much?",
+  promise: "Fold rows into one number: count them, add them up, average them, and know what happens to the NULLs.",
+  minutes: 9,
+  level: 1,
+  explain: [
+    "Summary functions fold many rows into one value: **count(*)** counts rows, **sum(x)** adds up, **avg(x)** averages, and **min(x)** and **max(x)** find the ends.",
+    "Without GROUP BY they fold every row that survived WHERE into a single row. WHERE runs first, so `WHERE status = 'delivered'` changes what gets added up.",
+    "NULLs are skipped: **count(city)** counts only rows that have a city, and avg leaves missing values out rather than counting them as 0. `count(DISTINCT coupon)` counts different values.",
+  ],
+  syntax: {
+    code: "SELECT count(*) AS orders,\n       sum(total) AS revenue,\n       round(avg(total), 2) AS average\nFROM orders\nWHERE status = 'delivered';",
+    notes: [
+      "`count(*)` counts rows; `count(column)` counts that column's non-NULL values.",
+      "sum, avg, min and max skip NULLs too.",
+      "Name results with AS; otherwise Postgres calls them count, sum and so on.",
+    ],
+  },
+  mistake: "Expecting `count(column)` to count rows. It counts the values that aren't NULL, so `count(city)` is 16 here, not 20. Use `count(*)` for rows. avg skips NULLs as well, so it averages only the values that are there.",
+  tasks: [
+    {
+      id: "how-many",
+      prompt: "How many customers are there? Return one number.",
+      starter: "SELECT *\nFROM customers;",
+      hint: "Replace * with count(*).",
+      solution: "SELECT count(*)\nFROM customers;",
+      ordered: false,
+    },
+    {
+      id: "with-city",
+      prompt: "Show how many customers there are as `customers`, and how many told us their city as `with_city`.",
+      starter: "SELECT count(*) AS customers, count(*) AS with_city\nFROM customers;",
+      hint: "count(city) counts only the rows where city isn't NULL.",
+      solution: "SELECT count(*) AS customers, count(city) AS with_city\nFROM customers;",
+      ordered: false,
+      namedColumns: ["customers", "with_city"],
+    },
+    {
+      id: "delivered-revenue",
+      prompt: "What's the total value of all **delivered** orders? Return one number.",
+      starter: "SELECT sum(total)\nFROM orders;",
+      hint: "WHERE runs before the sum: keep only status = 'delivered'.",
+      solution: "SELECT sum(total)\nFROM orders\nWHERE status = 'delivered';",
+      ordered: false,
+    },
+    {
+      id: "price-range",
+      prompt: "Show the cheapest product price as `cheapest`, the dearest as `dearest`, and the average as `average`, rounded to the rupee.",
+      starter: "SELECT min(price) AS cheapest, max(price) AS dearest\nFROM products;",
+      hint: "Add round(avg(price)) AS average.",
+      solution: "SELECT min(price) AS cheapest, max(price) AS dearest, round(avg(price)) AS average\nFROM products;",
+      ordered: false,
+      namedColumns: ["cheapest", "dearest", "average"],
+    },
+    {
+      id: "coupons",
+      prompt: "How many orders used a coupon (`with_coupon`), and how many different coupons were used (`coupons`)?",
+      starter: "SELECT count(*) AS with_coupon, count(*) AS coupons\nFROM orders;",
+      hint: "count(coupon) skips orders without one; count(DISTINCT coupon) counts each code once.",
+      solution: "SELECT count(coupon) AS with_coupon, count(DISTINCT coupon) AS coupons\nFROM orders;",
+      ordered: false,
+      namedColumns: ["with_coupon", "coupons"],
+    },
+  ],
+  buildsOn: ["sql-select"],
+  cheatsheet: [
+    { heading: "Fold into one", text: ["`count(*)` rows · `sum(total)` total · `avg(total)` average · `min` and `max` the ends.", "Without GROUP BY you get one row for the whole table, after WHERE."] },
+    { heading: "NULLs", text: ["`count(city)` counts cities given, not customers.", "sum, avg, min and max skip NULLs; avg doesn't treat them as 0."] },
+    { heading: "Different values", text: ["`count(DISTINCT coupon)` counts each coupon code once."] },
+  ],
+};

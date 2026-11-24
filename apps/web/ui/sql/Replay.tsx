@@ -24,10 +24,10 @@ export function ReplayStage({ replay, autoplay = true, waiting }: { replay: Repl
   const last = frames.length - 1;
   const frameRef = useRef<HTMLDivElement>(null);
 
-  // WHERE and HAVING: bring the first row that passed into view, so the kept rows aren't hidden below the fold.
+  // Bring the first marked row (kept, new, changed or deleted) into view, so it isn't hidden below the fold.
   useEffect(() => {
     const wrap = frameRef.current?.querySelector<HTMLElement>(".sql-table-wrap");
-    const row = wrap?.querySelector<HTMLElement>("tr.m-pass");
+    const row = wrap?.querySelector<HTMLElement>("tr.m-pass, tr.m-new, tr.m-changed, tr.m-gone, tr.m-filled");
     if (wrap) wrap.scrollTop = row ? Math.max(0, row.offsetTop - 36) : 0;
   }, [at, replay]);
 
@@ -56,9 +56,9 @@ export function ReplayStage({ replay, autoplay = true, waiting }: { replay: Repl
       <div className="sql-stage-top">
         <ol className="sql-clauses" aria-label="Clauses, in the order Postgres runs them">
           {frames.map((f, i) => (
-            <li key={f.clause}>
+            <li key={i}>
               <button type="button" className={i === at ? "cur" : i < at ? "past" : ""} aria-current={i === at ? "step" : undefined} onClick={() => go(i)}>
-                {f.clause}
+                {f.label ?? f.clause}
               </button>
             </li>
           ))}
@@ -86,7 +86,7 @@ export function ReplayStage({ replay, autoplay = true, waiting }: { replay: Repl
         {frame.note}
       </p>
       <div className="sql-frame" key={at} ref={frameRef}>
-        <ResultTable columns={frame.columns} rows={frame.rows} total={frame.total} marks={frame.marks} groups={frame.groups} max={60} caption={`Rows after ${frame.clause}`} />
+        <ResultTable columns={frame.columns} rows={frame.rows} total={frame.total} marks={frame.marks} groups={frame.groups} max={200} caption={`Rows after ${frame.label ?? frame.clause}`} />
       </div>
     </section>
   );

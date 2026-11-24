@@ -7,6 +7,27 @@ describe("plainError", () => {
     expect(m).toContain("Every column in SELECT must be in GROUP BY or inside a summary like SUM");
     expect(m).toContain("customers.name");
   });
+  it("sends a summary in WHERE to HAVING", () => {
+    expect(plainError("42803", "aggregate functions are not allowed in WHERE")).toBe("Summaries like count(*) can't go in WHERE, because WHERE runs before rows are grouped. Test them in HAVING.");
+  });
+  it("sends a window function in WHERE to a WITH step", () => {
+    expect(plainError("42P20", "window functions are not allowed in WHERE")).toBe("Window functions can't go in WHERE, because they're worked out after it. Number the rows in a WITH step, then filter in the main query.");
+  });
+  it("says which rows still point at the rows being deleted", () => {
+    expect(plainError("23503", 'update or delete on table "orders" violates foreign key constraint "order_items_order_id_fkey" on table "order_items"'))
+      .toBe("Rows in order_items still point at the orders rows you're removing. Delete or change those first.");
+  });
+  it("says a new row would point at nothing", () => {
+    expect(plainError("23503", 'insert or update on table "orders" violates foreign key constraint "orders_customer_id_fkey"'))
+      .toBe("That orders row would point at a row that doesn't exist (orders_customer_id_fkey).");
+  });
+  it("names the unknown type and suggests real ones", () => {
+    expect(plainError("42704", 'type "strng" does not exist')).toBe("There's no type called strng. Common ones: integer, numeric(10,2), text, date, boolean.");
+  });
+  it("explains why a new required column needs a default", () => {
+    expect(plainError("23502", 'column "points" of relation "customers" contains null values'))
+      .toBe("points can't be NOT NULL yet: the rows already in customers would have NULL in it. Give it a DEFAULT so they get a value.");
+  });
   it("names the unknown column", () => {
     expect(plainError("42703", 'column "nme" does not exist')).toBe("There's no column called nme. Check the spelling against the dataset card.");
   });

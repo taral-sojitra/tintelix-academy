@@ -1477,7 +1477,29 @@ SQL_LESSONS = [
     ("order-by", "Who comes first?", "FROM starts with every row of products: 15 rows."),
     ("distinct", "Every city, once", "FROM starts with every row of products: 15 rows."),
     ("limit-offset", "The top five, then the next", "FROM starts with every row of products: 15 rows."),
+    ("aggregates", "How many, how much?", "FROM starts with every row of customers: 20 rows."),
+    ("group-by", "Who spends the most?", "FROM starts with every row of orders: 60 rows."),
+    ("having", "Only the big spenders", "FROM starts with every row of orders: 60 rows."),
+    ("case-when", "Label every order", "FROM starts with every row of orders: 60 rows."),
+    ("inner-join", "Whose order is this?", "FROM starts with every row of orders: 60 rows."),
+    ("left-join", "Who never ordered?", "FROM joined customers and orders into 60 rows."),
+    ("cte", "Name a step, use it later", "WITH made a step called spend: 15 rows."),
+    ("row-number", "Each customer's latest order", "FROM starts with every row of orders: 60 rows."),
+    ("insert", "Add a new product", "FROM starts with every row of products: 15 rows."),
+    ("update", "Change some rows, not all", "There's no WHERE, so UPDATE changes every row: all 15."),
+    ("delete", "Remove only what you mean", "WHERE kept 1 of 20 rows."),
+    ("create-table", "Make a new table", "CREATE TABLE made coupons with 1 column and no rows yet."),
+    ("alter-table", "Add a column later", "products has 5 columns and 15 rows."),
+    ("create-index", "Find it without reading all", "FROM starts with every row of customers: 20 rows."),
+    ("drop-table", "Gone, and what goes with it", "FROM starts with every row of coupons: 0 rows."),
+    ("truncate", "Empty it in one go", "FROM starts with every row of order_items: 150 rows."),
 ]
+
+
+async def sql_ready(page):
+    """Postgres has started in the page's worker (the stage alone can show before it has)."""
+    await page.wait_for_selector(SQL_READY, timeout=30000)
+    await expect(page.locator(".sql-status")).not_to_contain_text("Starting", timeout=30000)
 
 
 async def type_sql(page, sql):
@@ -1550,7 +1572,7 @@ async def sql_flow(page):
 
 async def sql_timeout(page):
     await page.goto(BASE + "/sql/select", wait_until="load")
-    await page.wait_for_selector(SQL_READY, timeout=30000)
+    await sql_ready(page)
     await type_sql(page, "SELECT count(*) FROM generate_series(1, 10000000000)")
     await page.keyboard.press("Control+Enter")
     await expect(page.locator(".fb-error")).to_contain_text("took longer than 3 seconds", timeout=10000)
