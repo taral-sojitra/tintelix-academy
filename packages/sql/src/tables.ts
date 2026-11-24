@@ -81,3 +81,11 @@ FROM pg_index i, generate_series(1, i.indnkeyatts::int) AS k(n)
 WHERE i.indrelid = to_regclass(quote_ident(${quote(table)})) AND NOT i.indisprimary
 GROUP BY i.indexrelid, i.indisunique, i.indpred IS NOT NULL`;
 }
+
+/** A verify query for drop tasks: the tables and views that exist, and how many links each has to other tables. */
+export function describeRelations(): string {
+  return `SELECT c.relname::text AS name, c.relkind::text AS kind,
+       (SELECT count(*) FROM pg_constraint k WHERE k.conrelid = c.oid AND k.contype = 'f') AS links
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind IN ('r', 'v', 'm')`;
+}

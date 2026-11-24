@@ -160,3 +160,16 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   count), whether it's UNIQUE and whether it's partial; index names don't matter. Feedback speaks of indexes.
 - Replay: CREATE INDEX shows the table in stored order ("Without an index, a WHERE on city reads all 20 rows…"),
   then the index's entries sorted by its keys, each pointing at its row's primary key.
+
+## 20. DROP TABLE: Gone, and what goes with it
+
+- Tasks make their own tables first (every run starts from a fresh shop): drop coupons; drop coupons and its view
+  with CASCADE (the prompt invites the plain refusal); drop only the view; drop products with CASCADE, which removes
+  order_items' link but keeps order_items (the starter is a harmless DROP TABLE IF EXISTS).
+- Checking: `describeRelations()` lists the tables and views and how many links each has; feedback speaks of tables.
+- Replay: DROP TABLE and DROP VIEW list the tables and views before (what goes is marked) and after, and say what
+  CASCADE also removed, including links from tables that stay; IF EXISTS on a missing table says nothing changed.
+- Engine: the replay now splits the editor's text with the checker's string- and comment-aware splitter, runs the
+  earlier statements as plain text and parses only the last, so a statement the parser can't read no longer stops the
+  replay. DROP VIEW, which the parser can't read at all, is matched by pattern.
+- Error: Postgres's refusal to drop a table now names what depends on it (from the error's detail).
