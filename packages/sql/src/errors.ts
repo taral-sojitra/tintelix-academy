@@ -14,6 +14,7 @@ const RULES: Record<string, (message: string) => string> = {
     /not allowed in WHERE/i.test(m)
       ? "Summaries like count(*) can't go in WHERE, because WHERE runs before rows are grouped. Test them in HAVING."
       : `Every column in SELECT must be in GROUP BY or inside a summary like SUM. ${quoted(m)} is neither.`,
+  "42P20": () => "Window functions can't go in WHERE, because they're worked out after it. Number the rows in a WITH step, then filter in the main query.",
   "42702": (m) => `${quoted(m)} is in more than one table here. Say which one you mean, like o.id or c.id.`,
   "42883": (m) => `Postgres has no function or operator that fits here (${m}). The types may not match: text and numbers don't mix.`,
   "42P07": (m) => `There's already a table called ${quoted(m)}.`,

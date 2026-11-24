@@ -1484,6 +1484,7 @@ SQL_LESSONS = [
     ("inner-join", "Whose order is this?", "FROM starts with every row of orders: 60 rows."),
     ("left-join", "Who never ordered?", "FROM joined customers and orders into 60 rows."),
     ("cte", "Name a step, use it later", "WITH made a step called spend: 15 rows."),
+    ("row-number", "Each customer's latest order", "FROM starts with every row of orders: 60 rows."),
 ]
 
 

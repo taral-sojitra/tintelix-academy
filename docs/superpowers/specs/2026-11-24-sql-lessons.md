@@ -89,3 +89,14 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Replay: WITH is now followed. Each step gets its own frame (chip "WITH spend") with its rows, then the main query's
   frames run inside the same WITH. WITH RECURSIVE still shows only the result. Join notes count matches with `ctid`,
   which only real tables have, so they're skipped when a step is joined.
+
+## 13. ROW_NUMBER() OVER: Each customer's latest order
+
+- Tasks: number each customer's orders newest first; the latest order per customer (number in a WITH step, keep
+  n = 1); rank() so tied prices share a rank (the starter's row_number splits them); a running total (the starter's
+  `OVER ()` puts the grand total on every row); the two dearest products per category.
+- Replay: window functions in the SELECT list are now followed. A new OVER frame shows the rows split into
+  partitions (coloured like GROUP BY buckets), sorted the way the window sorts them, with the window's column, and says
+  what it did ("numbered the rows from 1 in each group", "ranked them; ties share a rank", "worked out a running sum").
+  A window anywhere else still shows the result only.
+- Error: a window function in WHERE (42P20) now says to number in a WITH step and filter in the main query.
