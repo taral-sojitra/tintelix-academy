@@ -19,3 +19,9 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - New build checks for all lessons: an ordered task's answer must sort to one order only (`sortTies` counts rows that
   tie on every key; it must be 0), and a starter must not already pass. The first closes the gap where a right
   answer could fail because tied rows came back in another order.
+
+## 4. DISTINCT: Every city, once
+
+- Tasks: categories once each; cities without the missing ones (the starter's DISTINCT keeps one NULL row, so it has
+  one row too many); country and city pairs (DISTINCT covers every listed column); customer ids that ordered, sorted.
+- The mistake note warns against DISTINCT as a cover for repeats a join caused, which lesson 10 comes back to.
