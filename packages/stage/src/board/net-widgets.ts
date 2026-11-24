@@ -101,6 +101,19 @@ const NAT_ROWS: string[][] = [
   ["192.168.1.50:49152", "203.0.113.10:40003", "198.51.100.7:443"],
 ];
 
+/** The firewall lesson's rules, in order, and which apply at each `fwStage` (0 none, 1 stateless, 2 stateful). */
+const FW_RULES = ["allow TCP :443 from anywhere", "allow TCP :22 from 198.51.100.0/24", "allow replies to connections started inside", "drop everything else"];
+const FW_ON = [[], [0, 1, 3], [0, 1, 2, 3]];
+/** Sample packets, one every 1.5 s: [description, the first rule that matches it]. */
+const FW_PACKETS: [string, number][] = [
+  ["visitor → :443", 0],
+  ["203.0.113.66 → :22", 3],
+  ["198.51.100.9 → :22", 1],
+  ["203.0.113.66 → :5432", 3],
+  ["reply to the web server's update check", 2],
+];
+const FW_STEP_SEC = 1.5;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -517,6 +530,30 @@ export const NET_CUSTOM: Record<string, Custom> = {
         `the ISP's own NAT shares one address among ${group(num(d, "homesPerIp", 32))} homes`,
       ][stage]!;
       setText(root.querySelector(".tx-nat-ev")!, text);
+    },
+  },
+  /**
+   * A firewall's rule list, checked top to bottom, against a stream of sample packets: the first matching
+   * rule is lit and decides. `fwStage` 0 has no rules, 1 no state, 2 a rule for replies.
+   */
+  fwrules: {
+    html: (key) =>
+      `<div class="tx-fw" data-w="${key}">${FW_RULES.map(() => '<p class="tx-fw-rule"><em></em><span></span></p>').join("")}<p class="tx-calc-s tx-fw-now"></p></div>`,
+    paint(root, d, clock) {
+      const stage = Math.min(2, Math.max(0, Math.round(num(d, "fwStage", 0))));
+      const on = FW_ON[stage]!;
+      const [what, wants] = FW_PACKETS[Math.floor(Math.max(0, clock) / FW_STEP_SEC) % FW_PACKETS.length]!;
+      const hit = on.includes(wants) ? wants : 3;
+      root.querySelectorAll<HTMLElement>(".tx-fw-rule").forEach((row, n) => {
+        const pos = on.indexOf(n);
+        row.hidden = pos < 0;
+        row.classList.toggle("hit", stage > 0 && n === hit);
+        row.classList.toggle("deny", n === 3);
+        setText(row.querySelector("em")!, `${pos + 1}`);
+        setText(row.querySelector("span")!, FW_RULES[n]!);
+      });
+      const text = stage === 0 ? `${what} · no firewall: let in` : `${what} · rule ${on.indexOf(hit) + 1}: ${hit === 3 ? "dropped" : "allowed"}`;
+      setText(root.querySelector(".tx-fw-now")!, text);
     },
   },
 };
