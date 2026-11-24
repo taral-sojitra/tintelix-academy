@@ -87,4 +87,21 @@ describe("board widgets", () => {
     expect(root.querySelector("[data-bits-vals]")!.textContent).toBe("machine 37 doesn't fit in 5 bits");
     expect(root.querySelector("[data-bits-id]")!.textContent).toBe("no valid ID");
   });
+  it("quorum widget lights the W replicas written and the R replicas read, and says if they overlap", () => {
+    const w: BoardWidget = { kind: "custom", name: "quorum" };
+    const row = (root: HTMLElement, name: string) =>
+      [...root.querySelectorAll(`[data-q="${name}"] i`)].map((c) => (c.classList.contains("down") ? "x" : c.classList.contains("on") ? "1" : "0")).join("");
+    const root = mount(w, { replicas: 3, writeQuorum: 2, readQuorum: 2, downReplica: 0 });
+    expect(row(root, "write")).toBe("110");
+    expect(row(root, "read")).toBe("011");
+    expect(root.querySelector(".tx-calc-s")!.textContent).toBe("W 2 + R 2 > N 3: every read meets the latest write");
+    paintWidget(root, w, { replicas: 3, writeQuorum: 1, readQuorum: 1, downReplica: 0 }, 0);
+    expect(row(root, "write")).toBe("100");
+    expect(row(root, "read")).toBe("001");
+    expect(root.querySelector(".tx-calc-s")!.textContent).toBe("W 1 + R 1 ≤ N 3: a read can miss the latest write");
+    paintWidget(root, w, { replicas: 3, writeQuorum: 2, readQuorum: 2, downReplica: 2 }, 0);
+    expect(row(root, "write")).toBe("1x1");
+    paintWidget(root, w, { replicas: 3, writeQuorum: 3, readQuorum: 1, downReplica: 2 }, 0);
+    expect(root.querySelector(".tx-calc-s")!.textContent).toBe("Only 2 of 3 replicas up: writes need 3");
+  });
 });
