@@ -1,0 +1,86 @@
+import type { Step } from "@tintelix/schema";
+
+export const bandwidthSteps: Step[] = [
+  {
+    id: "slow-download",
+    tag: "problem",
+    title: "A fast plan, a slow download",
+    short: "The problem",
+    text: [
+      "Your internet plan is **{bandwidthMbps} Mbit/s**. A {fileMB} MB file should take **{idealSec}**. Downloading it from a server in London takes **{actualSec}**.",
+      "Nothing is broken. The plan says how wide the pipe is; it doesn't promise how much one connection will push through it from the other side of the world.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 0 },
+    live: "LIVE · the problem",
+  },
+  {
+    id: "three-words",
+    tag: "technique",
+    title: "Bandwidth, throughput, latency",
+    short: "Three words",
+    text: [
+      "Three words get mixed up. **Bandwidth** is the pipe's capacity: {bandwidthMbps} Mbit/s. **Throughput** is what actually arrives: here **{throughputMbps} Mbit/s**. **Latency** is how long each bit takes to get there, {rttMs} for a round trip, as in the last lesson.",
+      "A wide pipe doesn't make bits arrive sooner, and a short delay doesn't make the pipe wider. For a small web page, latency decides everything; for a big file, throughput does.",
+    ],
+    scene: { focus: ["pipe", "laptop", "server"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · three words",
+  },
+  {
+    id: "fill-the-pipe",
+    tag: "technique",
+    title: "Filling a long pipe",
+    short: "Fill the pipe",
+    text: [
+      "TCP can only send so much before it needs an ACK back. To keep a {bandwidthMbps} Mbit/s pipe full across a {rttMs} round trip, **{bdpKB} KB** must be on its way at once: the **bandwidth-delay product**. The longer the round trip, the more must be in flight.",
+      "TCP doesn't start there. It sends about 14 KB, then doubles each round trip, called slow start. A short download can finish before it ever gets near full speed.",
+    ],
+    controls: ["rttMs", "bandwidthMbps"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · fill the pipe",
+  },
+  {
+    id: "loss",
+    tag: "problem",
+    title: "A little loss, a big slowdown",
+    short: "Loss",
+    text: [
+      "TCP reads every lost packet as a sign the network is congested, and cuts its pace in half before building up again. The classic formula for how fast one connection can go: about the segment size over the round trip, times 1.22 over the square root of the loss rate.",
+      "At **{lossPct}** loss and a **{rttMs}** round trip that's **{lossLimitMbps} Mbit/s**: just **{utilPct}** of the pipe. Halve the round trip and it doubles; quarter the loss and it doubles too.",
+    ],
+    note: { kind: "turn", text: "Drag the loss and the round trip. Watch which bar is narrowest; that one sets the speed." },
+    controls: ["lossPct", "rttMs"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · loss",
+  },
+  {
+    id: "what-helps",
+    tag: "solution",
+    title: "Getting closer to the pipe",
+    short: "What helps",
+    text: [
+      "**Shorter round trips**: download from a server nearby, which is what CDNs and regional mirrors are for. **Less loss**: a cable instead of crowded Wi-Fi. **More connections**: download managers and video players open several, each getting its own share. **Newer congestion control**, like BBR, measures the path instead of treating every loss as congestion.",
+      "Now: **{throughputMbps} Mbit/s** of {bandwidthMbps}, and the file takes **{actualSec}**.",
+    ],
+    controls: ["rttMs", "lossPct", "bandwidthMbps"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 4 },
+    live: "LIVE · what helps",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "A wide pipe, a slow trickle",
+    short: "Recap",
+    text: [
+      "Bandwidth is the pipe's width; throughput is what arrives; latency is how long it takes. One TCP connection's throughput is capped by the round trip and by loss as well as by the pipe, so far servers and lossy links waste a fast plan. Move closer, cut loss, or use several connections.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "RECAP",
+  },
+];

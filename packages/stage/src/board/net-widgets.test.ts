@@ -502,3 +502,27 @@ describe("tunnel widget", () => {
     expect(tunSees(proxy)).toEqual(["a connection to the proxy", "the proxy, 198.51.100.30; other apps go direct"]);
   });
 });
+
+const pipe: BoardWidget = { kind: "custom", name: "pipe" };
+const pipeRows = (root: HTMLElement) =>
+  [...root.querySelectorAll<HTMLElement>(".tx-pipe-row")].map((r) => [r.querySelector("em")!.textContent, r.querySelector<HTMLElement>(".tx-pipe-bar i")!.style.width, r.querySelector("span")!.textContent, r.classList.contains("limit")]);
+
+describe("pipe widget", () => {
+  it("draws the pipe, the loss limit and what arrives; the narrowest wins", () => {
+    const root = mount(pipe, { bandwidthMbps: 100, lossLimitMbps: 5.63, throughputMbps: 5.63 });
+    expect(pipeRows(root)).toEqual([
+      ["bandwidth", "80%", "100 Mbit/s", false],
+      ["loss + round trip", "4.5%", "5.6 Mbit/s", true],
+      ["throughput", "4.5%", "5.6 Mbit/s", false],
+    ]);
+    expect(root.querySelector(".tx-pipe-cap")!.textContent).toBe("the narrowest limit wins: loss and round trip");
+  });
+
+  it("with no loss, the pipe itself is the limit", () => {
+    const root = mount(pipe, { bandwidthMbps: 100, lossLimitMbps: 100000, throughputMbps: 100 });
+    const rows = pipeRows(root);
+    expect(rows[1]!.slice(1, 3)).toEqual(["100%", "no limit"]);
+    expect(rows[0]![3]).toBe(true);
+    expect(root.querySelector(".tx-pipe-cap")!.textContent).toBe("the narrowest limit wins: the pipe itself");
+  });
+});

@@ -127,6 +127,13 @@ const TUN_STAGES: { pkt: [string, string][]; wifi: string; far: string; farLabel
   { pkt: [["IP 203.0.113.10 → 198.51.100.30", "o"], ["TCP :3128", "o"], ["CONNECT example.com:443", "o"], ["TLS: the page", "s"]], wifi: "a connection to the proxy", far: "the proxy, 198.51.100.30; other apps go direct", farLabel: "example.com sees" },
 ];
 
+/** At or above this, the loss limit is treated as no limit at all (no loss). */
+const PIPE_NO_LIMIT = 100_000;
+const mbps = (v: number) => {
+  const tenth = Math.round(v * 10) / 10;
+  return `${Math.abs(tenth) < 10 && !Number.isInteger(tenth) ? tenth.toFixed(1) : group(v)} Mbit/s`;
+};
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -582,6 +589,31 @@ export const NET_CUSTOM: Record<string, Custom> = {
       setText(wifi!.querySelector("span")!, st.wifi);
       setText(far!.querySelector("em")!, st.farLabel);
       setText(far!.querySelector("span")!, st.far);
+    },
+  },
+  /**
+   * Bandwidth vs throughput: the pipe (`bandwidthMbps`), what loss and round trip allow TCP
+   * (`lossLimitMbps`), and what arrives (`throughputMbps`), on one scale where the pipe fills 80%.
+   */
+  pipe: {
+    html: (key) =>
+      `<div class="tx-pipe" data-w="${key}">${["bandwidth", "loss + round trip", "throughput"].map((l) => `<div class="tx-pipe-row"><em>${l}</em><div class="tx-pipe-bar"><i></i></div><span></span></div>`).join("")}<p class="tx-calc-s tx-pipe-cap"></p></div>`,
+    paint(root, d) {
+      const bw = Math.max(0.001, num(d, "bandwidthMbps", 100));
+      const loss = Math.max(0, num(d, "lossLimitMbps", PIPE_NO_LIMIT));
+      const got = Math.max(0, num(d, "throughputMbps", bw));
+      const free = loss >= PIPE_NO_LIMIT;
+      const scale = bw * 1.25;
+      const values = [bw, loss, got];
+      const lossLimits = !free && loss < bw;
+      root.querySelectorAll<HTMLElement>(".tx-pipe-row").forEach((row, n) => {
+        const w = `${Math.round(Math.min(1, values[n]! / scale) * 1000) / 10}%`;
+        const bar = row.querySelector<HTMLElement>(".tx-pipe-bar i")!;
+        if (bar.style.width !== w) bar.style.width = w;
+        setText(row.querySelector("span")!, n === 1 && free ? "no limit" : mbps(values[n]!));
+        row.classList.toggle("limit", n === (lossLimits ? 1 : 0));
+      });
+      setText(root.querySelector(".tx-pipe-cap")!, `the narrowest limit wins: ${lossLimits ? "loss and round trip" : "the pipe itself"}`);
     },
   },
 };

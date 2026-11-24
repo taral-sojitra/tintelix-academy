@@ -884,3 +884,14 @@
 .tx-tun-sees p { margin: 0; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; font-family: var(--mono); font-size: 11.5px; }
 .tx-tun-sees em { font-style: normal; color: var(--node-sub); }
 .tx-tun-sees span { color: var(--cyan); }
+
+/* Networks: bandwidth vs throughput, the narrowest limit lit. */
+.tx-pipe { margin-top: 6px; display: grid; gap: 6px; }
+.tx-pipe-row { display: grid; grid-template-columns: 140px minmax(0, 1fr) 90px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 11px; }
+.tx-pipe-row em { font-style: normal; color: var(--node-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-pipe-row span { color: var(--node-ink); text-align: right; }
+.tx-pipe-bar { height: 14px; border-radius: 7px; background: color-mix(in srgb, var(--node-stroke) 25%, transparent); overflow: hidden; }
+.tx-pipe-bar i { display: block; height: 100%; border-radius: 7px; background: color-mix(in srgb, var(--cyan) 55%, transparent); transition: width .4s ease; }
+.tx-pipe-row.limit em, .tx-pipe-row.limit span { color: var(--amber); }
+.tx-pipe-row.limit .tx-pipe-bar i { background: color-mix(in srgb, var(--amber) 65%, transparent); }
+.tx-pipe-cap { margin: 2px 0 0; font-family: var(--mono); color: var(--cyan); }
