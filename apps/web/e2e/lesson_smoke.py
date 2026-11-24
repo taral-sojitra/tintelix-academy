@@ -1055,19 +1055,42 @@ async def nearby_flow(page):
     return "Proximity lesson: 17,361 searches a second; lat/lon indexes make the database 868% busy; geohash length 6 reads 40 cells (length 5: 65 ms a search); a 3.2 GB index in memory on 12 servers"
 
 
+async def friends_flow(page):
+    await page.goto(BASE + "/system-design/nearby-friends", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Which friends are close right now?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("2 million/s")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Everyone asking about everyone")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("30,000%", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Publish to a channel, friends subscribe")
+    await expect(page.locator("[data-node='pubsub'] .tx-ps-row.near")).to_have_count(2)
+    every = page.locator("section.try", has=page.locator("#ctl-updateEvery"))
+    await set_range(page, "#ctl-updateEvery", 10)
+    await expect(every.locator(".try-readout")).to_contain_text("120 million")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Spread the channels across nodes")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("60", timeout=8000)
+    return "Nearby-friends lesson: 2 million updates a second; polling makes the database 30,000% busy; pub/sub reaches 2 near friends per update (10 s updates: 120 million messages a second); 60 pub/sub nodes"
+
+
 async def subject_page(page):
     await page.goto(BASE + "/system-design", wait_until="load")
-    await expect(page.get_by_text("59 lessons in 13 modules · 42 open now")).to_be_visible()
+    await expect(page.get_by_text("59 lessons in 13 modules · 43 open now")).to_be_visible()
     await page.goto(BASE + "/system-design/cdn", wait_until="load")
-    await expect(page.get_by_text("42 of 59 open")).to_be_visible()
-    return "System Design lists 59 lessons in 13 modules, 42 open"
+    await expect(page.get_by_text("43 of 59 open")).to_be_visible()
+    return "System Design lists 59 lessons in 13 modules, 43 open"
 
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, subject_page]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, subject_page]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

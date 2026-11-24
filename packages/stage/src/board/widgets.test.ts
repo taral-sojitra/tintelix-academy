@@ -178,4 +178,20 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("pubsub widget shows one person's channel, its subscribers, and who each update reaches", () => {
+    const w: BoardWidget = { kind: "custom", name: "pubsub" };
+    const root = mount(w, { updateEvery: 20, radiusKm: 5 }, 0);
+    const rows = () => [...root.querySelectorAll(".tx-ps-row")].map((r) => [r.querySelector("em")!.textContent, r.querySelector("b")!.textContent, r.className.replace("tx-ps-row", "").trim()]);
+    expect(root.querySelector(".tx-ps-head")!.textContent).toBe("your channel · update #1");
+    expect(rows()).toEqual([
+      ["Meera", "1.2 km · sent", "near"],
+      ["Dev", "3.8 km · sent", "near"],
+      ["Kiran", "12 km · too far", "far"],
+      ["Ravi", "not sharing", "off"],
+    ]);
+    paintWidget(root, w, { updateEvery: 20, radiusKm: 5 }, 2.1);
+    expect(root.querySelector(".tx-ps-head")!.textContent).toBe("your channel · update #2");
+    paintWidget(root, w, { updateEvery: 20, radiusKm: 2 }, 0);
+    expect(rows()[1]!.slice(1)).toEqual(["3.8 km · too far", "far"]);
+  });
 });

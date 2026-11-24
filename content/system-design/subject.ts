@@ -101,7 +101,7 @@ export const systemDesign: Subject = {
         l("photo-feed", "Design a photo feed (news feed)", "Build each person's home feed fast by mixing posts pushed ahead of time with posts pulled on read.", ["caching", "object-storage", "fan-out"], "Fill the home feed in a blink"),
         l("chat-app", "Design a chat app (one-to-one, groups, channels)", "Keep millions of connections open and deliver every message once, in order, with read receipts.", ["health-checks", "message-queues", "fan-out", "unique-ids"], "Delivered, read, and in order"),
         l("proximity-service", "Design a proximity service", "Find the places within a few kilometres of a user by cutting the map into cells.", ["caching", "indexing", "replication"], "Places within two kilometres"),
-        l("nearby-friends", "Design nearby friends", "Show which friends are close right now as millions of phones report where they are.", ["fan-out", "chat-app", "proximity-service"]),
+        l("nearby-friends", "Design nearby friends", "Show which friends are close right now as millions of phones report where they are.", ["fan-out", "chat-app", "proximity-service"], "Which friends are close right now?"),
         l("ride-hailing", "Design ride hailing", "Match each rider to a nearby driver in seconds while every driver's location keeps moving.", ["proximity-service", "nearby-friends"]),
         l("maps-navigation", "Design maps and navigation", "Serve map tiles from the edge and find the fastest route across a graph of roads.", ["cdn", "proximity-service"]),
       ],
