@@ -103,7 +103,7 @@ export const systemDesign: Subject = {
         l("proximity-service", "Design a proximity service", "Find the places within a few kilometres of a user by cutting the map into cells.", ["caching", "indexing", "replication"], "Places within two kilometres"),
         l("nearby-friends", "Design nearby friends", "Show which friends are close right now as millions of phones report where they are.", ["fan-out", "chat-app", "proximity-service"], "Which friends are close right now?"),
         l("ride-hailing", "Design ride hailing", "Match each rider to a nearby driver in seconds while every driver's location keeps moving.", ["proximity-service", "nearby-friends"], "A car for every rider in seconds"),
-        l("maps-navigation", "Design maps and navigation", "Serve map tiles from the edge and find the fastest route across a graph of roads.", ["cdn", "proximity-service"]),
+        l("maps-navigation", "Design maps and navigation", "Serve map tiles from the edge and find the fastest route across a graph of roads.", ["cdn", "proximity-service"], "The fastest way home"),
       ],
     },
     {

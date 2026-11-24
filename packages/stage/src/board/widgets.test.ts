@@ -178,6 +178,30 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("roadgraph widget grows a search circle from home, or follows shortcuts once they exist", () => {
+    const w: BoardWidget = { kind: "custom", name: "roadgraph" };
+    const slow = { shortcuts: 0, explored: 628319 };
+    const root = mount(w, slow, 0);
+    const lit = () => root.querySelectorAll(".tx-rg-map i.lit").length;
+    const caption = () => root.querySelector(".tx-rg-cap")!.textContent;
+    expect(root.querySelectorAll(".tx-rg-map i")).toHaveLength(70);
+    expect(root.querySelector(".tx-rg-map i.start")).not.toBeNull();
+    expect(root.querySelector(".tx-rg-map i.goal")).not.toBeNull();
+    expect(lit()).toBe(1);
+    expect(caption()).toBe("every road · 628,319 searched");
+    paintWidget(root, w, slow, 3);
+    expect(lit()).toBe(66);
+    expect(caption()).toBe("every road · 628,319 searched · found");
+    const fast = { shortcuts: 1, explored: 1000 };
+    paintWidget(root, w, fast, 3);
+    expect(lit()).toBe(15);
+    expect(root.classList.contains("fast")).toBe(true);
+    expect(caption()).toBe("shortcuts · 1,000 searched · found");
+    paintWidget(root, w, fast, 4.2);
+    expect(lit()).toBe(3);
+    expect(caption()).toBe("shortcuts · 1,000 searched");
+  });
+
   it("dispatch widget ranks nearby drivers, claims the best, and shows a second rider losing the race", () => {
     const w: BoardWidget = { kind: "custom", name: "dispatch" };
     const d = { candidates: 42, cellsChecked: 7, clashPct: 0 };
