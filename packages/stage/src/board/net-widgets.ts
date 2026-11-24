@@ -38,6 +38,10 @@ const DHCP_CYCLE_SEC = 6;
 const DHCP_IP = "192.168.1.101";
 const hours = (h: number) => `${Number.isInteger(h) ? h : h.toFixed(1)} h`;
 
+/** TCP vs UDP: eight packets, number 4 lost; one phase a second (arrive, lost, held, resent), a 6 s cycle. */
+const ORD_STEP_SEC = 1;
+const ORD_CYCLE_SEC = 6;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -212,6 +216,30 @@ export const NET_CUSTOM: Record<string, Custom> = {
       const values = [DHCP_IP, "255.255.255.0", "192.168.1.1", "192.168.1.1", hours(lease)];
       root.querySelectorAll(".tx-dhcp-set b").forEach((b, n) => setText(b, known ? values[n]! : "—"));
       root.querySelector(".tx-dhcp-set")!.classList.toggle("known", known);
+    },
+  },
+  /**
+   * TCP vs UDP at the receiver: packets 1–8 with number 4 lost. TCP holds 5–8 until 4 is resent, then
+   * hands all over in order; UDP hands each over as it arrives and never gets 4. `stallMs` is the wait.
+   */
+  order: {
+    html: (key) =>
+      `<div class="tx-ord" data-w="${key}">${["TCP", "UDP"].map((n) => `<div class="tx-ord-row"><em>${n}</em>${[1, 2, 3, 4, 5, 6, 7, 8].map((k) => `<i>${k}</i>`).join("")}</div>`).join("")}<p class="tx-calc-s tx-ord-cap"></p></div>`,
+    paint(root, d, clock) {
+      const phase = Math.min(3, Math.floor((Math.max(0, clock) % ORD_CYCLE_SEC) / ORD_STEP_SEC));
+      const tcp = (k: number) => (k < 3 ? "ok" : k === 3 ? (phase === 0 ? "" : phase === 3 ? "resent" : "lost") : phase < 2 ? "" : phase === 2 ? "wait" : "ok");
+      const udp = (k: number) => (k < 3 ? "ok" : k === 3 ? (phase === 0 ? "" : "lost") : phase < 2 ? "" : "ok");
+      const [t, u] = [...root.querySelectorAll<HTMLElement>(".tx-ord-row")];
+      t!.querySelectorAll("i").forEach((c, k) => (c.className = tcp(k)));
+      u!.querySelectorAll("i").forEach((c, k) => (c.className = udp(k)));
+      const stall = Math.round(num(d, "stallMs", 120));
+      const text = [
+        "1–3 arrive in both",
+        "4 is lost on the way",
+        "TCP holds 5–8 until 4 comes; UDP hands them over now",
+        `4 resent ${stall} ms later: TCP delivers 4–8 in order`,
+      ][phase]!;
+      setText(root.querySelector(".tx-ord-cap")!, text);
     },
   },
 };

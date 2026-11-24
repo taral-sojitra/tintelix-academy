@@ -175,3 +175,33 @@ describe("dhcp widget", () => {
     expect(settings(root)[4]).toBe("4 h");
   });
 });
+
+const order: BoardWidget = { kind: "custom", name: "order" };
+const lane = (root: HTMLElement, n: number) => [...root.querySelectorAll<HTMLElement>(".tx-ord-row")[n]!.querySelectorAll("i")].map((c) => c.className);
+const ordCap = (root: HTMLElement) => root.querySelector(".tx-ord-cap")!.textContent;
+
+describe("order widget", () => {
+  it("delivers 1–3 in both lanes, then loses 4", () => {
+    const root = mount(order, { stallMs: 120 }, 0.5);
+    expect(lane(root, 0)).toEqual(["ok", "ok", "ok", "", "", "", "", ""]);
+    expect(lane(root, 1)).toEqual(["ok", "ok", "ok", "", "", "", "", ""]);
+    expect(ordCap(root)).toBe("1–3 arrive in both");
+    paintWidget(root, order, { stallMs: 120 }, 1.5);
+    expect(lane(root, 0)[3]).toBe("lost");
+    expect(ordCap(root)).toBe("4 is lost on the way");
+  });
+
+  it("TCP holds 5–8 back while UDP hands them over at once", () => {
+    const root = mount(order, { stallMs: 120 }, 2.5);
+    expect(lane(root, 0)).toEqual(["ok", "ok", "ok", "lost", "wait", "wait", "wait", "wait"]);
+    expect(lane(root, 1)).toEqual(["ok", "ok", "ok", "lost", "ok", "ok", "ok", "ok"]);
+    expect(ordCap(root)).toBe("TCP holds 5–8 until 4 comes; UDP hands them over now");
+  });
+
+  it("TCP gets 4 again and delivers everything in order; UDP never does", () => {
+    const root = mount(order, { stallMs: 120 }, 4.2);
+    expect(lane(root, 0)).toEqual(["ok", "ok", "ok", "resent", "ok", "ok", "ok", "ok"]);
+    expect(lane(root, 1)[3]).toBe("lost");
+    expect(ordCap(root)).toBe("4 resent 120 ms later: TCP delivers 4–8 in order");
+  });
+});
