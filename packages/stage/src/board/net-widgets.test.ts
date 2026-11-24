@@ -416,3 +416,29 @@ describe("traceroute widget", () => {
     expect(trLines(root).slice(2)).toEqual(["TTL 3R3 backbone22 ms", "TTL 4R6 far away118 ms", "TTL 5203.0.113.9121 ms"]);
   });
 });
+
+const nat: BoardWidget = { kind: "custom", name: "nat" };
+const natRows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-nat-row")].filter((r) => !r.hidden).map((r) => [...r.querySelectorAll("span")].map((c) => c.textContent));
+const natEvent = (root: HTMLElement) => root.querySelector(".tx-nat-ev")!.textContent;
+
+describe("nat widget", () => {
+  it("has no entries before anything leaves", () => {
+    const root = mount(nat, { natStage: 0, homesPerIp: 32 });
+    expect(natRows(root)).toEqual([]);
+    expect(natEvent(root)).toBe("20 devices, 1 public address: 203.0.113.10");
+  });
+
+  it("writes an entry as the laptop's packet leaves", () => {
+    const root = mount(nat, { natStage: 1, homesPerIp: 32 });
+    expect(natRows(root)).toEqual([["192.168.1.42:51000", "203.0.113.10:40001", "198.51.100.7:443"]]);
+    expect(natEvent(root)).toBe("out: 192.168.1.42:51000 becomes 203.0.113.10:40001");
+  });
+
+  it("sends replies back by the entry, drops what has none, and scales up at the ISP", () => {
+    const root = mount(nat, { natStage: 2, homesPerIp: 32 });
+    expect(natRows(root)).toHaveLength(3);
+    expect(natEvent(root)).toBe("back: 203.0.113.10:40001 becomes 192.168.1.42:51000");
+    expect(natEvent(mount(nat, { natStage: 3, homesPerIp: 32 }))).toBe("in: to 203.0.113.10:22, no entry, dropped");
+    expect(natEvent(mount(nat, { natStage: 4, homesPerIp: 32 }))).toBe("the ISP's own NAT shares one address among 32 homes");
+  });
+});

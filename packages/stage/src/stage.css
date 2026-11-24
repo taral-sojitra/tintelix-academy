@@ -853,3 +853,14 @@
 .tx-tr-row em { font-style: normal; color: var(--node-sub); }
 .tx-tr-row span { color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tx-node .tx-tr-row b { display: block; font-size: 11.5px; font-weight: 400; text-align: right; color: var(--amber); }
+
+/* Networks: a home router's NAT table. */
+.tx-nat { margin-top: 6px; display: grid; gap: 3px; }
+.tx-nat-head, .tx-nat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; font-family: var(--mono); font-size: 11px; }
+.tx-nat-head { color: var(--node-sub); }
+.tx-nat-row { padding: 2px 6px; margin: 0 -6px; border-radius: 5px; color: var(--node-ink); }
+.tx-nat-row[hidden] { display: none; }
+.tx-nat-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-nat-row span:nth-child(2) { color: var(--amber); }
+.tx-nat-row.pick { background: color-mix(in srgb, var(--cyan) 18%, transparent); }
+.tx-nat-ev { margin: 4px 0 0; font-family: var(--mono); color: var(--cyan); }

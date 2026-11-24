@@ -1470,7 +1470,7 @@ async def subject_page(page):
 
 
 # Written Networks lessons, in order; Load balancers (shared with System Design) is open as well.
-NET_LESSONS = ["osi-model", "tcp-ip-model", "ip-addressing", "subnetting", "arp", "dhcp", "tcp-vs-udp", "handshake", "ports-sockets", "dns", "http", "tls", "switches-routers", "routing"]
+NET_LESSONS = ["osi-model", "tcp-ip-model", "ip-addressing", "subnetting", "arp", "dhcp", "tcp-vs-udp", "handshake", "ports-sockets", "dns", "http", "tls", "switches-routers", "routing", "nat"]
 
 
 async def net_flow(page):
@@ -1757,6 +1757,25 @@ async def net_routing_flow(page):
     return "Routing lesson: .200 matches 3 routes and /25 wins; .42 goes via the /24; anywhere else takes the default route, 121 ms"
 
 
+async def net_nat_flow(page):
+    await page.goto(BASE + "/networks/nat", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Twenty devices, one address")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-node='table'] .tx-nat-ev")).to_have_text("out: 192.168.1.42:51000 becomes 203.0.113.10:40001", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("The table sends replies home")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("1.2%", timeout=8000)
+    conns = page.locator("section.try", has=page.locator("#ctl-connsPerDevice"))
+    await set_range(page, "#ctl-connsPerDevice", 200)
+    await expect(conns.locator(".try-readout")).to_contain_text("323")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-node='table'] .tx-nat-ev")).to_have_text("in: to 203.0.113.10:22, no entry, dropped", timeout=8000)
+    return "NAT lesson: the laptop's .42:51000 becomes .10:40001; 800 entries use 1.2% of the ports, 200 connections each caps it near 323 devices; unasked packets are dropped"
+
+
 SQL_READY = ".sql-clauses, .sql-stage.empty .sql-stage-msg"
 # Every written SQL lesson: slug, hook title, and what the stage says for the first task's starter.
 SQL_LESSONS = [
@@ -1883,7 +1902,7 @@ async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

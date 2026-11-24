@@ -94,6 +94,13 @@ const TR_PATHS = [
 const TR_STEP_SEC = 1;
 const TR_CYCLE_SEC = 7;
 
+/** The home router's NAT table in the NAT lesson: [inside, outside, remote]. */
+const NAT_ROWS: string[][] = [
+  ["192.168.1.42:51000", "203.0.113.10:40001", "198.51.100.7:443"],
+  ["192.168.1.43:60123", "203.0.113.10:40002", "198.51.100.7:443"],
+  ["192.168.1.50:49152", "203.0.113.10:40003", "198.51.100.7:443"],
+];
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -484,6 +491,32 @@ export const NET_CUSTOM: Record<string, Custom> = {
         setText(row.querySelector("span")!, path[n]!);
         setText(row.querySelector("b")!, `${Math.round(num(d, `trace${n + 1}Ms`, 0))} ms`);
       });
+    },
+  },
+  /**
+   * A home router's NAT table: inside address and port, the public one it was rewritten to, and the
+   * remote end. `natStage` 0: empty. 1: the laptop's entry. 2: three devices, replies mapped back.
+   * 3: an unasked packet from outside, dropped. 4: the ISP's NAT on top, `homesPerIp` to an address.
+   */
+  nat: {
+    html: (key) =>
+      `<div class="tx-nat" data-w="${key}"><div class="tx-nat-head"><span>inside</span><span>outside</span><span>remote</span></div>${'<div class="tx-nat-row"><span></span><span></span><span></span></div>'.repeat(NAT_ROWS.length)}<p class="tx-calc-s tx-nat-ev"></p></div>`,
+    paint(root, d) {
+      const stage = Math.min(4, Math.max(0, Math.round(num(d, "natStage", 0))));
+      const shown = stage === 0 ? 0 : stage === 1 ? 1 : NAT_ROWS.length;
+      root.querySelectorAll<HTMLElement>(".tx-nat-row").forEach((row, n) => {
+        row.hidden = n >= shown;
+        row.classList.toggle("pick", (stage === 1 || stage === 2) && n === 0);
+        row.querySelectorAll("span").forEach((cell, c) => setText(cell, NAT_ROWS[n]![c]!));
+      });
+      const text = [
+        `${group(num(d, "devices", 20))} devices, 1 public address: 203.0.113.10`,
+        "out: 192.168.1.42:51000 becomes 203.0.113.10:40001",
+        "back: 203.0.113.10:40001 becomes 192.168.1.42:51000",
+        "in: to 203.0.113.10:22, no entry, dropped",
+        `the ISP's own NAT shares one address among ${group(num(d, "homesPerIp", 32))} homes`,
+      ][stage]!;
+      setText(root.querySelector(".tx-nat-ev")!, text);
     },
   },
 };
