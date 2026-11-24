@@ -43,9 +43,11 @@ export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promis
   if (!feedback.ok && feedback.kind === "rows") {
     const missing = minus(want.after.result.rows, mine.after.result.rows).length;
     const extra = minus(mine.after.result.rows, want.after.result.rows).length;
-    const parts = [missing ? `${plural(missing, "row")} missing` : "", extra ? `${plural(extra, "row")} that shouldn't be there` : ""].filter(Boolean);
+    // A table description (describeTable) has one row per column, so speak of columns.
+    const unit = want.after.result.columns[0] === "column_name" && want.after.result.columns.includes("rules") ? "column" : "row";
+    const parts = [missing ? `${plural(missing, unit)} missing` : "", extra ? `${plural(extra, unit)} that shouldn't be there` : ""].filter(Boolean);
     feedback.message = missing === extra
-      ? `After your statement, ${plural(missing, "row")} ${missing === 1 ? "doesn't" : "don't"} look the way ${missing === 1 ? "it" : "they"} should.`
+      ? `After your statement, ${plural(missing, unit)} ${missing === 1 ? "doesn't" : "don't"} look the way ${missing === 1 ? "it" : "they"} should.`
       : `After your statement, the check finds ${parts.join(" and ")}.`;
   }
   return { run: mine.outcome, feedback };

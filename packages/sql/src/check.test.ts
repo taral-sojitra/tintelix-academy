@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { checkSqlTask } from "./check";
 import type { Db } from "./db";
 import { openShop } from "./seed";
+import { describeTable } from "./tables";
 
 let db: Db;
 beforeAll(async () => { db = await openShop(); }, 30000);
@@ -14,7 +15,17 @@ const restock: SqlTask = {
   solution: "UPDATE products SET stock = 50 WHERE name = 'Spice Box'", ordered: true, verify: "SELECT id, stock FROM products ORDER BY id",
 };
 
+const define: SqlTask = {
+  id: "coupons", kind: "define", prompt: "p", starter: "CREATE TABLE coupons (code text, percent_off integer)", hint: "h",
+  solution: "CREATE TABLE coupons (code text PRIMARY KEY, percent_off integer)", ordered: false, verify: describeTable("coupons"),
+};
+
 describe("checkSqlTask", () => {
+  it("talks about columns when checking a table definition", async () => {
+    const { feedback } = await checkSqlTask(db, define, define.starter);
+    expect(feedback).toMatchObject({ ok: false, kind: "rows", message: "After your statement, 1 column doesn't look the way it should." });
+  });
+
   it("passes the solution", async () => {
     expect((await checkSqlTask(db, names, names.solution)).feedback).toEqual({ ok: true });
   });

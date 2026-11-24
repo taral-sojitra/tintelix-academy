@@ -1,6 +1,7 @@
 import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement, type Statement, type WithStatement } from "pgsql-ast-parser";
 import { changeFrames } from "./changes";
 import { normalise } from "./compare";
+import { ddlFrames } from "./ddl";
 import type { Db, QueryResult } from "./db";
 
 /**
@@ -8,7 +9,7 @@ import type { Db, QueryResult } from "./db";
  * Every frame is the result of real SQL run in PGlite, and the last frame is the real result.
  */
 
-export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE";
+export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE" | "CREATE TABLE";
 /**
  * pass, fail, unknown: what WHERE or HAVING said. filled: a row an outer join filled with NULLs.
  * new, changed, gone: what INSERT, UPDATE or DELETE did to a row. plain: nothing to mark.
@@ -36,6 +37,8 @@ export type Replay = { supported: true; frames: Frame[] } | { supported: false; 
 
 export const MAX_FRAME_ROWS = 200;
 const AGGREGATES = new Set(["count", "sum", "avg", "min", "max", "string_agg", "array_agg", "bool_and", "bool_or", "every"]);
+/** Statements that make or change tables, replayed by ddl.ts. */
+const DDL = new Set(["create table"]);
 const NESTED = new Set(["select", "union", "union all", "with", "with recursive", "values"]);
 const TEXT_TYPES = new Set([19, 25, 1042, 1043]);
 const DATE_TYPES = new Set([1082, 1114, 1184]);
@@ -162,13 +165,15 @@ export async function buildReplay(db: Db, sql: string): Promise<Replay> {
     const loc = (n as Located)._location;
     return loc ? sql.slice(loc.start, loc.end).trim() : toSql.expr(n as Expr);
   };
-  const shape = last.type === "insert" || last.type === "update" || last.type === "delete" ? null : readShape(last);
+  const ddl = DDL.has(last.type);
+  const shape = ddl || last.type === "insert" || last.type === "update" || last.type === "delete" ? null : readShape(last);
   if (typeof shape === "string") return no(shape);
 
   await db.exec("BEGIN");
   try {
     if (first) await db.exec(first);
     if (last.type === "insert" || last.type === "update" || last.type === "delete") return await changeFrames(db, last);
+    if (ddl) return (await ddlFrames(db, last, source(statements.length - 1))) ?? no("The replay can't follow this statement yet; here's what it did.");
     return await frames(db, source(statements.length - 1), shape!, text);
   } catch {
     return no("The replay couldn't follow this query, so here's just its result.");

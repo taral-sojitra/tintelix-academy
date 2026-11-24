@@ -21,6 +21,9 @@ describe("plainError", () => {
     expect(plainError("23503", 'insert or update on table "orders" violates foreign key constraint "orders_customer_id_fkey"'))
       .toBe("That orders row would point at a row that doesn't exist (orders_customer_id_fkey).");
   });
+  it("names the unknown type and suggests real ones", () => {
+    expect(plainError("42704", 'type "strng" does not exist')).toBe("There's no type called strng. Common ones: integer, numeric(10,2), text, date, boolean.");
+  });
   it("names the unknown column", () => {
     expect(plainError("42703", 'column "nme" does not exist')).toBe("There's no column called nme. Check the spelling against the dataset card.");
   });
