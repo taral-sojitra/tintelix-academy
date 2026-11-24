@@ -8,6 +8,13 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** A slice of the board around you, starting at rank 1,203. Your score rises 50 a second over a 5 s cycle. */
+const ZS_OTHERS: [string, number][] = [["Asha", 9820], ["Ken", 9705], ["Lola", 9650], ["Omar", 9580], ["Priya", 9555]];
+const ZS_FIRST_RANK = 1203;
+const ZS_YOU_START = 9540;
+const ZS_PER_SEC = 50;
+const ZS_CYCLE_SEC = 5;
+
 /** Three minutes of clicks as [click time, arrival time] in seconds after 12:00, played 20× fast over a 10 s cycle. One phone was offline. */
 const WM_EVENTS: [number, number][] = [
   [5, 7], [18, 21], [33, 36], [47, 50], [58, 63], [66, 68], [79, 83], [92, 95], [104, 107], [40, 125], [131, 134], [150, 152], [167, 170],
@@ -106,6 +113,30 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A sorted set: players kept in score order, so your rank and neighbours are a lookup, not a count. */
+  sortedset: {
+    html: (key) =>
+      `<div class="tx-zs" data-w="${key}">${"<div class=\"tx-zs-row\"><b></b><em></em><span></span></div>".repeat(ZS_OTHERS.length + 1)}<p class="tx-calc-s tx-zs-cap"></p></div>`,
+    paint(root, d, clock) {
+      const you = ZS_YOU_START + Math.floor((Math.max(0, clock) % ZS_CYCLE_SEC)) * ZS_PER_SEC;
+      const board: [string, number, boolean][] = [...ZS_OTHERS.map(([n, s]): [string, number, boolean] => [n, s, false]), ["you", you, true]];
+      board.sort((a, b) => b[1] - a[1]);
+      root.querySelectorAll<HTMLElement>(".tx-zs-row").forEach((row, n) => {
+        const [name, score, me] = board[n]!;
+        row.classList.toggle("me", me);
+        const set = (sel: string, text: string) => {
+          const el = row.querySelector(sel)!;
+          if (el.textContent !== text) el.textContent = text;
+        };
+        set("b", `#${group(ZS_FIRST_RANK + n)}`);
+        set("em", name);
+        set("span", group(score));
+      });
+      const text = `your rank found in ${Math.round(d.logSteps ?? 23)} steps`;
+      const cap = root.querySelector(".tx-zs-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** Clicks placed by when they happened, minute windows that close once the watermark passes, and a click too late to count. */
   watermark: {
     html: (key) =>
