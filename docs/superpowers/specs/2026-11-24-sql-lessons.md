@@ -80,3 +80,12 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   orders per customer keeping everyone (the starter's WHERE on the right table undoes the LEFT JOIN; the replay's
   WHERE note shows the 5 NULL rows dropped).
 - The FROM frame marks NULL-filled rows in violet.
+
+## 12. WITH (CTE): Name a step, use it later
+
+- Tasks: big spenders read from a `spend` step (WHERE on a summary that is now a column); customers above the overall
+  average via a second step and CROSS JOIN; the three best months without cancelled orders; a step joined to
+  customers.
+- Replay: WITH is now followed. Each step gets its own frame (chip "WITH spend") with its rows, then the main query's
+  frames run inside the same WITH. WITH RECURSIVE still shows only the result. Join notes count matches with `ctid`,
+  which only real tables have, so they're skipped when a step is joined.

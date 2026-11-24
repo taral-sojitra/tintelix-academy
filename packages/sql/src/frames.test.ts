@@ -137,9 +137,28 @@ describe("buildReplay", () => {
     await endsOnRealResult(sql, r);
   });
 
+  it("shows each WITH step, then the main query reading from it", async () => {
+    const sql = "WITH spend AS (SELECT customer_id, sum(total) AS spent FROM orders GROUP BY customer_id) SELECT customer_id, spent FROM spend WHERE spent > 20000 ORDER BY spent DESC";
+    const r = await buildReplay(db, sql);
+    expect(clauses(r)).toEqual(["WITH", "FROM", "WHERE", "SELECT", "ORDER BY"]);
+    const step = frame(r, "WITH");
+    expect(step).toMatchObject({ label: "WITH spend", columns: ["customer_id", "spent"], total: 15 });
+    expect(step.note).toBe("WITH made a step called spend: 15 rows. The main query reads it like a table.");
+    expect(frame(r, "FROM").note).toBe("FROM starts with every row of spend: 15 rows.");
+    await endsOnRealResult(sql, r);
+  });
+
+  it("shows several WITH steps in order", async () => {
+    const sql = "WITH books AS (SELECT id, name FROM products WHERE category = 'Books'), sold AS (SELECT i.product_id, sum(i.quantity) AS units FROM order_items i JOIN books b ON b.id = i.product_id GROUP BY i.product_id) SELECT b.name, s.units FROM books b JOIN sold s ON s.product_id = b.id";
+    const r = await buildReplay(db, sql);
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames.filter((f) => f.clause === "WITH").map((f) => f.label)).toEqual(["WITH books", "WITH sold"]);
+    await endsOnRealResult(sql, r);
+  });
+
   it("shows only the result for shapes it can't follow yet", async () => {
     for (const sql of [
-      "WITH big AS (SELECT * FROM orders WHERE total > 5000) SELECT count(*) FROM big",
+      "WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i + 1 FROM n WHERE i < 3) SELECT i FROM n",
       "SELECT name FROM customers WHERE id IN (SELECT customer_id FROM orders)",
       "SELECT id, row_number() OVER (ORDER BY total) FROM orders",
       "SELECT 1 UNION SELECT 2",
