@@ -183,3 +183,14 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   CASCADE also emptied and whether RESTART IDENTITY reset the counter.
 - Error: the refusal to truncate a table others point at now reads "order_items points at orders, so orders can't be
   emptied on its own. Empty both in the same TRUNCATE, or add CASCADE."
+
+## After the series: four small fixes
+
+- A run pressed while Postgres is starting (Run button or Ctrl+Enter) now waits and runs once it's ready; the status
+  line says so. Before, it was ignored.
+- Switching tasks during a run: the finished run still records progress, but its result and replay no longer appear
+  on the new task, and the new task's draft is replayed once the worker is free.
+- A replay gets 10 seconds (it reruns the query once per clause) instead of a run's 3, and says "The replay took too
+  long to build" rather than blaming the query.
+- Phones: explanation and syntax first, then the task, stage and editor, then feedback, then the task list and the
+  mistake note. Desktop is unchanged.

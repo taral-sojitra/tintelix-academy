@@ -15,8 +15,14 @@ import { ReplayStage } from "./Replay";
 import { ResultTable } from "./ResultTable";
 import { runStatus } from "./status";
 
-/** A SQL task lesson: explanation and tasks, the replay and editor, then feedback, result and dataset. */
-export function SqlLessonView({ slug }: { slug: string }) {
+const workerClient = () => new SqlClient(() => new Worker(new URL("./sql.worker.ts", import.meta.url), { type: "module" }));
+
+/**
+ * A SQL task lesson: explanation and tasks, the replay and editor, then feedback, result and dataset.
+ * The worker does one thing at a time: a run pressed while it's busy or still starting waits its turn, and a
+ * task switched to mid-run gets its replay once the run is done.
+ */
+export function SqlLessonView({ slug, makeClient = workerClient }: { slug: string; makeClient?: () => SqlClient }) {
   const lesson = getSqlLesson(slug)!;
   const prefKey = `sql-tasks:${lesson.id}`;
   const client = useRef<SqlClient | null>(null);
@@ -28,21 +34,20 @@ export function SqlLessonView({ slug }: { slug: string }) {
   const [replay, setReplay] = useState<Replay | null>(null);
   const [busy, setBusy] = useState(true);
   const [booted, setBooted] = useState(false);
+  const [queued, setQueued] = useState(false);
+  /** The task whose draft still needs replaying, after a switch. */
+  const [owed, setOwed] = useState<string | null>(null);
   const [help, setHelp] = useState<{ hint: boolean; solution: boolean }>({ hint: false, solution: false });
 
   const task = lesson.tasks[current]!;
   const draft = drafts[task.id] ?? task.starter;
+  const showing = useRef(task.id);
+  showing.current = task.id;
   const setDraft = useCallback((sql: string) => setDrafts((d) => ({ ...d, [task.id]: sql })), [task.id]);
-
-  /** Replays a query that already ran, or says why there's nothing to replay. */
-  const replayOf = useCallback(async (sql: string, ok: boolean) => {
-    if (!ok) return setReplay({ supported: false, reason: "Your query didn't run, so there's nothing to replay. The message on the right says why." });
-    setReplay(await client.current!.replay(sql));
-  }, []);
 
   // One worker per page; replay the first task's starter so the stage isn't empty.
   useEffect(() => {
-    const c = new SqlClient(() => new Worker(new URL("./sql.worker.ts", import.meta.url), { type: "module" }));
+    const c = makeClient();
     client.current = c;
     let live = true;
     const store = getStore();
@@ -56,7 +61,7 @@ export function SqlLessonView({ slug }: { slug: string }) {
       const t = lesson.tasks[first]!;
       const r = await c.replay(t.starter);
       if (!live) return;
-      setReplay(r);
+      if (showing.current === t.id) setReplay(r);
       setBooted(true);
       setBusy(false);
     })();
@@ -64,41 +69,67 @@ export function SqlLessonView({ slug }: { slug: string }) {
       live = false;
       c.dispose();
     };
-  }, [lesson, prefKey]);
+  }, [lesson, prefKey, makeClient]);
 
   const run = useCallback(async () => {
     const c = client.current;
-    if (!c || busy) return;
+    if (!c) return;
+    if (busy || !booted) {
+      setQueued(true);
+      return;
+    }
+    const id = task.id;
+    const sql = draft;
     setBusy(true);
-    const result = await c.check(task, draft);
-    setBooted(true);
-    setChecked(result);
-    setRan((r) => (r.includes(task.id) ? r : [...r, task.id]));
-    if (result.feedback.ok && !solved.includes(task.id)) {
-      const next = [...solved, task.id];
+    const result = await c.check(task, sql);
+    setRan((r) => (r.includes(id) ? r : [...r, id]));
+    if (result.feedback.ok && !solved.includes(id)) {
+      const next = [...solved, id];
       setSolved(next);
       const store = getStore();
       void store.setPref(prefKey, next);
       void store.saveStep(lesson.id, next.length - 1, lesson.tasks.length);
     }
-    await replayOf(draft, result.run.ok);
+    // Switched away while it ran: keep the progress, but don't show this task's result on another task.
+    if (showing.current === id) {
+      setChecked(result);
+      setReplay(
+        result.run.ok
+          ? await c.replay(sql)
+          : { supported: false, reason: "Your query didn't run, so there's nothing to replay. The message on the right says why." },
+      );
+    }
     setBusy(false);
-  }, [busy, draft, lesson, prefKey, replayOf, solved, task]);
+  }, [booted, busy, draft, lesson, prefKey, solved, task]);
+
+  // When the worker is free: a waiting run goes first, then a replay owed to a switched-to task.
+  useEffect(() => {
+    if (busy || !booted) return;
+    if (queued) {
+      setQueued(false);
+      void run();
+      return;
+    }
+    if (owed && owed === task.id) {
+      setOwed(null);
+      setBusy(true);
+      void client.current!.replay(draft).then((r) => {
+        if (showing.current === owed) setReplay(r);
+        setBusy(false);
+      });
+    }
+  }, [booted, busy, draft, owed, queued, run, task.id]);
 
   const pick = useCallback(
-    async (i: number) => {
+    (i: number) => {
       if (i === current) return;
-      const t = lesson.tasks[i]!;
       setCurrent(i);
       setChecked(null);
+      setQueued(false);
       setHelp({ hint: false, solution: false });
-      if (client.current && !busy) {
-        setBusy(true);
-        await replayOf(drafts[t.id] ?? t.starter, true);
-        setBusy(false);
-      }
+      setOwed(lesson.tasks[i]!.id);
     },
-    [busy, current, drafts, lesson, replayOf],
+    [current, lesson],
   );
 
   const nextOpen = lesson.tasks.findIndex((t, i) => i > current && !solved.includes(t.id));
@@ -108,60 +139,64 @@ export function SqlLessonView({ slug }: { slug: string }) {
   return (
     <div className="sql-grid">
       <div className="sql-learn">
-        <section className="sql-explain">
-          {lesson.explain.map((p, i) => (
-            <p key={i}>
-              <Md text={p} />
-            </p>
-          ))}
-        </section>
-        <section className="sql-syntax" aria-labelledby="syntax-title">
-          <h3 id="syntax-title" className="eyebrow">
-            Syntax
-          </h3>
-          <pre>
-            <code>{lesson.syntax.code}</code>
-          </pre>
-          <ul>
-            {lesson.syntax.notes.map((n, i) => (
-              <li key={i}>
-                <Md text={n} />
-              </li>
+        <div className="sql-intro">
+          <section className="sql-explain">
+            {lesson.explain.map((p, i) => (
+              <p key={i}>
+                <Md text={p} />
+              </p>
             ))}
-          </ul>
-        </section>
-        <section className="sql-tasks" aria-labelledby="tasks-title">
-          <h3 id="tasks-title">
-            Tasks
-            <small>
-              {solved.length} of {lesson.tasks.length} solved
-            </small>
-          </h3>
-          <ol>
-            {lesson.tasks.map((t, i) => {
-              const done = solved.includes(t.id);
-              return (
-                <li key={t.id} className={`${i === current ? "cur" : ""}${done ? " done" : ""}`}>
-                  <button type="button" onClick={() => void pick(i)} aria-current={i === current ? "step" : undefined}>
-                    <span className="tk-no" aria-label={done ? "Solved" : undefined}>
-                      {done ? <Icon name="check" /> : i + 1}
-                    </span>
-                    <span className="tk-text">
-                      <Md text={t.prompt} />
-                    </span>
-                  </button>
+          </section>
+          <section className="sql-syntax" aria-labelledby="syntax-title">
+            <h3 id="syntax-title" className="eyebrow">
+              Syntax
+            </h3>
+            <pre>
+              <code>{lesson.syntax.code}</code>
+            </pre>
+            <ul>
+              {lesson.syntax.notes.map((n, i) => (
+                <li key={i}>
+                  <Md text={n} />
                 </li>
-              );
-            })}
-          </ol>
-        </section>
-        <aside className="note n-watch">
-          <Icon name="alert" />
-          <div>
-            <span className="eyebrow">Common mistake</span>
-            <Md text={lesson.mistake} />
-          </div>
-        </aside>
+              ))}
+            </ul>
+          </section>
+        </div>
+        <div className="sql-taskside">
+          <section className="sql-tasks" aria-labelledby="tasks-title">
+            <h3 id="tasks-title">
+              Tasks
+              <small>
+                {solved.length} of {lesson.tasks.length} solved
+              </small>
+            </h3>
+            <ol>
+              {lesson.tasks.map((t, i) => {
+                const done = solved.includes(t.id);
+                return (
+                  <li key={t.id} className={`${i === current ? "cur" : ""}${done ? " done" : ""}`}>
+                    <button type="button" onClick={() => pick(i)} aria-current={i === current ? "step" : undefined}>
+                      <span className="tk-no" aria-label={done ? "Solved" : undefined}>
+                        {done ? <Icon name="check" /> : i + 1}
+                      </span>
+                      <span className="tk-text">
+                        <Md text={t.prompt} />
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+          <aside className="note n-watch">
+            <Icon name="alert" />
+            <div>
+              <span className="eyebrow">Common mistake</span>
+              <Md text={lesson.mistake} />
+            </div>
+          </aside>
+        </div>
       </div>
 
       <div className="sql-work">
@@ -209,11 +244,11 @@ export function SqlLessonView({ slug }: { slug: string }) {
         </div>
         <ReplayStage replay={replay} waiting={booted ? undefined : "Starting Postgres in your browser…"} />
         <p className="sql-status" role="status">
-          {runStatus(checked, busy, booted)}
+          {runStatus(checked, busy, booted, queued)}
         </p>
         <QueryEditor value={draft} onChange={setDraft} onRun={() => void run()} />
         <div className="sql-runbar">
-          <button type="button" className="btn primary" onClick={() => void run()} disabled={busy}>
+          <button type="button" className="btn primary" onClick={() => void run()} disabled={busy && booted}>
             <Icon name="play" />
             Run
           </button>
@@ -230,7 +265,7 @@ export function SqlLessonView({ slug }: { slug: string }) {
       <div className="sql-check">
         <FeedbackCard
           feedback={checked?.feedback ?? null}
-          onNext={nextIndex >= 0 ? () => void pick(nextIndex) : undefined}
+          onNext={nextIndex >= 0 ? () => pick(nextIndex) : undefined}
         />
         <section className="sql-result" aria-labelledby="result-title">
           <h3 id="result-title">Result</h3>
@@ -254,7 +289,7 @@ export function SqlLessonView({ slug }: { slug: string }) {
         <DatasetCard />
         <div className="nav-btns">
           {nextIndex >= 0 ? (
-            <button type="button" className="btn primary" onClick={() => void pick(nextIndex)}>
+            <button type="button" className="btn primary" onClick={() => pick(nextIndex)}>
               Next task
               <Icon name="arrowRight" />
             </button>

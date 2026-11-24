@@ -58,12 +58,24 @@ describe("SqlClient", () => {
     expect(made[0]!.posted.map((m) => m.op)).toEqual(["warm", "run", "replay"]);
   });
 
+  it("gives a replay longer than a run, and says the replay took too long", async () => {
+    vi.useFakeTimers();
+    const { make } = fakeWorkers((m) => (m.op === "warm" ? true : undefined));
+    const client = new SqlClient(make, 3000);
+    let done: unknown;
+    void client.replay("SELECT 1").then((r) => (done = r));
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(done).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(7000);
+    expect(done).toEqual({ supported: false, reason: "The replay took too long to build, so here's just the result." });
+  });
+
   it("gives each kind of request its own timeout answer", async () => {
     vi.useFakeTimers();
     const { make } = fakeWorkers((m) => (m.op === "warm" ? true : undefined));
     const client = new SqlClient(make, 3000);
-    const replay = client.replay("SELECT 1");
+    const check = client.check({ id: "t", prompt: "p", starter: "s", hint: "h", solution: "SELECT 1", ordered: false }, "SELECT 1");
     await vi.advanceTimersByTimeAsync(3000);
-    expect(await replay).toEqual({ supported: false, reason: "That query took longer than 3 seconds, so it was stopped." });
+    expect((await check).feedback).toEqual({ ok: false, kind: "error", message: "That query took longer than 3 seconds, so it was stopped." });
   });
 });
