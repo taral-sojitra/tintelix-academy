@@ -24,10 +24,10 @@ export function ReplayStage({ replay, autoplay = true, waiting }: { replay: Repl
   const last = frames.length - 1;
   const frameRef = useRef<HTMLDivElement>(null);
 
-  // WHERE and HAVING: bring the first row that passed into view, so the kept rows aren't hidden below the fold.
+  // Bring the first marked row (kept, new, changed or deleted) into view, so it isn't hidden below the fold.
   useEffect(() => {
     const wrap = frameRef.current?.querySelector<HTMLElement>(".sql-table-wrap");
-    const row = wrap?.querySelector<HTMLElement>("tr.m-pass");
+    const row = wrap?.querySelector<HTMLElement>("tr.m-pass, tr.m-new, tr.m-changed, tr.m-gone");
     if (wrap) wrap.scrollTop = row ? Math.max(0, row.offsetTop - 36) : 0;
   }, [at, replay]);
 

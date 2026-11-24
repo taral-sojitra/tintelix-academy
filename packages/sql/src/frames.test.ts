@@ -188,6 +188,55 @@ describe("buildReplay", () => {
     await endsOnRealResult(sql, r);
   });
 
+  it("shows which rows an UPDATE picks, then the rows it changed", async () => {
+    const r = await buildReplay(db, "UPDATE products SET stock = 50 WHERE name = 'Spice Box'");
+    expect(clauses(r)).toEqual(["WHERE", "UPDATE"]);
+    const where = frame(r, "WHERE");
+    expect(where.total).toBe(15);
+    expect(where.marks?.filter((m) => m === "changed")).toHaveLength(1);
+    expect(where.note).toBe("WHERE picked 1 of 15 rows to change.");
+    const after = frame(r, "UPDATE");
+    expect(after.note).toBe("UPDATE set stock on 1 row.");
+    const i = after.marks!.indexOf("changed");
+    expect(after.rows[i]).toContain(50);
+    expect(after.rows.map((x) => x[0])).toEqual(where.rows.map((x) => x[0]));
+  });
+
+  it("warns that an UPDATE without WHERE changes every row", async () => {
+    const r = await buildReplay(db, "UPDATE products SET stock = 0");
+    expect(clauses(r)).toEqual(["BEFORE", "UPDATE"]);
+    expect(frame(r, "BEFORE").note).toBe("There's no WHERE, so UPDATE changes every row: all 15.");
+    expect(frame(r, "UPDATE").marks?.filter((m) => m === "changed")).toHaveLength(15);
+  });
+
+  it("shows the row an INSERT adds", async () => {
+    const r = await buildReplay(db, "INSERT INTO products (name, category, price, stock) VALUES ('Desk Mat', 'Home', 799, 30)");
+    expect(clauses(r)).toEqual(["BEFORE", "INSERT"]);
+    expect(frame(r, "BEFORE").note).toBe("products has 15 rows before the INSERT.");
+    const after = frame(r, "INSERT");
+    expect(after.total).toBe(16);
+    expect(after.marks?.filter((m) => m === "new")).toHaveLength(1);
+    expect(after.note).toBe("INSERT added 1 row, so products now has 16.");
+  });
+
+  it("shows the rows a DELETE removes", async () => {
+    const lines = Number((await db.query("SELECT count(*) FROM order_items WHERE order_id = 1")).rows[0]?.[0]);
+    const r = await buildReplay(db, "DELETE FROM order_items WHERE order_id = 1");
+    expect(clauses(r)).toEqual(["WHERE", "DELETE"]);
+    expect(frame(r, "WHERE").marks?.filter((m) => m === "gone")).toHaveLength(lines);
+    expect(frame(r, "WHERE").note).toBe(`WHERE picked ${lines} of 150 rows to delete.`);
+    expect(frame(r, "DELETE").total).toBe(150 - lines);
+    expect(frame(r, "DELETE").note).toBe(`DELETE removed ${lines} rows, so order_items now has ${150 - lines}.`);
+  });
+
+  it("runs earlier statements first and replays the last one", async () => {
+    const r = await buildReplay(db, "CREATE TABLE notes (id int PRIMARY KEY, body text);\nINSERT INTO notes VALUES (1, 'hi'), (2, 'there');");
+    expect(frame(r, "BEFORE").note).toBe("notes has 0 rows before the INSERT.");
+    expect(frame(r, "INSERT").total).toBe(2);
+    const s2 = await buildReplay(db, "UPDATE products SET stock = 0; SELECT name, stock FROM products WHERE stock = 0");
+    expect(frame(s2, "WHERE").note).toBe("WHERE kept 15 of 15 rows.");
+  });
+
   it("shows only the result for shapes it can't follow yet", async () => {
     for (const sql of [
       "WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i + 1 FROM n WHERE i < 3) SELECT i FROM n",
@@ -195,7 +244,7 @@ describe("buildReplay", () => {
       "SELECT id FROM orders ORDER BY row_number() OVER (ORDER BY total)",
       "SELECT 1 UNION SELECT 2",
       "SELECT 1 + 1",
-      "UPDATE products SET stock = 0",
+      "UPDATE orders o SET total = 0 FROM customers c WHERE c.id = o.customer_id",
     ]) {
       expect((await buildReplay(db, sql)).supported, sql).toBe(false);
     }

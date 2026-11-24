@@ -100,3 +100,16 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   what it did ("numbered the rows from 1 in each group", "ranked them; ties share a rank", "worked out a running sum").
   A window anywhere else still shows the result only.
 - Error: a window function in WHERE (42P20) now says to number in a WITH step and filter in the main query.
+
+## 14. INSERT INTO: Add a new product
+
+- Tasks (change tasks, checked by a verify query after the learner's statement and after the solution): add Desk Mat;
+  two rows in one statement; Phone Stand where the starter leaves out the column list and swaps name and category;
+  a new customer (the prompt invites trying id 1 to see the duplicate key turned away, since starters must run);
+  `INSERT … SELECT` to read the Yoga Mat's price.
+- Replay: INSERT, UPDATE and DELETE are now followed (`changes.ts`). The table before (or the rows WHERE picks), then
+  the table after with new, changed or deleted rows marked, matched by `RETURNING ctid` and sorted by primary key.
+  When the editor holds several statements, the earlier ones run first and the last is replayed, so a CREATE TABLE
+  followed by an INSERT replays the INSERT. Statement text is sliced by start positions, because the parser's end
+  positions can drop a closing bracket.
+- The page now asks for a replay for every task kind; the content check requires change-task solutions to replay.
