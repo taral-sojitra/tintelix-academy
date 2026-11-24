@@ -8,6 +8,10 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** One metric over time as 24 bars, oldest first. Rolled up: the oldest 12 average in fours (1 h), the next 8 in pairs (1 min), the last 4 stay raw. */
+const RUP_HEIGHTS = Array.from({ length: 24 }, (_, n) => Math.round(42 + 22 * Math.sin(n * 0.9) + 12 * Math.sin(n * 0.37 + 1)));
+const rupGroup = (n: number): [number, number, string] => (n < 12 ? [n - (n % 4), 4, "hr"] : n < 20 ? [n - (n % 2), 2, "mn"] : [n, 1, ""]);
+
 /** Four partitions of a topic, 14 offsets each, filling at 2 records a second over a 6 s cycle; each starts at its own offset. */
 const PT_BASES = [3, 2, 4, 1];
 const PT_CELLS = 14;
@@ -83,6 +87,23 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** One metric's history: every raw point, or older points averaged into coarser rollups. */
+  rollup: {
+    html: (key) => `<div class="tx-rup" data-w="${key}"><div class="tx-rup-bars">${"<i></i>".repeat(RUP_HEIGHTS.length)}</div><p class="tx-calc-s tx-rup-cap"></p></div>`,
+    paint(root, d) {
+      const rolled = (d.rollups ?? 0) > 0;
+      root.querySelectorAll<HTMLElement>(".tx-rup-bars i").forEach((bar, n) => {
+        const [start, size, cls] = rolled ? rupGroup(n) : [n, 1, ""];
+        const avg = RUP_HEIGHTS.slice(start, start + size).reduce((a, b) => a + b, 0) / size;
+        const height = `${+avg.toFixed(1)}%`;
+        if (bar.style.height !== height) bar.style.height = height;
+        bar.className = cls;
+      });
+      const text = rolled ? "old: 1 h · then 1 min · recent: 15 s" : "every 15 s point, kept forever";
+      const cap = root.querySelector(".tx-rup-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** A topic's partitions as append-only logs: records written so far, and where each consumer group has committed. */
   partitions: {
     html: (key) =>

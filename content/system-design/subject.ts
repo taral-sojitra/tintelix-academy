@@ -119,7 +119,7 @@ export const systemDesign: Subject = {
       title: "Case studies: data pipelines",
       lessons: [
         l("message-queue-design", "Design a distributed message queue", "Keep every message on disk in partitions, copied to several brokers, and let readers replay from any point.", ["replication", "message-queues", "leader-election"], "A queue that keeps every message"),
-        l("metrics-alerting", "Design metrics monitoring and alerting", "Collect millions of numbers a second, roll them up over time, and alert before users notice.", ["latency-percentiles", "availability", "health-checks"]),
+        l("metrics-alerting", "Design metrics monitoring and alerting", "Collect millions of numbers a second, roll them up over time, and alert before users notice.", ["latency-percentiles", "availability", "health-checks"], "Spot the outage before users do"),
         l("click-aggregation", "Design ad click aggregation (analytics)", "Count every ad click once, in windows of time, even when events arrive late or twice.", ["message-queues", "idempotency", "message-queue-design"]),
         l("leaderboard", "Design a real-time leaderboard", "Rank millions of players live with a sorted set, and show anyone their place in a blink.", ["caching", "sharding"]),
         l("rag-serving", "Design a RAG and model-serving system", "Find the right passages in your own documents and hand them to a model that answers in seconds.", ["caching", "message-queues", "api-gateway"]),

@@ -178,6 +178,24 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("rollup widget keeps recent points raw and averages older ones into 1-minute and 1-hour points", () => {
+    const w: BoardWidget = { kind: "custom", name: "rollup" };
+    const root = mount(w, { rollups: 0 }, 0);
+    const bars = () => [...root.querySelectorAll<HTMLElement>(".tx-rup-bars i")];
+    const h = (n: number) => bars()[n]!.style.height;
+    expect(bars()).toHaveLength(24);
+    expect(root.querySelectorAll(".tx-rup-bars i.hr, .tx-rup-bars i.mn")).toHaveLength(0);
+    expect(h(0)).not.toBe(h(1));
+    expect(root.querySelector(".tx-rup-cap")!.textContent).toBe("every 15 s point, kept forever");
+    paintWidget(root, w, { rollups: 1 }, 0);
+    expect(root.querySelectorAll(".tx-rup-bars i.hr")).toHaveLength(12);
+    expect(root.querySelectorAll(".tx-rup-bars i.mn")).toHaveLength(8);
+    expect(new Set([h(0), h(1), h(2), h(3)]).size).toBe(1);
+    expect(h(12)).toBe(h(13));
+    expect(new Set([h(20), h(21), h(22), h(23)]).size).toBe(4);
+    expect(root.querySelector(".tx-rup-cap")!.textContent).toBe("old: 1 h · then 1 min · recent: 15 s");
+  });
+
   it("partitions widget appends to four logs and shows each group's committed offset", () => {
     const w: BoardWidget = { kind: "custom", name: "partitions" };
     const root = mount(w, { groups: 2 }, 0);
