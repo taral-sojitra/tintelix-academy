@@ -41,6 +41,16 @@ describe("ReplayStage", () => {
     expect(container.querySelector(".sql-stage .null")?.textContent).toBe("NULL");
   });
 
+  it("labels each WITH step's chip with its name", () => {
+    const withFrames: Frame[] = [
+      { clause: "WITH", label: "WITH books", note: "WITH made a step called books: 3 rows.", columns: ["id"], rows: [[10], [11], [12]], total: 3 },
+      { clause: "WITH", label: "WITH sold", note: "WITH made a step called sold: 3 rows.", columns: ["id"], rows: [[10]], total: 1 },
+      frames[0]!,
+    ];
+    render(<ReplayStage replay={{ supported: true, frames: withFrames }} autoplay={false} />);
+    expect(screen.getAllByRole("button", { name: /^(WITH \w+|FROM)$/ }).map((c) => c.textContent)).toEqual(["WITH books", "WITH sold", "FROM"]);
+  });
+
   it("says why when there's no replay", () => {
     render(<ReplayStage replay={{ supported: false, reason: "The replay can't follow WITH yet, so here's just its result." }} autoplay={false} />);
     expect(screen.getByText("The replay can't follow WITH yet, so here's just its result.")).toBeTruthy();

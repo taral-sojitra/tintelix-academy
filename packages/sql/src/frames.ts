@@ -1,4 +1,4 @@
-import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement } from "pgsql-ast-parser";
+import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement, type Statement, type WithStatement } from "pgsql-ast-parser";
 import { normalise } from "./compare";
 import type { Db, QueryResult } from "./db";
 
@@ -7,12 +7,14 @@ import type { Db, QueryResult } from "./db";
  * Every frame is the result of real SQL run in PGlite, and the last frame is the real result.
  */
 
-export type Clause = "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT";
+export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT";
 /** pass, fail, unknown: what WHERE or HAVING said. filled and plain: whether an outer join filled the row with NULLs. */
 export type Mark = "pass" | "fail" | "unknown" | "filled" | "plain";
 
 export interface Frame {
   clause: Clause;
+  /** Chip text when the clause alone isn't enough, like "WITH spend". */
+  label?: string;
   note: string;
   columns: string[];
   /** At most MAX_FRAME_ROWS rows; `total` is the full count. */
@@ -52,7 +54,13 @@ function walk(root: unknown, visit: (n: Node) => boolean | void): void {
   go(root, true);
 }
 
-function readShape(sql: string): SelectFromStatement | string {
+interface Shape {
+  main: SelectFromStatement;
+  /** The WITH around the main query, if any. */
+  around?: WithStatement;
+}
+
+function readShape(sql: string): Shape | string {
   let statements;
   try {
     statements = parse(sql, { locationTracking: true });
@@ -61,7 +69,18 @@ function readShape(sql: string): SelectFromStatement | string {
   }
   if (statements.length !== 1) return "The replay follows one query at a time; this shows the last result.";
   const ast = statements[0]!;
-  if (ast.type === "with" || ast.type === "with recursive") return "The replay can't follow WITH yet, so here's just its result.";
+  if (ast.type === "with recursive") return "The replay can't follow WITH RECURSIVE yet, so here's just its result.";
+  if (ast.type === "with") {
+    const main = checkSelect(ast.in);
+    return typeof main === "string" ? main : { main, around: ast };
+  }
+  const main = checkSelect(ast);
+  return typeof main === "string" ? main : { main };
+}
+
+/** The shapes the replay can take apart: one SELECT over tables and joins, no subqueries or window functions. */
+function checkSelect(ast: Statement): SelectFromStatement | string {
+  if (ast.type === "with" || ast.type === "with recursive") return "The replay follows one WITH at a time, so here's just its result.";
   if (ast.type === "union" || ast.type === "union all") return "The replay can't follow UNION yet, so here's just its result.";
   if (ast.type !== "select") return "The replay follows SELECT queries; here's what your statement did.";
   if (!ast.from?.length) return "There's no table here to replay.";
@@ -79,6 +98,8 @@ function readShape(sql: string): SelectFromStatement | string {
 
 interface Source {
   table: string;
+  /** A real table (it has ctid row ids); a WITH step does not. */
+  real: boolean;
   schema?: string;
   alias: string;
   columns: string[];
@@ -95,10 +116,12 @@ async function q(db: Db, sql: string): Promise<QueryResult> {
 async function joinNote(
   db: Db,
   stmt: (over: Partial<SelectFromStatement>) => string,
+  print: (s: SelectFromStatement) => string,
   sources: Source[],
   filledBy: Map<number, string>,
   rows: number,
 ): Promise<string> {
+  if (sources.some((s) => !s.real)) return "";
   const count = (arg: Expr, distinct = false) => ({ type: "call", function: { name: "count" }, args: [arg], ...(distinct ? { distinct: "distinct" } : {}) }) as unknown as Expr;
   const cols = sources.flatMap((s, i) => [
     { expr: count(ref("ctid", s.alias), true), alias: { name: `__d${i}` } },
@@ -107,7 +130,7 @@ async function joinNote(
   const r = (await db.query(stmt({ columns: cols, where: undefined, groupBy: undefined, having: undefined, orderBy: undefined, limit: undefined, distinct: undefined }))).rows[0] ?? [];
   const parts: string[] = [];
   for (const [i, s] of sources.entries()) {
-    const probe = toSql.statement({ type: "select", columns: [{ expr: count(ref("*")) }], from: [{ type: "table", name: { name: s.table, schema: s.schema } }] } as SelectFromStatement);
+    const probe = print({ type: "select", columns: [{ expr: count(ref("*")) }], from: [{ type: "table", name: { name: s.table, schema: s.schema } }] } as SelectFromStatement);
     const total = Number((await db.query(probe)).rows[0]?.[0]);
     const out = total - Number(r[2 * i]);
     if (out > 0) parts.push(`${out} ${out === 1 ? "row" : "rows"} of ${s.table} had no match, so ${out === 1 ? "it's" : "they're"} left out.`);
@@ -120,7 +143,6 @@ async function joinNote(
 export async function buildReplay(db: Db, sql: string): Promise<Replay> {
   const shape = readShape(sql);
   if (typeof shape === "string") return no(shape);
-  const ast = shape;
   const text = (n: unknown): string => {
     const loc = (n as Located)._location;
     return loc ? sql.slice(loc.start, loc.end).trim() : toSql.expr(n as Expr);
@@ -128,7 +150,7 @@ export async function buildReplay(db: Db, sql: string): Promise<Replay> {
 
   await db.exec("BEGIN");
   try {
-    return await frames(db, sql, ast, text);
+    return await frames(db, sql, shape, text);
   } catch {
     return no("The replay couldn't follow this query, so here's just its result.");
   } finally {
@@ -136,8 +158,10 @@ export async function buildReplay(db: Db, sql: string): Promise<Replay> {
   }
 }
 
-async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: unknown) => string): Promise<Replay> {
-  const stmt = (over: Partial<SelectFromStatement>) => toSql.statement({ ...ast, ...over } as SelectFromStatement);
+async function frames(db: Db, sql: string, { main: ast, around }: Shape, text: (n: unknown) => string): Promise<Replay> {
+  /** Every stage query runs inside the learner's WITH, so the main query can read its steps. */
+  const print = (s: SelectFromStatement) => toSql.statement(around ? { ...around, in: s } : s);
+  const stmt = (over: Partial<SelectFromStatement>) => print({ ...ast, ...over } as SelectFromStatement);
   const bare = { groupBy: undefined, having: undefined, orderBy: undefined, limit: undefined, distinct: undefined };
 
   // Every source table's columns, labelled by table where two tables share a name.
@@ -145,9 +169,10 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
   for (const f of ast.from!) {
     if (f.type !== "table") return no("The replay can't follow this FROM yet.");
     const name = f.name;
-    const probe = toSql.statement({ type: "select", columns: [{ expr: ref("*") }], from: [{ type: "table", name: { name: name.name, schema: name.schema } }], limit: { limit: { type: "integer", value: 0 } } } as SelectFromStatement);
+    const probe = print({ type: "select", columns: [{ expr: ref("*") }], from: [{ type: "table", name: { name: name.name, schema: name.schema } }], limit: { limit: { type: "integer", value: 0 } } } as SelectFromStatement);
     const cols = (await q(db, probe)).fields.map((x) => x.name);
-    sources.push({ table: name.name, schema: name.schema, alias: name.alias ?? name.name, columns: cols });
+    const step = !name.schema && (around?.bind ?? []).some((b) => b.alias.name === name.name);
+    sources.push({ table: name.name, real: !step, schema: name.schema, alias: name.alias ?? name.name, columns: cols });
   }
   const seen = new Map<string, number>();
   for (const s of sources) for (const c of s.columns) seen.set(c, (seen.get(c) ?? 0) + 1);
@@ -167,6 +192,20 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
   const cap = <T,>(xs: T[]) => xs.slice(0, MAX_FRAME_ROWS);
   const out: Frame[] = [];
 
+  // WITH: each named step's rows first, in the order they're written.
+  for (const b of around?.bind ?? []) {
+    const name = b.alias.name;
+    const rw = await q(db, print({ type: "select", columns: [{ expr: ref("*") }], from: [{ type: "table", name: { name } }] } as SelectFromStatement));
+    out.push({
+      clause: "WITH",
+      label: `WITH ${name}`,
+      note: `WITH made a step called ${name}: ${plural(rw.rows.length, "row")}. The main query reads it like a table.`,
+      columns: rw.fields.map((x) => x.name),
+      rows: cap(rw.rows),
+      total: rw.rows.length,
+    });
+  }
+
   // Sources an outer join can fill with NULLs, and the join that does it.
   const filledBy = new Map<number, string>();
   ast.from!.forEach((f, i) => {
@@ -174,7 +213,7 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
     if (kind === "LEFT JOIN" || kind === "FULL JOIN") filledBy.set(i, kind);
     if (kind === "RIGHT JOIN" || kind === "FULL JOIN") for (let j = 0; j < i; j++) filledBy.set(j, kind);
   });
-  const nullable = [...filledBy.keys()];
+  const nullable = [...filledBy.keys()].filter((i) => sources[i]!.real);
 
   // FROM, and WHERE's verdict on each of those rows (one query, so the rows line up).
   const pass = ast.where ? [{ expr: ast.where, alias: { name: "__pass" } }] : [];
@@ -185,7 +224,7 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
   const firstFill = all.length + pass.length;
   out.push({
     clause: "FROM",
-    note: sources.length === 1 ? `FROM starts with every row of ${tables[0]}: ${plural(fromRows.length, "row")}.` : `FROM joined ${listing(tables)} into ${plural(fromRows.length, "row")}.` + (await joinNote(db, stmt, sources, filledBy, fromRows.length)),
+    note: sources.length === 1 ? `FROM starts with every row of ${tables[0]}: ${plural(fromRows.length, "row")}.` : `FROM joined ${listing(tables)} into ${plural(fromRows.length, "row")}.` + (await joinNote(db, stmt, print, sources, filledBy, fromRows.length)),
     columns: allLabels,
     rows: cap(fromRows),
     total: fromRows.length,
