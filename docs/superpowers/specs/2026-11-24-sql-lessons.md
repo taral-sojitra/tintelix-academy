@@ -113,3 +113,11 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   followed by an INSERT replays the INSERT. Statement text is sliced by start positions, because the parser's end
   positions can drop a closing bracket.
 - The page now asks for a replay for every task kind; the content check requires change-task solutions to replay.
+
+## 15. UPDATE: Change some rows, not all
+
+- Tasks: restock the Spice Box (the starter has no WHERE; the replay warns "There's no WHERE, so UPDATE changes every
+  row: all 15"); raise Books prices 10% rounded; two columns in one SET; fill missing cities (the starter's `= NULL`
+  changes nobody, and the replay says 20 hit a NULL); AND instead of OR.
+- Feedback: when a change leaves the same number of rows wrong on both sides, it now reads "After your statement,
+  14 rows don't look the way they should." instead of "14 rows missing and 14 that shouldn't be there".

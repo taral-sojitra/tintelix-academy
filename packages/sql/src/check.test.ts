@@ -45,6 +45,6 @@ describe("checkSqlTask", () => {
     expect((await checkSqlTask(db, restock, restock.solution)).feedback).toEqual({ ok: true });
     const wrong = await checkSqlTask(db, restock, restock.starter);
     expect(wrong.run.ok && wrong.run.rowCount).toBe(15);
-    expect(wrong.feedback).toMatchObject({ ok: false, kind: "rows" });
+    expect(wrong.feedback).toMatchObject({ ok: false, kind: "rows", message: "After your statement, 14 rows don't look the way they should." });
   });
 });
