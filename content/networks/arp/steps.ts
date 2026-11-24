@@ -1,0 +1,88 @@
+import type { Step } from "@tintelix/schema";
+
+export const arpSteps: Step[] = [
+  {
+    id: "who-has",
+    tag: "problem",
+    title: "The laptop knows an IP, the wire wants a MAC",
+    short: "The gap",
+    text: [
+      "The laptop wants to reach a website, so its packet goes to the default gateway, the router at **192.168.1.1**. The IP header is easy: that address is in the laptop's settings.",
+      "But the next step down is Ethernet or Wi-Fi, and a frame isn't addressed by IP. It needs the router's **MAC address**, the hardware address of its network card. The laptop doesn't know it.",
+    ],
+    sim: { mode: "none", speed: 1 },
+    model: { mode: 0 },
+    live: "THE GAP",
+  },
+  {
+    id: "mac-addresses",
+    tag: "technique",
+    title: "MAC addresses: one per network card",
+    short: "MAC addresses",
+    text: [
+      "A **MAC address** is 48 bits, written as six pairs of hex digits like **02:aa:bb:cc:dd:01**. Each network card has one, set when it's made; the first half has traditionally named the maker. Phones now often make up a random one for each Wi-Fi network, so they can't be tracked from place to place.",
+      "A MAC address only means something on one link. Remember the router in the TCP/IP lesson: it writes a new Ethernet header, with new MAC addresses, for every hop. IP addresses get a packet across the world; MAC addresses get a frame to the next box.",
+    ],
+    note: { kind: "tip", text: "Addresses starting 02: are \"locally administered\": made up rather than set by a maker. All the ones here are." },
+    scene: { focus: ["laptop", "router", "phone", "tv"] },
+    sim: { mode: "none", speed: 1 },
+    model: { mode: 0 },
+    live: "MAC ADDRESSES",
+  },
+  {
+    id: "ask-everyone",
+    tag: "technique",
+    title: "Ask everyone, hear from one",
+    short: "Ask everyone",
+    text: [
+      "So the laptop asks the whole network. It sends an **ARP request** (Address Resolution Protocol) to the broadcast address **ff:ff:ff:ff:ff:ff**: \"who has 192.168.1.1? Tell 192.168.1.42.\" The switch copies a broadcast out of every port, so all **{askedDevices}** other devices read it.",
+      "The phone and the TV see it isn't their address and ignore it. The router answers, to the laptop alone: \"192.168.1.1 is at 02:aa:bb:cc:dd:01.\" Now the laptop can build the frame.",
+    ],
+    note: { kind: "watch", text: "The question goes out three ways; one green answer comes back." },
+    changed: [{ kind: "add", label: "ARP", value: "question and answer" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · ask everyone",
+  },
+  {
+    id: "cache-it",
+    tag: "solution",
+    title: "Remember the answer",
+    short: "The cache",
+    text: [
+      "The laptop keeps the answer in its **ARP cache**, here for **{cacheSec} seconds**. Every packet to the router in that time goes straight to 02:aa:bb:cc:dd:01 with no question at all. When the entry expires, the laptop asks again, in case the router was replaced.",
+      "The router learned something too: the question carried the laptop's own IP and MAC, so the router can reply to the laptop without asking.",
+    ],
+    note: { kind: "next", text: "A new device asks for its IP address in a similar broadcast. That's DHCP, the next lesson." },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · the cache",
+  },
+  {
+    id: "the-cost",
+    tag: "technique",
+    title: "Why every device caches",
+    short: "The cost",
+    text: [
+      "Imagine no cache. Each of the laptop's {packetsPerMin} packets a minute would need its own question, and every question interrupts all **{askedDevices}** other devices: **{noiseNoCache}** frames a minute they have to read and throw away. With a {cacheSec}-second cache it's **{noiseCached}** a minute, **{savedPct}** less.",
+      "That's also why big networks get split into subnets: a broadcast stops at the router, so smaller networks mean fewer devices woken by each question.",
+    ],
+    note: { kind: "watch", text: "ARP has no proof of who's answering. A device that answers \"192.168.1.1 is at me\" can sit in the middle of your traffic. Encryption, like TLS, keeps what it sees unreadable." },
+    controls: ["devices", "cacheSec"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · the cost",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "Who has 192.168.1.1?",
+    short: "Recap",
+    text: [
+      "Frames are addressed by MAC, so before sending to an IP on its own network a device asks: an ARP request to everyone, an answer from the owner. It caches the answer for a while so it doesn't have to ask for every packet. IPv6 does the same job with a protocol called Neighbor Discovery.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "RECAP",
+  },
+];

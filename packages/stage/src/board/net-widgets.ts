@@ -24,6 +24,14 @@ const ENV_CYCLE_SEC = 6;
 /** The sample IPv6 address, in full: the first four groups are the network (/64), the last four the device. */
 const V6_GROUPS = ["2001", "0db8", "0000", "0042", "0000", "8a2e", "0370", "7334"];
 
+/** The ARP lesson's addresses: made-up, locally administered MACs (they start 02:), as phones use today. */
+const ARP_LAPTOP = "02:1a:2b:3c:4d:5e";
+const ARP_ROUTER = "02:aa:bb:cc:dd:01";
+/** The exchange: the request shows at once, the reply after 1.2 s, the cache entry after 2.4 s; a 4 s cycle. */
+const ARP_REPLY_SEC = 1.2;
+const ARP_CACHE_SEC = 2.4;
+const ARP_CYCLE_SEC = 4;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -143,6 +151,31 @@ export const NET_CUSTOM: Record<string, Custom> = {
       setText(lines[1]!, `B 192.168.1.${b} AND 255.255.255.${last} = 192.168.1.${b & last}`);
       const same = (a & last) === (b & last);
       setText(root.querySelector(".tx-sn-cap")!, same ? "same subnet: A sends straight to B" : "different subnets: A sends it to the router");
+    },
+  },
+  /**
+   * ARP from the laptop's side: the broadcast question, the router's answer and the laptop's cache.
+   * `arpStage` 0 knows nothing, 1 plays the exchange, 2 sends from the cache for `cacheSec` seconds.
+   */
+  arp: {
+    html: (key) =>
+      `<div class="tx-arp" data-w="${key}"><p class="tx-arp-line ask"></p><p class="tx-arp-line ans"></p><p class="tx-arp-line use"></p><p class="tx-arp-cache"><em>ARP cache</em><span class="tx-arp-row"></span></p></div>`,
+    paint(root, d, clock) {
+      const stage = Math.round(num(d, "arpStage", 0));
+      const t = Math.max(0, clock) % ARP_CYCLE_SEC;
+      const [ask, ans, use] = [...root.querySelectorAll<HTMLElement>(".tx-arp-line")];
+      ask!.hidden = stage !== 1;
+      ans!.hidden = stage !== 1 || t < ARP_REPLY_SEC;
+      use!.hidden = stage !== 2;
+      setText(ask!, "to ff:ff:ff:ff:ff:ff (everyone): who has 192.168.1.1? tell 192.168.1.42");
+      setText(ans!, `to ${ARP_LAPTOP}: 192.168.1.1 is at ${ARP_ROUTER}`);
+      setText(use!, `to ${ARP_ROUTER} directly: no broadcast`);
+      const known = stage === 2 || (stage === 1 && t >= ARP_CACHE_SEC);
+      const left = Math.max(0, Math.round(num(d, "cacheSec", 60)) - Math.floor(Math.max(0, clock)));
+      const row = !known ? "192.168.1.1 → ?" : stage === 2 ? `192.168.1.1 → ${ARP_ROUTER} · ${left} s left` : `192.168.1.1 → ${ARP_ROUTER}`;
+      const el = root.querySelector(".tx-arp-row")!;
+      setText(el, row);
+      el.classList.toggle("known", known);
     },
   },
 };
