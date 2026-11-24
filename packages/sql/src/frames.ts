@@ -233,15 +233,35 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
   const picked = rs.fields.map((x) => x.name);
   const star = selected.length === 1 && (selected[0]!.expr as Node).type === "ref" && (selected[0]!.expr as Node).name === "*";
   let summarised = false;
+  const overColumn: Node[] = [];
   walk(selected, (n) => {
-    if (n.type === "call" && AGGREGATES.has(((n.function as { name: string }).name ?? "").toLowerCase())) summarised = true;
+    if (n.type === "call" && AGGREGATES.has(((n.function as { name: string }).name ?? "").toLowerCase())) {
+      summarised = true;
+      const args = (n.args as Node[] | undefined) ?? [];
+      if (args.length === 1 && !(args[0]!.type === "ref" && args[0]!.name === "*")) overColumn.push(n);
+      return false;
+    }
   });
+  // A summary over a column skips its NULLs; say how many, since that's the surprise.
+  const skipped: string[] = [];
+  if (summarised && !keys.length && overColumn.length) {
+    const count = (arg: unknown) => ({ type: "call", function: { name: "count" }, args: [arg] }) as unknown as Expr;
+    const cols = overColumn.flatMap((n, i) => [
+      { expr: count(ref("*")), alias: { name: `__all${i}` } },
+      { expr: count((n.args as unknown[])[0]), alias: { name: `__has${i}` } },
+    ]);
+    const rn = await q(db, stmt({ ...bare, columns: cols }));
+    overColumn.forEach((n, i) => {
+      const gap = Number(rn.rows[0]?.[2 * i]) - Number(rn.rows[0]?.[2 * i + 1]);
+      if (gap > 0) skipped.push(`${text(n)} skipped ${plural(gap, "NULL")}`);
+    });
+  }
   out.push({
     clause: "SELECT",
     note: keys.length
       ? `SELECT made one row per group: ${plural(rs.rows.length, "row")}.`
       : summarised
-        ? `SELECT summarised ${plural(remaining, "row")} into one.`
+        ? `SELECT summarised ${plural(remaining, "row")} into one.` + (skipped.length ? ` ${skipped.join("; ")}.` : "")
         : star
           ? "SELECT * kept every column."
           : `SELECT picked ${listing(picked)}.`,
