@@ -442,3 +442,33 @@ describe("nat widget", () => {
     expect(natEvent(mount(nat, { natStage: 4, homesPerIp: 32 }))).toBe("the ISP's own NAT shares one address among 32 homes");
   });
 });
+
+const fwrules: BoardWidget = { kind: "custom", name: "fwrules" };
+const fwRules = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-fw-rule")].filter((r) => !r.hidden).map((r) => r.querySelector("span")!.textContent);
+const fwHit = (root: HTMLElement) => root.querySelector(".tx-fw-rule.hit span")?.textContent ?? null;
+const fwNow = (root: HTMLElement) => root.querySelector(".tx-fw-now")!.textContent;
+
+describe("fwrules widget", () => {
+  it("has no rules without a firewall: everything gets in", () => {
+    const root = mount(fwrules, { fwStage: 0 }, 1.6);
+    expect(fwRules(root)).toEqual([]);
+    expect(fwNow(root)).toBe("203.0.113.66 → :22 · no firewall: let in");
+  });
+
+  it("checks rules top to bottom; the first match decides", () => {
+    const root = mount(fwrules, { fwStage: 1 }, 0.2);
+    expect(fwRules(root)).toEqual(["allow TCP :443 from anywhere", "allow TCP :22 from 198.51.100.0/24", "drop everything else"]);
+    expect(fwHit(root)).toBe("allow TCP :443 from anywhere");
+    expect(fwNow(root)).toBe("visitor → :443 · rule 1: allowed");
+    paintWidget(root, fwrules, { fwStage: 1 }, 1.6);
+    expect(fwNow(root)).toBe("203.0.113.66 → :22 · rule 3: dropped");
+  });
+
+  it("without state, the reply to the server's own request is dropped; with it, let in", () => {
+    const stateless = mount(fwrules, { fwStage: 1 }, 6.2);
+    expect(fwNow(stateless)).toBe("reply to the web server's update check · rule 3: dropped");
+    const stateful = mount(fwrules, { fwStage: 2 }, 6.2);
+    expect(fwRules(stateful)[2]).toBe("allow replies to connections started inside");
+    expect(fwNow(stateful)).toBe("reply to the web server's update check · rule 3: allowed");
+  });
+});
