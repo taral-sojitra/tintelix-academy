@@ -39,6 +39,7 @@ import { photoFeed } from "./system-design/photo-feed/lesson";
 import { chatApp } from "./system-design/chat-app/lesson";
 import { proximityService } from "./system-design/proximity-service/lesson";
 import { nearbyFriends } from "./system-design/nearby-friends/lesson";
+import { rideHailing } from "./system-design/ride-hailing/lesson";
 import { replication } from "./system-design/replication/lesson";
 import { retriesAndCircuitBreakers } from "./system-design/retries-and-circuit-breakers/lesson";
 import { sharding } from "./system-design/sharding/lesson";
@@ -48,7 +49,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing];
 
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);

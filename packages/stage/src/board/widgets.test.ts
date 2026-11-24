@@ -178,6 +178,35 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("dispatch widget ranks nearby drivers, claims the best, and shows a second rider losing the race", () => {
+    const w: BoardWidget = { kind: "custom", name: "dispatch" };
+    const d = { candidates: 42, cellsChecked: 7, clashPct: 0 };
+    const root = mount(w, d, 0);
+    const rows = () => [...root.querySelectorAll(".tx-disp-row")].map((r) => [r.querySelector("b")!.textContent, r.className.replace("tx-disp-row", "").trim()]);
+    const caption = () => root.querySelector(".tx-disp-cap")!.textContent;
+    expect([...root.querySelectorAll(".tx-disp-row em")].map((e) => e.textContent)).toEqual(["#37 · 2 min", "#51 · 3 min", "#8 · 5 min"]);
+    expect(caption()).toBe("rider 12: 42 free in 7 cells");
+    expect(rows()).toEqual([["free", ""], ["free", ""], ["free", ""]]);
+    paintWidget(root, w, d, 1.6);
+    expect(rows()[0]).toEqual(["claiming", "try"]);
+    paintWidget(root, w, d, 3.1);
+    expect(rows()[0]).toEqual(["claimed · rider 12", "mine"]);
+    paintWidget(root, w, d, 4.6);
+    expect(caption()).toBe("offered to 37 · 10 s to accept");
+    paintWidget(root, w, d, 6.1);
+    expect(caption()).toBe("37 accepted · trip on");
+    expect(rows()[1]).toEqual(["free", ""]);
+    const race = { ...d, clashPct: 100 };
+    paintWidget(root, w, race, 4.6);
+    expect(caption()).toBe("rider 13 claims 37 too · fails");
+    expect(rows()[0]).toEqual(["claimed · rider 12", "mine clash"]);
+    paintWidget(root, w, race, 6.1);
+    expect(caption()).toBe("rider 13 takes 51 instead");
+    expect(rows()[1]).toEqual(["claimed · rider 13", "mine"]);
+    paintWidget(root, w, race, 7.6);
+    expect(rows()[0]).toEqual(["free", ""]);
+  });
+
   it("pubsub widget shows one person's channel, its subscribers, and who each update reaches", () => {
     const w: BoardWidget = { kind: "custom", name: "pubsub" };
     const root = mount(w, { updateEvery: 20, radiusKm: 5 }, 0);

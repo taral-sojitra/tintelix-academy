@@ -8,6 +8,10 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Free drivers near the rider, best first: driver number and minutes away. One phase of the match plays every 1.5 s. */
+const DISPATCH: [string, number][] = [["37", 2], ["51", 3], ["8", 5]];
+const DISPATCH_PHASE_SEC = 1.5;
+
 /** Friends subscribed to your channel: name and distance in km (null = not sharing). One real second plays 10. */
 const SUBSCRIBERS: [string, number | null][] = [["Meera", 1.2], ["Dev", 3.8], ["Kiran", 12], ["Ravi", null]];
 const PUBSUB_SPEEDUP = 10;
@@ -40,6 +44,35 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** One match: rank nearby free drivers, claim the best, then offer; with a race on, a second rider's claim on the same driver fails. */
+  dispatch: {
+    html: (key) =>
+      `<div class="tx-disp" data-w="${key}"><p class="tx-calc-s tx-disp-cap"></p>${DISPATCH.map(([id, min]) => `<div class="tx-disp-row"><i></i><em>#${id} · ${min} min</em><b></b></div>`).join("")}</div>`,
+    paint(root, d, clock) {
+      const phase = Math.floor(Math.max(0, clock) / DISPATCH_PHASE_SEC) % 5;
+      const race = (d.clashPct ?? 0) > 0;
+      const [best, next] = [DISPATCH[0]![0], DISPATCH[1]![0]];
+      const captions = [
+        `rider 12: ${group(d.candidates ?? 0)} free in ${group(d.cellsChecked ?? 7)} cells`,
+        `claiming ${best}: free → claimed`,
+        `${best} claimed · no one else can`,
+        race ? `rider 13 claims ${best} too · fails` : `offered to ${best} · 10 s to accept`,
+        race ? `rider 13 takes ${next} instead` : `${best} accepted · trip on`,
+      ];
+      const cap = root.querySelector(".tx-disp-cap")!;
+      if (cap.textContent !== captions[phase]) cap.textContent = captions[phase]!;
+      const states: [string, string][] = DISPATCH.map(() => ["free", ""]);
+      if (phase === 1) states[0] = ["claiming", "try"];
+      if (phase >= 2) states[0] = ["claimed · rider 12", phase === 3 && race ? "mine clash" : "mine"];
+      if (phase === 4 && race) states[1] = ["claimed · rider 13", "mine"];
+      root.querySelectorAll<HTMLElement>(".tx-disp-row").forEach((row, i) => {
+        const [text, cls] = states[i]!;
+        row.className = cls ? `tx-disp-row ${cls}` : "tx-disp-row";
+        const b = row.querySelector("b")!;
+        if (b.textContent !== text) b.textContent = text;
+      });
+    },
+  },
   /** One person's location channel: each update goes to subscribed friends, sent only if close enough. */
   pubsub: {
     html: (key) =>
