@@ -23,7 +23,10 @@ const RULES: Record<string, (message: string) => string> = {
   "22012": () => "The query divided by zero. Postgres stops rather than guess.",
   "22P02": (m) => `${m.split(": ").pop()?.replace(/"/g, "") ?? "That value"} isn't a valid value for that column's type.`,
   "23505": (m) => `That would put a duplicate where values must be unique (${quoted(m)}).`,
-  "23502": (m) => `${quoted(m)} can't be empty (NULL) in ${quoted(m, 1)}.`,
+  "23502": (m) =>
+    /contains null values/.test(m)
+      ? `${quoted(m)} can't be NOT NULL yet: the rows already in ${quoted(m, 1)} would have NULL in it. Give it a DEFAULT so they get a value.`
+      : `${quoted(m)} can't be empty (NULL) in ${quoted(m, 1)}.`,
   "23503": (m) =>
     /^update or delete on/i.test(m)
       ? `Rows in ${quoted(m, 2)} still point at the ${quoted(m)} rows you're removing. Delete or change those first.`

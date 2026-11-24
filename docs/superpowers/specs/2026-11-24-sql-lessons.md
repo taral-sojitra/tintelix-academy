@@ -141,3 +141,13 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Replay: CREATE TABLE gets a frame listing the new table's columns, types and rules in SQL words ("PRIMARY KEY,
   counts up by itself", "NOT NULL, REFERENCES products(id)"). The content check now requires every task's solution
   to replay, define tasks included. Error: an unknown type names it and lists common ones.
+
+## 18. ALTER TABLE: Add a column later
+
+- Tasks: a discount column with DEFAULT 0 (the starter leaves the 15 rows NULL); a required loyalty_points column (the
+  prompt invites NOT NULL without a default to see the refusal); rename signed_up; drop orders.coupon; a CHECK that
+  price is above 0, checked against existing rows.
+- Replay: ALTER TABLE shows the columns before (dropped ones marked), the columns after (new and changed ones
+  marked), then the rows after with what a new column got ("All 15 rows got discount = 0.00." or "All 20 rows have NULL
+  in points, because it has no default."). Renamed columns are matched to their old names.
+- Error: NOT NULL on a new column of a table with rows now says to give it a DEFAULT.

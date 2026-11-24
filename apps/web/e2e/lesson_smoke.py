@@ -1489,6 +1489,7 @@ SQL_LESSONS = [
     ("update", "Change some rows, not all", "There's no WHERE, so UPDATE changes every row: all 15."),
     ("delete", "Remove only what you mean", "WHERE kept 1 of 20 rows."),
     ("create-table", "Make a new table", "CREATE TABLE made coupons with 1 column and no rows yet."),
+    ("alter-table", "Add a column later", "products has 5 columns and 15 rows."),
 ]
 
 
