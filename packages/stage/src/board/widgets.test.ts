@@ -134,4 +134,21 @@ describe("board widgets", () => {
     paintWidget(root, w, {}, 4.9);
     expect(typed()).toBe("c");
   });
+  it("lanes widget plays a broadcast: each channel's progress and when it finishes", () => {
+    const w: BoardWidget = { kind: "custom", name: "lanes" };
+    const d = { pushCount: 10.5e6, emailCount: 3.75e6, smsCount: 750000, pushEff: 35000, emailEff: 12500, smsEff: 300 };
+    const root = mount(w, d, 0);
+    const lanes = () => [...root.querySelectorAll(".tx-chl-row")].map((r) => [r.querySelector("em")!.textContent, r.querySelector("b")!.textContent]);
+    expect(root.querySelector(".tx-chl-t")!.textContent).toBe("T+0:00");
+    expect(lanes()).toEqual([
+      ["push", "0% · all by 5:00"],
+      ["email", "0% · all by 5:00"],
+      ["SMS", "0% · all by 41:40"],
+    ]);
+    paintWidget(root, w, d, 15);
+    expect(root.querySelector(".tx-chl-t")!.textContent).toBe("T+5:00");
+    expect(lanes()[0]![1]).toBe("100% · all by 5:00");
+    expect(lanes()[2]![1]).toBe("12% · all by 41:40");
+    expect(root.querySelector<HTMLElement>(".tx-chl-row:nth-child(3) .tx-chl-bar i")!.style.width).toBe("12%");
+  });
 });

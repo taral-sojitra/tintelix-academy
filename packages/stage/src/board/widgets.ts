@@ -8,6 +8,11 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** The channels a broadcast fans out to: output prefix and label. One real second plays 20 broadcast seconds. */
+const LANES: [string, string][] = [["push", "push"], ["email", "email"], ["sms", "SMS"]];
+const LANE_SPEEDUP = 20;
+const clockText = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
+
 /** Sample autocomplete: a prefix and the top five completions cached at its trie node. */
 const TRIE_DEMO: [string, string[]][] = [
   ["c", ["cricket score", "chatgpt", "cheap flights", "cat videos", "calculator"]],
@@ -24,6 +29,24 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A broadcast playing out per channel: how much of each has gone, and when each will be done. */
+  lanes: {
+    html: (key) =>
+      `<div class="tx-chl" data-w="${key}"><p class="tx-calc-s tx-chl-t"></p><div class="tx-chl-rows">${LANES.map(([, label]) => `<div class="tx-chl-row"><em>${esc(label)}</em><span class="tx-chl-bar"><i></i></span><b></b></div>`).join("")}</div></div>`,
+    paint(root, d, clock) {
+      const t = Math.max(0, clock) * LANE_SPEEDUP;
+      root.querySelector(".tx-chl-t")!.textContent = `T+${clockText(t)}`;
+      root.querySelectorAll<HTMLElement>(".tx-chl-row").forEach((row, i) => {
+        const [name] = LANES[i]!;
+        const count = d[`${name}Count`] ?? 0;
+        const rate = d[`${name}Eff`] ?? 0;
+        const done = rate > 0 ? count / rate : Infinity;
+        const pct = count > 0 ? Math.min(100, Math.round(((rate * t) / count) * 100)) : 100;
+        row.querySelector<HTMLElement>(".tx-chl-bar i")!.style.width = `${pct}%`;
+        row.querySelector("b")!.textContent = `${pct}% · all by ${Number.isFinite(done) ? clockText(done) : "never"}`;
+      });
+    },
+  },
   /** A trie lookup as someone types: the prefix so far and the top five completions stored at its node. */
   trie: {
     html: (key) => `<div class="tx-trie" data-w="${key}"><p class="tx-calc-s">typed: <span class="tx-trie-typed"></span></p><ol>${"<li></li>".repeat(5)}</ol></div>`,
