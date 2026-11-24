@@ -1,0 +1,88 @@
+import type { Step } from "@tintelix/schema";
+
+export const natSteps: Step[] = [
+  {
+    id: "one-address",
+    tag: "problem",
+    title: "Twenty devices, one address",
+    short: "The problem",
+    text: [
+      "Your home has **{devices}** devices, each with a private address like 192.168.1.42 that the internet won't carry. Your ISP gave the house one public address, **203.0.113.10**. Everything leaves through it.",
+      "Sending is easy. The hard part is the replies: they all come back to 203.0.113.10. Which device asked for which?",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 0 },
+    live: "LIVE · the problem",
+  },
+  {
+    id: "rewrite-out",
+    tag: "technique",
+    title: "Rewrite the sender on the way out",
+    short: "Out",
+    text: [
+      "As the laptop's packet leaves, the router replaces its source, **192.168.1.42:51000**, with its own public address and a port it picks, **203.0.113.10:40001**. It writes that pair into its **NAT table** (Network Address Translation).",
+      "The server only ever sees 203.0.113.10:40001. It has no idea the laptop exists.",
+    ],
+    changed: [{ kind: "add", label: "NAT entry", value: ".42:51000 ↔ .10:40001" }],
+    scene: { focus: ["laptop", "router", "server", "table"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · out",
+  },
+  {
+    id: "map-back",
+    tag: "technique",
+    title: "The table sends replies home",
+    short: "Back",
+    text: [
+      "The reply comes to 203.0.113.10:**40001**. The router looks up that port, finds the laptop's entry, rewrites the destination back to 192.168.1.42:51000 and passes it in. Every device's connections get their own outside port, which is how ports and sockets keep them apart.",
+      "{devices} devices with {connsPerDevice} connections each is **{natEntries}** entries, **{portsUsedPct}** of the {natPorts} ports one address offers.",
+    ],
+    note: { kind: "turn", text: "Drag the devices and connections up; one address runs out of ports around {maxDevices} busy devices." },
+    controls: ["devices", "connsPerDevice"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · back",
+  },
+  {
+    id: "no-way-in",
+    tag: "technique",
+    title: "No entry, no way in",
+    short: "Unasked",
+    text: [
+      "A stranger sends a packet to 203.0.113.10:22. No device asked for it, so there's no entry for that port, and the router drops it. NAT hides your devices from anyone who wasn't invited, a handy side effect, though it isn't a firewall.",
+      "To run a game server or camera that outsiders can reach, you add a fixed entry yourself: **port forwarding**, such as \"outside port 8080 goes to 192.168.1.50:80\".",
+    ],
+    note: { kind: "next", text: "Real rules about who gets in are a firewall's job, the next lesson." },
+    scene: { focus: ["stranger", "router", "table", "laptop", "phone"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · unasked",
+  },
+  {
+    id: "isp-scale",
+    tag: "solution",
+    title: "Sharing at ISP scale",
+    short: "Carrier NAT",
+    text: [
+      "IPv4 ran short, so many ISPs, especially mobile ones, do NAT again on their side: **carrier-grade NAT**. Your home's \"public\" address is shared with about **{homesPerIp}** other homes, each given a block of **{portsPerHome}** ports. Your home is using {homePortsUsedPct} of its block.",
+      "It works, but it breaks things that need to be reached from outside, like hosting a game. The real fix is **IPv6**: enough addresses for every device, so nothing needs translating.",
+    ],
+    controls: ["devices", "connsPerDevice"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 4 },
+    live: "LIVE · carrier NAT",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "Twenty devices, one address",
+    short: "Recap",
+    text: [
+      "NAT rewrites each outgoing packet's private address and port to the public address and a fresh port, and records the pair. Replies are matched by port and rewritten back. Unasked packets have no entry and are dropped, unless you forward a port. ISPs stack another NAT on top; IPv6 removes the need.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "RECAP",
+  },
+];
