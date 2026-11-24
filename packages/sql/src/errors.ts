@@ -23,7 +23,10 @@ const RULES: Record<string, (message: string) => string> = {
   "22P02": (m) => `${m.split(": ").pop()?.replace(/"/g, "") ?? "That value"} isn't a valid value for that column's type.`,
   "23505": (m) => `That would put a duplicate where values must be unique (${quoted(m)}).`,
   "23502": (m) => `${quoted(m)} can't be empty (NULL) in ${quoted(m, 1)}.`,
-  "23503": (m) => `That breaks a link between tables (${quoted(m, 2) || quoted(m, 1)}): a row would point at something that doesn't exist.`,
+  "23503": (m) =>
+    /^update or delete on/i.test(m)
+      ? `Rows in ${quoted(m, 2)} still point at the ${quoted(m)} rows you're removing. Delete or change those first.`
+      : `That ${quoted(m)} row would point at a row that doesn't exist (${quoted(m, 1)}).`,
   "23514": (m) => `That value breaks a rule on the table (${quoted(m, 1) || quoted(m)}).`,
   "2BP01": () => "Other things depend on this table. Add CASCADE to drop them too, or drop them first.",
   "21000": () => "A subquery returned more than one row where only one fits.",
