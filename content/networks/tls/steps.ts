@@ -1,0 +1,88 @@
+import type { Step } from "@tintelix/schema";
+
+export const tlsSteps: Step[] = [
+  {
+    id: "plain-text",
+    tag: "problem",
+    title: "Anyone on the path can read HTTP",
+    short: "Plain text",
+    text: [
+      "You log in to a site over a café's Wi-Fi. With plain HTTP, every byte crosses the Wi-Fi, the café's router and your internet provider as readable text. Anyone on that path can read your password, copy your login cookie, or change the page on its way to you.",
+      "**TLS** (Transport Layer Security) fixes this. It needs to do two things before your first request: agree on a secret key with the server, and prove the server really is example.com.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 0 },
+    live: "LIVE · plain text",
+  },
+  {
+    id: "key-agreement",
+    tag: "technique",
+    title: "Agree a key in the open",
+    short: "The key",
+    text: [
+      "How do two strangers agree a secret while everyone listens? Each picks a random secret and sends only a **public half** made from it, the **key share**. Each side then mixes its own secret with the other's public half. The maths gives both the **same key**.",
+      "The Wi-Fi saw both public halves, but making the key needs one of the secrets, and those never left either machine. This is Diffie-Hellman key exchange; TLS 1.3 does it in its very first message.",
+    ],
+    note: { kind: "idea", text: "Fresh secrets every connection mean a key stolen next year can't unlock traffic recorded today." },
+    changed: [{ kind: "add", label: "Key exchange", value: "key shares" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · the key",
+  },
+  {
+    id: "certificate",
+    tag: "technique",
+    title: "Prove who's on the other end",
+    short: "The certificate",
+    text: [
+      "A shared key is useless if you shared it with the café's Wi-Fi pretending to be example.com. So the server also sends its **certificate**: its name and public key, signed by a **certificate authority**. That authority's own certificate is signed by a **root** that ships inside your browser. If the chain checks out, the name matches and nothing has expired, the certificate is good.",
+      "Then the server signs the handshake with the certificate's **private key**. Only the real example.com has it. Since March 2026 a public certificate lasts at most **{certDays} days**, and {certDays2029} from 2029, so renewal has to be automatic.",
+    ],
+    note: { kind: "watch", text: "Without the certificate check, an attacker could do its own key exchange with you and another with the server, reading everything in between." },
+    scene: { focus: ["browser", "server", "ca", "story"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · the certificate",
+  },
+  {
+    id: "one-round-trip",
+    tag: "solution",
+    title: "One round trip, then everything sealed",
+    short: "The handshake",
+    text: [
+      "TLS 1.3 fits all of it into one round trip. The browser's **hello** carries its key share. The server's **reply** carries its key share, the certificate, its signature, and a Finished check. The browser checks, sends its own Finished, and the request goes straight after, sealed.",
+      "Counting TCP's handshake, the first byte of the page arrives after **{tls13FirstByteMs}**. From then on the Wi-Fi sees which site you reached, plus sizes and timing, but not a single page, cookie or password.",
+    ],
+    note: { kind: "tip", text: "The site's name is visible because the browser sends it in the hello, so a server hosting many sites knows which certificate to show." },
+    changed: [{ kind: "add", label: "Sealed data", value: "after one round trip" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · the handshake",
+  },
+  {
+    id: "versions",
+    tag: "technique",
+    title: "Fewer round trips with each version",
+    short: "Versions",
+    text: [
+      "**TLS 1.2** needed two round trips, so the first byte came at **{tls12FirstByteMs}**. **TLS 1.3** needs one: **{tls13FirstByteMs}**. **QUIC**, under HTTP/3, does TCP's job and TLS's together: **{quicFirstByteMs}**. Coming back to a site, a browser can resume the old session and send its request in the very first flight, saving another round trip, though only for requests that are safe to repeat.",
+      "**SSL** is the old name. SSL 3.0, TLS 1.0 and TLS 1.1 are retired as unsafe; today you'll meet 1.2 and 1.3.",
+    ],
+    controls: ["rttMs"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 4 },
+    live: "LIVE · versions",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "Private before the first byte",
+    short: "Recap",
+    text: [
+      "TLS agrees a fresh key with key shares that are safe to send in the open, and proves the server's identity with a certificate chain up to a root your browser trusts. TLS 1.3 does both in one round trip, then seals everything. Watchers still see which site, never what's inside.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "RECAP",
+  },
+];
