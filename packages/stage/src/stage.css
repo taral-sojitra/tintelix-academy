@@ -873,3 +873,14 @@
 .tx-fw-rule.hit { color: var(--node-ink); border-color: var(--green); background: color-mix(in srgb, var(--green) 20%, transparent); }
 .tx-fw-rule.hit.deny { border-color: var(--red); background: color-mix(in srgb, var(--red) 16%, transparent); }
 .tx-fw-now { grid-column: 1 / -1; margin: 2px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a packet plain, inside a VPN tunnel, or through a proxy, and who sees what. */
+.tx-tun { margin-top: 6px; display: grid; gap: 8px; }
+.tx-tun-pkt { margin: 0; display: flex; gap: 3px; flex-wrap: wrap; font-family: var(--mono); font-size: 11.5px; }
+.tx-tun-pkt span { padding: 3px 8px; border-radius: 5px; color: var(--node-ink); }
+.tx-tun-pkt .o { background: color-mix(in srgb, var(--amber) 26%, transparent); }
+.tx-tun-pkt .s { background: color-mix(in srgb, var(--violet) 26%, transparent); }
+.tx-tun-sees { display: grid; gap: 3px; }
+.tx-tun-sees p { margin: 0; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; font-family: var(--mono); font-size: 11.5px; }
+.tx-tun-sees em { font-style: normal; color: var(--node-sub); }
+.tx-tun-sees span { color: var(--cyan); }
