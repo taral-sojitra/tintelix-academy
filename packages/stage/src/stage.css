@@ -756,3 +756,16 @@
 .tx-arp-cache em { font-style: normal; color: var(--node-sub); }
 .tx-arp-row { color: var(--node-sub); }
 .tx-arp-row.known { color: var(--green); }
+
+/* Networks: DHCP from the newcomer's side, the four messages and the settings it ends up with. */
+.tx-dhcp { margin-top: 6px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
+.tx-dhcp-msgs { display: grid; gap: 4px; align-content: start; }
+.tx-dhcp-msg { margin: 0; font-family: var(--mono); font-size: 11.5px; padding: 2px 8px; border-radius: 5px; color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-dhcp-msg[hidden] { display: none; }
+.tx-dhcp-msg.up { background: color-mix(in srgb, var(--amber) 24%, transparent); }
+.tx-dhcp-msg.down { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.tx-dhcp-set { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; align-content: start; font-family: var(--mono); font-size: 11.5px; }
+.tx-dhcp-set div { display: flex; justify-content: space-between; gap: 8px; }
+.tx-dhcp-set dt { color: var(--node-sub); }
+.tx-dhcp-set b { display: inline; font-weight: 400; font-size: 11.5px; letter-spacing: 0; color: var(--node-sub); }
+.tx-dhcp-set.known b { color: var(--green); }
