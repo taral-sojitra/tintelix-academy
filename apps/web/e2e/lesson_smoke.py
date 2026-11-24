@@ -1492,6 +1492,7 @@ SQL_LESSONS = [
     ("alter-table", "Add a column later", "products has 5 columns and 15 rows."),
     ("create-index", "Find it without reading all", "FROM starts with every row of customers: 20 rows."),
     ("drop-table", "Gone, and what goes with it", "FROM starts with every row of coupons: 0 rows."),
+    ("truncate", "Empty it in one go", "FROM starts with every row of order_items: 150 rows."),
 ]
 
 

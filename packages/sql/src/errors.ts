@@ -37,6 +37,13 @@ const RULES: Record<string, (message: string, detail?: string) => string> = {
     const why = detail?.split("\n")[0]?.trim();
     return `Other things depend on ${what}${why ? ` (${why})` : ""}. Add CASCADE to drop them too, or drop them first.`;
   },
+  "0A000": (m, detail) => {
+    if (!/cannot truncate a table referenced/.test(m)) return `Postgres says: ${m}`;
+    const [, from, to] = /Table "(.+?)" references "(.+?)"/.exec(detail ?? "") ?? [];
+    return from && to
+      ? `${from} points at ${to}, so ${to} can't be emptied on its own. Empty both in the same TRUNCATE, or add CASCADE.`
+      : "Another table points at this one. Empty both in the same TRUNCATE, or add CASCADE.";
+  },
   "21000": () => "A subquery returned more than one row where only one fits.",
   "42P10": () => "ORDER BY in a SELECT DISTINCT must use columns from the SELECT list.",
 };

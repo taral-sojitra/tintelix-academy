@@ -173,3 +173,13 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   earlier statements as plain text and parses only the last, so a statement the parser can't read no longer stops the
   replay. DROP VIEW, which the parser can't read at all, is matched by pattern.
 - Error: Postgres's refusal to drop a table now names what depends on it (from the error's detail).
+
+## 21. TRUNCATE: Empty it in one go
+
+- Tasks: empty order_items; empty orders and its lines in one statement (the prompt invites the refusal for orders on
+  its own); RESTART IDENTITY so the next coupon is id 1 again (the task makes its own coupons table); and a case for
+  DELETE … WHERE instead, since TRUNCATE has no WHERE.
+- Replay: TRUNCATE marks every row of the table as going, then shows the empty table with its columns, and says what
+  CASCADE also emptied and whether RESTART IDENTITY reset the counter.
+- Error: the refusal to truncate a table others point at now reads "order_items points at orders, so orders can't be
+  emptied on its own. Empty both in the same TRUNCATE, or add CASCADE."
