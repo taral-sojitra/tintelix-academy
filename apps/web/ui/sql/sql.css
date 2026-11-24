@@ -64,6 +64,8 @@
 .sql-table tr.m-pass td { background: color-mix(in srgb, var(--green) 13%, transparent); }
 .sql-table tr.m-fail td, .sql-table tr.m-unknown td { animation: sql-drop .5s .45s ease both; }
 .sql-table tr.m-unknown td { background: var(--amber-soft); }
+.sql-table tr.m-filled td { background: var(--violet-soft); }
+.sql-table tr.m-filled .null { color: var(--violet); font-style: normal; font-weight: 600; }
 @keyframes sql-drop { to { opacity: .35; text-decoration: line-through; } }
 .sql-table tr.g-start td { border-top: 2px solid var(--border-strong); }
 .sql-table tr[class^="g-"] td:first-child { box-shadow: inset 3px 0 0 var(--g); }

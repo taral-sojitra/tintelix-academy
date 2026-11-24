@@ -8,7 +8,8 @@ import type { Db, QueryResult } from "./db";
  */
 
 export type Clause = "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT";
-export type Mark = "pass" | "fail" | "unknown";
+/** pass, fail, unknown: what WHERE or HAVING said. filled and plain: whether an outer join filled the row with NULLs. */
+export type Mark = "pass" | "fail" | "unknown" | "filled" | "plain";
 
 export interface Frame {
   clause: Clause;
@@ -17,7 +18,7 @@ export interface Frame {
   /** At most MAX_FRAME_ROWS rows; `total` is the full count. */
   rows: unknown[][];
   total: number;
-  /** WHERE and HAVING: what the test said for each row. */
+  /** WHERE and HAVING: what the test said for each row. FROM with an outer join: which rows it filled with NULLs. */
   marks?: Mark[];
   /** GROUP BY: the bucket each row fell into, counted from 0; rows come sorted by bucket. */
   groups?: number[];
@@ -90,6 +91,32 @@ async function q(db: Db, sql: string): Promise<QueryResult> {
   return db.query(sql);
 }
 
+/** What a join dropped (rows with no match) and what an outer join kept with NULLs. */
+async function joinNote(
+  db: Db,
+  stmt: (over: Partial<SelectFromStatement>) => string,
+  sources: Source[],
+  filledBy: Map<number, string>,
+  rows: number,
+): Promise<string> {
+  const count = (arg: Expr, distinct = false) => ({ type: "call", function: { name: "count" }, args: [arg], ...(distinct ? { distinct: "distinct" } : {}) }) as unknown as Expr;
+  const cols = sources.flatMap((s, i) => [
+    { expr: count(ref("ctid", s.alias), true), alias: { name: `__d${i}` } },
+    { expr: count(ref("ctid", s.alias)), alias: { name: `__c${i}` } },
+  ]);
+  const r = (await db.query(stmt({ columns: cols, where: undefined, groupBy: undefined, having: undefined, orderBy: undefined, limit: undefined, distinct: undefined }))).rows[0] ?? [];
+  const parts: string[] = [];
+  for (const [i, s] of sources.entries()) {
+    const probe = toSql.statement({ type: "select", columns: [{ expr: count(ref("*")) }], from: [{ type: "table", name: { name: s.table, schema: s.schema } }] } as SelectFromStatement);
+    const total = Number((await db.query(probe)).rows[0]?.[0]);
+    const out = total - Number(r[2 * i]);
+    if (out > 0) parts.push(`${out} ${out === 1 ? "row" : "rows"} of ${s.table} had no match, so ${out === 1 ? "it's" : "they're"} left out.`);
+    const filled = rows - Number(r[2 * i + 1]);
+    if (filled > 0) parts.push(`${filled} had no match in ${s.table}, so ${filledBy.get(i) ?? "the join"} kept ${filled === 1 ? "it" : "them"} with NULLs.`);
+  }
+  return parts.length ? " " + parts.join(" ") : "";
+}
+
 export async function buildReplay(db: Db, sql: string): Promise<Replay> {
   const shape = readShape(sql);
   if (typeof shape === "string") return no(shape);
@@ -140,17 +167,29 @@ async function frames(db: Db, sql: string, ast: SelectFromStatement, text: (n: u
   const cap = <T,>(xs: T[]) => xs.slice(0, MAX_FRAME_ROWS);
   const out: Frame[] = [];
 
+  // Sources an outer join can fill with NULLs, and the join that does it.
+  const filledBy = new Map<number, string>();
+  ast.from!.forEach((f, i) => {
+    const kind = (f as { join?: { type?: string } }).join?.type;
+    if (kind === "LEFT JOIN" || kind === "FULL JOIN") filledBy.set(i, kind);
+    if (kind === "RIGHT JOIN" || kind === "FULL JOIN") for (let j = 0; j < i; j++) filledBy.set(j, kind);
+  });
+  const nullable = [...filledBy.keys()];
+
   // FROM, and WHERE's verdict on each of those rows (one query, so the rows line up).
   const pass = ast.where ? [{ expr: ast.where, alias: { name: "__pass" } }] : [];
-  const r1 = await q(db, stmt({ ...bare, columns: [...all, ...pass], where: undefined }));
+  const fills = nullable.map((i) => ({ expr: { type: "unary", op: "IS NULL", operand: ref("ctid", sources[i]!.alias) } as unknown as Expr, alias: { name: `__f${i}` } }));
+  const r1 = await q(db, stmt({ ...bare, columns: [...all, ...pass, ...fills], where: undefined }));
   const fromRows = r1.rows.map((r) => r.slice(0, all.length));
   const tables = sources.map((s) => s.table);
+  const firstFill = all.length + pass.length;
   out.push({
     clause: "FROM",
-    note: sources.length === 1 ? `FROM starts with every row of ${tables[0]}: ${plural(fromRows.length, "row")}.` : `FROM joined ${listing(tables)} into ${plural(fromRows.length, "row")}.`,
+    note: sources.length === 1 ? `FROM starts with every row of ${tables[0]}: ${plural(fromRows.length, "row")}.` : `FROM joined ${listing(tables)} into ${plural(fromRows.length, "row")}.` + (await joinNote(db, stmt, sources, filledBy, fromRows.length)),
     columns: allLabels,
     rows: cap(fromRows),
     total: fromRows.length,
+    ...(nullable.length ? { marks: cap(r1.rows.map((r): Mark => (r.slice(firstFill).some((v) => v === true) ? "filled" : "plain"))) } : {}),
   });
   let remaining = fromRows.length;
   if (ast.where) {
