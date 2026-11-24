@@ -370,3 +370,49 @@ describe("mactable widget", () => {
     expect(macNow(mount(mactable, { macStage: 3 }))).toBe("A1 → B1: another network, so the frame goes to the router's MAC, port 4");
   });
 });
+
+const routetable: BoardWidget = { kind: "custom", name: "routetable" };
+const rtRows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-rt-row")].map((r) => [r.querySelector("em")!.textContent, r.querySelector("span")!.textContent, r.className.replace("tx-rt-row", "").trim()]);
+const rtCap = (root: HTMLElement) => root.querySelector(".tx-rt-cap")!.textContent;
+
+describe("routetable widget", () => {
+  it("matches .200 against all three routes and picks the /25", () => {
+    const root = mount(routetable, { destOutside: 0, destD: 200 });
+    expect(rtRows(root)).toEqual([
+      ["0.0.0.0/0", "→ R3", "match"],
+      ["198.51.100.0/24", "→ R4", "match"],
+      ["198.51.100.128/25", "→ R5", "match pick"],
+    ]);
+    expect(rtCap(root)).toBe("198.51.100.200: 3 routes match, /25 is longest → R5");
+  });
+
+  it("matches .42 against two and picks the /24", () => {
+    const root = mount(routetable, { destOutside: 0, destD: 42 });
+    expect(rtRows(root).map((r) => r[2])).toEqual(["match", "match pick", ""]);
+    expect(rtCap(root)).toBe("198.51.100.42: 2 routes match, /24 is longest → R4");
+  });
+
+  it("falls back to the default route for anywhere else", () => {
+    const root = mount(routetable, { destOutside: 1, destD: 42 });
+    expect(rtRows(root).map((r) => r[2])).toEqual(["match pick", "", ""]);
+    expect(rtCap(root)).toBe("203.0.113.9: only the default matches → R3");
+  });
+});
+
+const traceroute: BoardWidget = { kind: "custom", name: "traceroute" };
+const trLines = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-tr-row")].filter((r) => !r.hidden).map((r) => r.textContent);
+
+describe("traceroute widget", () => {
+  const hops = { routeIdx: 2, traceHops: 4, trace1Ms: 1, trace2Ms: 8, trace3Ms: 26, trace4Ms: 27, trace5Ms: 0 };
+  it("reveals one more hop per TTL", () => {
+    const root = mount(traceroute, hops, 0.5);
+    expect(trLines(root)).toEqual(["TTL 1R1 home router1 ms"]);
+    paintWidget(root, traceroute, hops, 4.5);
+    expect(trLines(root)).toEqual(["TTL 1R1 home router1 ms", "TTL 2R2 ISP8 ms", "TTL 3R526 ms", "TTL 4198.51.100.20027 ms"]);
+  });
+
+  it("names the far path's routers for the default route", () => {
+    const root = mount(traceroute, { routeIdx: 0, traceHops: 5, trace1Ms: 1, trace2Ms: 8, trace3Ms: 22, trace4Ms: 118, trace5Ms: 121 }, 6);
+    expect(trLines(root).slice(2)).toEqual(["TTL 3R3 backbone22 ms", "TTL 4R6 far away118 ms", "TTL 5203.0.113.9121 ms"]);
+  });
+});
