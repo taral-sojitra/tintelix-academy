@@ -1,7 +1,8 @@
 import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement, type Statement, type WithStatement } from "pgsql-ast-parser";
-import { changeFrames } from "./changes";
+import { changeFrames, type Change } from "./changes";
 import { normalise } from "./compare";
-import { ddlFrames } from "./ddl";
+import { ddlFrames, dropFrames } from "./ddl";
+import { splitStatements } from "./run";
 import type { Db, QueryResult } from "./db";
 
 /**
@@ -9,7 +10,7 @@ import type { Db, QueryResult } from "./db";
  * Every frame is the result of real SQL run in PGlite, and the last frame is the real result.
  */
 
-export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE" | "CREATE TABLE" | "ALTER TABLE" | "AFTER" | "CREATE INDEX";
+export type Clause = "WITH" | "FROM" | "WHERE" | "GROUP BY" | "HAVING" | "OVER" | "SELECT" | "DISTINCT" | "ORDER BY" | "LIMIT" | "BEFORE" | "INSERT" | "UPDATE" | "DELETE" | "CREATE TABLE" | "ALTER TABLE" | "AFTER" | "CREATE INDEX" | "DROP TABLE" | "DROP VIEW";
 /**
  * pass, fail, unknown: what WHERE or HAVING said. filled: a row an outer join filled with NULLs.
  * new, changed, gone: what INSERT, UPDATE or DELETE did to a row. plain: nothing to mark.
@@ -38,7 +39,7 @@ export type Replay = { supported: true; frames: Frame[] } | { supported: false; 
 export const MAX_FRAME_ROWS = 200;
 const AGGREGATES = new Set(["count", "sum", "avg", "min", "max", "string_agg", "array_agg", "bool_and", "bool_or", "every"]);
 /** Statements that make or change tables, replayed by ddl.ts. */
-const DDL = new Set(["create table", "alter table", "create index"]);
+const DDL = new Set(["create table", "alter table", "create index", "drop table"]);
 const NESTED = new Set(["select", "union", "union all", "with", "with recursive", "values"]);
 const TEXT_TYPES = new Set([19, 25, 1042, 1043]);
 const DATE_TYPES = new Set([1082, 1114, 1184]);
@@ -149,32 +150,35 @@ async function joinNote(
  * transaction, which is rolled back afterwards.
  */
 export async function buildReplay(db: Db, sql: string): Promise<Replay> {
-  let statements: Statement[];
+  const parts = splitStatements(sql);
+  const lastPart = parts[parts.length - 1];
+  if (!lastPart) return no("There's nothing to replay.");
+  const lastSql = lastPart.text;
+  const first = parts.slice(0, -1).map((p) => p.text).join(";\n");
+  // The parser can't read DROP VIEW, so that one is matched by hand.
+  const dropView = /^DROP\s+VIEW\s+(?:IF\s+EXISTS\s+)?(.+?)(?:\s+(?:CASCADE|RESTRICT))?\s*$/is.exec(lastSql.replace(/^(?:--[^\n]*\n|\s)+/, ""));
+  let last: Statement | undefined;
   try {
-    statements = parse(sql, { locationTracking: true });
+    last = parse(lastSql, { locationTracking: true })[0];
   } catch {
-    return no("The replay can't read this query yet, so here's just its result.");
+    if (!dropView) return no("The replay can't read this query yet, so here's just its result.");
   }
-  const last = statements[statements.length - 1];
-  if (!last) return no("There's nothing to replay.");
-  // Each statement's text runs from its start to the next one's (the parser's end positions can fall short).
-  const starts = statements.map((n) => (n as Located)._location?.start ?? 0);
-  const source = (i: number) => sql.slice(starts[i], starts[i + 1] ?? sql.length).trim().replace(/;$/, "");
-  const first = statements.slice(0, -1).map((_, i) => source(i)).join(";\n");
   const text = (n: unknown): string => {
     const loc = (n as Located)._location;
-    return loc ? sql.slice(loc.start, loc.end).trim() : toSql.expr(n as Expr);
+    return loc ? lastSql.slice(loc.start, loc.end).trim() : toSql.expr(n as Expr);
   };
-  const ddl = DDL.has(last.type);
-  const shape = ddl || last.type === "insert" || last.type === "update" || last.type === "delete" ? null : readShape(last);
+  const ddl = !!last && DDL.has(last.type);
+  const change = last?.type === "insert" || last?.type === "update" || last?.type === "delete";
+  const shape = !last || ddl || change ? null : readShape(last);
   if (typeof shape === "string") return no(shape);
 
   await db.exec("BEGIN");
   try {
     if (first) await db.exec(first);
-    if (last.type === "insert" || last.type === "update" || last.type === "delete") return await changeFrames(db, last);
-    if (ddl) return (await ddlFrames(db, last, source(statements.length - 1))) ?? no("The replay can't follow this statement yet; here's what it did.");
-    return await frames(db, source(statements.length - 1), shape!, text);
+    if (!last) return await dropFrames(db, "VIEW", dropView![1]!.split(",").map((n) => n.trim().replace(/^"|"$/g, "")), lastSql);
+    if (change) return await changeFrames(db, last as Change);
+    if (ddl) return (await ddlFrames(db, last, lastSql)) ?? no("The replay can't follow this statement yet; here's what it did.");
+    return await frames(db, lastSql, shape!, text);
   } catch {
     return no("The replay couldn't follow this query, so here's just its result.");
   } finally {

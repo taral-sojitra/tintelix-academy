@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "./db";
-import { runInRollback, statementKinds } from "./run";
+import { runInRollback, splitStatements, statementKinds } from "./run";
 import { openShop } from "./seed";
 
 let db: Db;
@@ -12,6 +12,15 @@ describe("statementKinds", () => {
     expect(statementKinds("select 1; -- delete\n update t set a = 'x; drop'")).toEqual(["SELECT", "UPDATE"]);
     expect(statementKinds("/* hi */ WITH x AS (SELECT 1) SELECT * FROM x;")).toEqual(["WITH"]);
     expect(statementKinds("  ")).toEqual([]);
+  });
+});
+
+describe("splitStatements", () => {
+  it("splits on semicolons outside strings and comments, keeping each statement's text", () => {
+    expect(splitStatements("CREATE VIEW v AS SELECT ';' AS x; -- a; b\nDROP VIEW v;\n")).toEqual([
+      { kind: "CREATE", text: "CREATE VIEW v AS SELECT ';' AS x" },
+      { kind: "DROP", text: "-- a; b\nDROP VIEW v" },
+    ]);
   });
 });
 

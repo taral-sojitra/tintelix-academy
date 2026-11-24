@@ -6,15 +6,17 @@ export type RunOutcome =
   | { ok: true; result: ResultSet; command: string; rowCount: number; ms: number }
   | { ok: false; message: string; code?: string };
 
-/** The first keyword of each statement, upper-cased; strings, quoted names and comments are skipped. */
-export function statementKinds(sql: string): string[] {
-  const kinds: string[] = [];
+/** Each statement's text and first keyword (upper-cased); strings, quoted names and comments are skipped over. */
+export function splitStatements(sql: string): { kind: string; text: string }[] {
+  const out: { kind: string; text: string }[] = [];
+  let begin = 0;
   let word = "";
   let seen = false;
-  const end = () => {
-    if (word) kinds.push(word.toUpperCase());
+  const end = (at: number) => {
+    if (word) out.push({ kind: word.toUpperCase(), text: sql.slice(begin, at).trim() });
     word = "";
     seen = false;
+    begin = at + 1;
   };
   for (let i = 0; i < sql.length; i++) {
     const c = sql[i]!;
@@ -26,12 +28,17 @@ export function statementKinds(sql: string): string[] {
       const tag = /^\$[A-Za-z_]*\$/.exec(sql.slice(i))?.[0];
       if (tag) { const j = sql.indexOf(tag, i + tag.length); i = j < 0 ? sql.length : j + tag.length - 1; seen = true; continue; }
     }
-    if (c === ";") { end(); continue; }
+    if (c === ";") { end(i); continue; }
     if (!seen && /[A-Za-z]/.test(c)) { word += c; continue; }
     if (word || /\S/.test(c)) seen = true;
   }
-  end();
-  return kinds;
+  end(sql.length);
+  return out;
+}
+
+/** The first keyword of each statement, upper-cased. */
+export function statementKinds(sql: string): string[] {
+  return splitStatements(sql).map((s) => s.kind);
 }
 
 const TRANSACTION = new Set(["BEGIN", "COMMIT", "ROLLBACK", "SAVEPOINT", "RELEASE", "END", "START", "ABORT"]);
@@ -40,9 +47,9 @@ export const hasTransactionControl = (kinds: string[]) => kinds.some((k) => TRAN
 const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
 export function failure(e: unknown): RunOutcome {
-  const err = e as { code?: string; message?: string };
+  const err = e as { code?: string; message?: string; detail?: string };
   const message = err?.message ?? String(e);
-  return err?.code ? { ok: false, message: plainError(err.code, message), code: err.code } : { ok: false, message: plainError(undefined, message) };
+  return err?.code ? { ok: false, message: plainError(err.code, message, err.detail), code: err.code } : { ok: false, message: plainError(undefined, message) };
 }
 
 /** The last statement's result. PGlite's affectedRows adds up over one exec call, so subtract the one before. */

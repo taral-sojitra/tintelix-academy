@@ -2,7 +2,7 @@
 
 const quoted = (message: string, n = 0): string => [...message.matchAll(/"([^"]*)"/g)][n]?.[1] ?? "";
 
-const RULES: Record<string, (message: string) => string> = {
+const RULES: Record<string, (message: string, detail?: string) => string> = {
   "42601": (m) => {
     const near = quoted(m);
     if (/at end of input/.test(m)) return "There's a typo: the query stops before it's finished. Is something missing at the end?";
@@ -32,12 +32,16 @@ const RULES: Record<string, (message: string) => string> = {
       ? `Rows in ${quoted(m, 2)} still point at the ${quoted(m)} rows you're removing. Delete or change those first.`
       : `That ${quoted(m)} row would point at a row that doesn't exist (${quoted(m, 1)}).`,
   "23514": (m) => `That value breaks a rule on the table (${quoted(m, 1) || quoted(m)}).`,
-  "2BP01": () => "Other things depend on this table. Add CASCADE to drop them too, or drop them first.",
+  "2BP01": (m, detail) => {
+    const what = /drop (?:table|view) (\S+)/.exec(m)?.[1] ?? "this table";
+    const why = detail?.split("\n")[0]?.trim();
+    return `Other things depend on ${what}${why ? ` (${why})` : ""}. Add CASCADE to drop them too, or drop them first.`;
+  },
   "21000": () => "A subquery returned more than one row where only one fits.",
   "42P10": () => "ORDER BY in a SELECT DISTINCT must use columns from the SELECT list.",
 };
 
-export function plainError(code: string | undefined, message: string): string {
+export function plainError(code: string | undefined, message: string, detail?: string): string {
   const rule = code ? RULES[code] : undefined;
-  return rule ? rule(message) : `Postgres says: ${message}`;
+  return rule ? rule(message, detail) : `Postgres says: ${message}`;
 }

@@ -89,3 +89,41 @@ describe("CREATE INDEX replay", () => {
     expect(idx.note).toBe("CREATE INDEX keeps city sorted, each entry pointing at its row: 20 entries. A WHERE on city can jump to its matches instead of reading every row.");
   });
 });
+
+describe("DROP TABLE replay", () => {
+  it("shows what's dropped, and what CASCADE takes with it", async () => {
+    const r = await buildReplay(db, "CREATE TABLE coupons (code text PRIMARY KEY, percent_off integer);\nCREATE VIEW big_coupons AS SELECT code FROM coupons WHERE percent_off >= 15;\nDROP TABLE coupons CASCADE;");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames.map((f) => f.clause)).toEqual(["BEFORE", "DROP TABLE"]);
+    expect(r.frames[0]!.columns).toEqual(["name", "kind", "rows", "points at"]);
+    expect(r.frames[0]!.marks?.filter((m) => m === "gone")).toHaveLength(2);
+    expect(r.frames[1]!.note).toBe("DROP TABLE removed coupons. CASCADE also removed the view big_coupons, which depended on it.");
+  });
+
+  it("says which links CASCADE removed from tables that stay", async () => {
+    const r = await buildReplay(db, "DROP TABLE products CASCADE");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames[1]!.note).toBe("DROP TABLE removed products. CASCADE also removed the link from order_items to products; order_items stays.");
+  });
+});
+
+describe("DROP VIEW and IF EXISTS", () => {
+  it("replays DROP VIEW", async () => {
+    const r = await buildReplay(db, "CREATE VIEW v AS SELECT id FROM orders;\nDROP VIEW v;");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames[1]!.note).toBe("DROP VIEW removed v.");
+  });
+  it("says when IF EXISTS found nothing", async () => {
+    const r = await buildReplay(db, "DROP TABLE IF EXISTS promotions");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames[1]!.note).toBe("DROP TABLE found nothing called promotions, so nothing changed.");
+  });
+});
+
+describe("dependents in the refusal", () => {
+  it("names what depends on the table", async () => {
+    const r = await runInRollback(db, "CREATE TABLE coupons (code text);\nCREATE VIEW v AS SELECT code FROM coupons;\nDROP TABLE coupons;");
+    expect(r.outcome.ok).toBe(false);
+    if (!r.outcome.ok) expect(r.outcome.message).toBe("Other things depend on coupons (view v depends on table coupons). Add CASCADE to drop them too, or drop them first.");
+  });
+});

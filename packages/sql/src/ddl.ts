@@ -89,6 +89,7 @@ export async function ddlFrames(db: Db, st: Statement, sql: string): Promise<Rep
   }
   if (st.type === "alter table") return alterFrames(db, st.table.name, st.changes as unknown as AlterChange[], sql);
   if (st.type === "create index") return indexFrames(db, st.table.name, sql);
+  if (st.type === "drop table") return dropFrames(db, "TABLE", st.names.map((n) => n.name), sql);
   return null;
 }
 
@@ -197,6 +198,50 @@ async function indexFrames(db: Db, table: string, sql: string): Promise<Replay> 
       rows: entries.rows,
       total: count,
     },
+  ];
+  return { supported: true, frames };
+}
+
+const KIND: Record<string, string> = { r: "table", v: "view", m: "materialized view" };
+
+/** The database's tables and views: name, kind, rows, and the tables each one points at. */
+async function relations(db: Db): Promise<unknown[][]> {
+  const r = await db.query(
+    `SELECT c.relname::text, c.relkind::text,
+            (SELECT string_agg(k.confrelid::regclass::text, ', ' ORDER BY k.confrelid::regclass::text) FROM pg_constraint k WHERE k.conrelid = c.oid AND k.contype = 'f')
+     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public' AND c.relkind IN ('r', 'v', 'm') ORDER BY c.relname`,
+  );
+  const out: unknown[][] = [];
+  for (const [name, kind, points] of r.rows) {
+    const rows = Number((await db.query(`SELECT count(*) FROM ${ident(String(name))}`)).rows[0]?.[0]);
+    out.push([name, KIND[String(kind)] ?? String(kind), rows, points ?? ""]);
+  }
+  return out;
+}
+
+/** DROP TABLE: the tables and views before (what goes is marked), then after, and what CASCADE took. */
+export async function dropFrames(db: Db, what: "TABLE" | "VIEW", named: string[], sql: string): Promise<Replay> {
+  const before = await relations(db);
+  const links = async () => (await db.query(`SELECT conrelid::regclass::text, confrelid::regclass::text FROM pg_constraint WHERE contype = 'f'`)).rows.map((r) => [String(r[0]), String(r[1])] as const);
+  const linksBefore = await links();
+  await db.exec(sql);
+  const after = await relations(db);
+  const left = new Set(after.map((r) => String(r[0])));
+  const gone = before.filter((r) => !left.has(String(r[0])));
+  const also = gone.filter((r) => !named.includes(String(r[0])));
+  const lost = linksBefore.filter(([from, to]) => left.has(from) && !left.has(to));
+  const dropped = gone.filter((r) => named.includes(String(r[0]))).map((r) => String(r[0]));
+  const parts = [dropped.length ? `DROP ${what} removed ${listing(dropped)}.` : `DROP ${what} found nothing called ${listing(named)}, so nothing changed.`];
+  if (also.length) parts.push(`CASCADE also removed ${listing(also.map((r) => `the ${r[1]} ${r[0]}`))}, which depended on it.`);
+  if (lost.length) {
+    const stays = [...new Set(lost.map(([from]) => from))];
+    parts.push(`CASCADE also removed the link${lost.length === 1 ? "" : "s"} from ${listing(lost.map(([from, to]) => `${from} to ${to}`))}; ${listing(stays)} ${stays.length === 1 ? "stays" : "stay"}.`);
+  }
+  const heads = ["name", "kind", "rows", "points at"];
+  const frames: Frame[] = [
+    { clause: "BEFORE", note: `The shop has ${plural(before.length, "table or view", "tables and views")} before the DROP.`, columns: heads, rows: before, total: before.length, marks: before.map((r): Mark => (left.has(String(r[0])) ? "plain" : "gone")) },
+    { clause: what === "TABLE" ? "DROP TABLE" : "DROP VIEW", note: parts.join(" "), columns: heads, rows: after, total: after.length },
   ];
   return { supported: true, frames };
 }

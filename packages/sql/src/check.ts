@@ -42,9 +42,9 @@ export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promis
   if (!feedback.ok && feedback.kind === "rows") {
     const missing = minus(want.after.result.rows, mine.after.result.rows).length;
     const extra = minus(mine.after.result.rows, want.after.result.rows).length;
-    // describeTable has one row per column and describeIndexes one per index, so speak of those.
+    // describeTable has one row per column, describeIndexes one per index and describeRelations one per table.
     const cols = want.after.result.columns;
-    const [unit, units] = cols[0] === "column_name" && cols.includes("rules") ? ["column", "columns"] : cols[0] === "keys" && cols.includes("is_unique") ? ["index", "indexes"] : ["row", "rows"];
+    const [unit, units] = cols[0] === "column_name" && cols.includes("rules") ? ["column", "columns"] : cols[0] === "keys" && cols.includes("is_unique") ? ["index", "indexes"] : cols[0] === "name" && cols.includes("links") ? ["table", "tables"] : ["row", "rows"];
     const count = (n: number) => `${n} ${n === 1 ? unit : units}`;
     const parts = [missing ? `${count(missing)} missing` : "", extra ? `${count(extra)} that shouldn't be there` : ""].filter(Boolean);
     feedback.message = missing === extra
