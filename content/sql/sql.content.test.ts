@@ -1,5 +1,5 @@
 import { SqlLesson } from "@tintelix/schema";
-import { buildReplay, checkSqlTask, openShop, runInRollback, type Db } from "@tintelix/sql";
+import { buildReplay, checkSqlTask, openShop, runInRollback, sortTies, type Db } from "@tintelix/sql";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getSqlLesson, getSubject, lessonSummaries, sqlLessons } from "../index";
 
@@ -48,9 +48,13 @@ describe.each(sqlLessons.map((l) => [l.slug, l] as const))("SQL lesson %s", (_, 
   it.each(lesson.tasks.map((t) => [t.id, t] as const))("task %s: starter runs, solution passes, answer is sound", async (_, task) => {
     const starter = await runInRollback(db, task.starter);
     expect(starter.outcome.ok ? "" : starter.outcome.message, "the starter runs").toBe("");
+    expect((await checkSqlTask(db, task, task.starter)).feedback.ok, "the starter doesn't already pass").toBe(false);
     const solved = await checkSqlTask(db, task, task.solution);
     expect(solved.feedback, "the solution passes its own check").toEqual({ ok: true });
-    if (task.ordered && (task.kind ?? "read") === "read") expect(task.answer ?? task.solution, "an ordered task's answer sorts").toMatch(/ORDER\s+BY/i);
+    if (task.ordered && (task.kind ?? "read") === "read") {
+      expect(task.answer ?? task.solution, "an ordered task's answer sorts").toMatch(/ORDER\s+BY/i);
+      expect(await sortTies(db, task.answer ?? task.solution), "an ordered task's answer sorts to one order only").toBe(0);
+    }
     if ((task.kind ?? "read") === "read") {
       const replay = await buildReplay(db, task.solution);
       expect(replay.supported ? "" : replay.reason, "the solution can be replayed").toBe("");
