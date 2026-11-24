@@ -351,7 +351,12 @@ async def lb_flow(page):
     await expect(page.locator(".narr h2")).to_have_text("Layer 4 or layer 7")
     await expect(page.locator("[data-tile='lookups'] .tx-v")).to_have_text("16 ms", timeout=8000)
     await expect(page.locator("[data-compare-row].on")).to_contain_text("Layer 7 by path")
-    return "Load balancing lesson: one server 48% served, round robin 82 ms, least connections 27 ms, layer 7 by path 16 ms"
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("What a layer 4 or layer 7 balancer reads")
+    await page.goto(BASE + "/networks", wait_until="load")
+    await page.locator("main a[href='/system-design/load-balancing']").first.click()
+    await expect(page).to_have_url(BASE + "/system-design/load-balancing")
+    return "Load balancing lesson: one server 48% served, round robin 82 ms, least connections 27 ms, layer 7 by path 16 ms, then what each layer reads; Networks links in"
 
 
 async def proxy_flow(page):

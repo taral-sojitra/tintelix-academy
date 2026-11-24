@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSubject, lessonSummaries, subjects } from "../index";
+import { getLesson, getSubject, lessonSummaries, subjects } from "../index";
 
 describe("the Networks subject", () => {
   it("lists 20 lessons in the HLD's six modules", () => {
@@ -28,5 +28,11 @@ describe("the Networks subject", () => {
     const own = subjects.flatMap((s) => lessonSummaries(s.id).filter((l) => l.home === s.id).map((l) => l.id));
     expect(new Set(own).size).toBe(own.length);
     expect(own.filter((id) => id === "load-balancing")).toHaveLength(1);
+  });
+  it("the shared Load balancers lesson has a step on what layer 4 and layer 7 balancers read", () => {
+    const lb = getLesson("system-design", "load-balancing")!;
+    const ids = lb.steps.map((s) => s.id);
+    expect(ids).toContain("what-each-reads");
+    expect(ids.indexOf("what-each-reads")).toBe(ids.indexOf("layer-7") + 1);
   });
 });
