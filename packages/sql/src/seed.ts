@@ -121,7 +121,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function build(): string {
   const rand = mulberry32(2026);
-  const pick = <T,>(xs: T[]) => xs[Math.floor(rand() * xs.length)];
+  const pick = <T,>(xs: T[]): T => xs[Math.floor(rand() * xs.length)]!;
   const out: string[] = [
     `CREATE TABLE customers (id serial PRIMARY KEY, name text NOT NULL, email text UNIQUE NOT NULL, city text, country text NOT NULL, signed_up date NOT NULL);`,
     `CREATE TABLE products (id serial PRIMARY KEY, name text NOT NULL, category text NOT NULL, price numeric(10,2) NOT NULL, stock integer NOT NULL);`,
@@ -150,22 +150,23 @@ function build(): string {
   let total = counts.reduce((a, b) => a + b, 0);
   while (total !== 150) {
     const i = Math.floor(rand() * counts.length);
-    if (total < 150 && counts[i] < 4) { counts[i]++; total++; }
-    else if (total > 150 && counts[i] > 1) { counts[i]--; total--; }
+    const c = counts[i]!;
+    if (total < 150 && c < 4) { counts[i] = c + 1; total++; }
+    else if (total > 150 && c > 1) { counts[i] = c - 1; total--; }
   }
 
   const orderRows: string[] = [];
   const itemRows: string[] = [];
   dates.forEach((date, i) => {
     const orderId = i + 1;
-    const eligible = buyers.filter((id) => CUSTOMERS[id - 1][3] <= iso(date));
+    const eligible = buyers.filter((id) => CUSTOMERS[id - 1]![3] <= iso(date));
     const customer = pick(eligible);
     const chosen = new Set<number>();
-    while (chosen.size < counts[i]) chosen.add(1 + Math.floor(rand() * PRODUCTS.length));
+    while (chosen.size < counts[i]!) chosen.add(1 + Math.floor(rand() * PRODUCTS.length));
     let sum = 0;
     for (const pid of [...chosen].sort((a, b) => a - b)) {
       const qty = rand() < 0.7 ? 1 : 2 + Math.floor(rand() * 2);
-      const price = PRODUCTS[pid - 1][2];
+      const price = PRODUCTS[pid - 1]![2];
       sum += qty * price;
       itemRows.push(`(${orderId}, ${pid}, ${qty}, ${price.toFixed(2)})`);
     }

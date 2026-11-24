@@ -3,7 +3,7 @@ import type { Db } from "./db";
 import { openShop, SHOP_TABLES } from "./seed";
 
 let db: Db;
-const one = async (sql: string) => Number((await db.query(sql)).rows[0][0]);
+const one = async (sql: string) => Number((await db.query(sql)).rows[0]?.[0]);
 
 beforeAll(async () => { db = await openShop(); }, 30000);
 afterAll(async () => { await db.close?.(); });
