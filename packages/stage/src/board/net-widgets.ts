@@ -55,6 +55,18 @@ const LADDERS: [number, "r" | "l", string][][] = [
 const LAD_STEP_SEC = 0.9;
 const LAD_HOLD_SEC = 2;
 
+/** The ports lesson's server and its sockets: [protocol, server end, client end, program]. */
+const SOCK_LISTEN: string[][] = [["LISTEN", "*:443", "", "web server"], ["LISTEN", "*:22", "", "SSH"], ["LISTEN", "*:5432", "", "database"]];
+const SOCK_CONNS: string[][] = [
+  ["TCP", "203.0.113.5:443", "198.51.100.7:51000", "web server"],
+  ["TCP", "203.0.113.5:443", "198.51.100.7:51001", "web server"],
+  ["TCP", "203.0.113.5:443", "198.51.100.9:60123", "web server"],
+  ["TCP", "203.0.113.5:22", "198.51.100.20:50555", "SSH"],
+  ["TCP", "203.0.113.5:5432", "198.51.100.30:40000", "database"],
+];
+/** In the port-exhaustion step the app server opens 5 new connections a second, each from the next port. */
+const SOCK_NEW_PER_SEC = 5;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -287,6 +299,34 @@ export const NET_CUSTOM: Record<string, Custom> = {
         "closed: each side sent a FIN and got an ACK",
       ][stage]!;
       setText(root.querySelector(".tx-lad-cap")!, text);
+    },
+  },
+  /**
+   * The server's socket table. `sockStage` 0: the three listening programs. 1: five connections, the two
+   * from one laptop picked out. 2: the same, with the app server's source port moving on as it opens
+   * connection after connection.
+   */
+  sockets: {
+    html: (key) =>
+      `<div class="tx-sock" data-w="${key}"><div class="tx-sock-head"><span>proto</span><span>server end</span><span>client end</span><span>program</span></div>${'<div class="tx-sock-row"><span></span><span></span><span></span><span></span></div>'.repeat(5)}<p class="tx-calc-s tx-sock-cap"></p></div>`,
+    paint(root, d, clock) {
+      const stage = Math.min(2, Math.max(0, Math.round(num(d, "sockStage", 0))));
+      const rows = stage === 0 ? SOCK_LISTEN : SOCK_CONNS;
+      const appPort = 40000 + Math.floor(Math.max(0, clock) * SOCK_NEW_PER_SEC);
+      root.querySelectorAll<HTMLElement>(".tx-sock-row").forEach((row, n) => {
+        const r = rows[n];
+        row.hidden = !r;
+        if (!r) return;
+        const pick = (stage === 1 && n < 2) || (stage === 2 && n === 4);
+        row.classList.toggle("pick", pick);
+        row.querySelectorAll("span").forEach((cell, c) => setText(cell, stage === 2 && n === 4 && c === 2 ? `198.51.100.30:${appPort}` : r[c]!));
+      });
+      const text = [
+        "3 programs listening, one port each",
+        "5 connections, 1 address: told apart by protocol and both ends' IP and port",
+        "each new connection from the app server takes a fresh source port",
+      ][stage]!;
+      setText(root.querySelector(".tx-sock-cap")!, text);
     },
   },
 };
