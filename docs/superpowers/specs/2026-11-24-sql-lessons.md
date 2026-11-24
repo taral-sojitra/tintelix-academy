@@ -31,3 +31,12 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Tasks: top three by price; the five latest orders (the starter's LIMIT without ORDER BY gets the five oldest);
   page 2 at four a page; the 4th to 6th biggest orders. Solutions carry tiebreakers so the no-ties check passes, even
   where the learner's top rows don't tie.
+
+## 6. COUNT, SUM, AVG: How many, how much?
+
+- Tasks: count customers; customers and those with a city (`count(*)` against `count(city)`); revenue of delivered
+  orders (WHERE runs before the sum); cheapest, dearest and average price; orders with a coupon and different coupons
+  (`count(coupon)`, `count(DISTINCT coupon)`).
+- Replay: a summary over a column now says how many NULLs it skipped ("count(city) skipped 4 NULLs"), the HLD's
+  point for this lesson.
+- Feedback: a one-row answer with the wrong value now reads "One row, as expected, but its values are different."

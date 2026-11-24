@@ -105,6 +105,13 @@ describe("buildReplay", () => {
     await endsOnRealResult(sql, r);
   });
 
+  it("says how many NULLs a summary skipped", async () => {
+    const sql = "SELECT count(*), count(city), count(DISTINCT city) FROM customers";
+    const r = await buildReplay(db, sql);
+    expect(frame(r, "SELECT").note).toBe("SELECT summarised 20 rows into one. count(city) skipped 4 NULLs; count(DISTINCT city) skipped 4 NULLs.");
+    await endsOnRealResult(sql, r);
+  });
+
   it("labels clashing columns by table", async () => {
     const sql = "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.customer_id";
     const r = await buildReplay(db, sql);

@@ -56,6 +56,10 @@ describe("compareResults", () => {
     expect(f).toMatchObject({ ok: false, kind: "rows" });
     if (!f.ok) expect(f.message).toBe("You have the right number of rows (3), but 2 have different values.");
   });
+  it("speaks plainly about a single-row answer", () => {
+    const f = compareResults(rs(["n"], [[20]]), rs(["n"], [[16]]), { ordered: false });
+    if (!f.ok) expect(f.message).toBe("One row, as expected, but its values are different.");
+  });
   it("says where each row should be when only the order is wrong", () => {
     const want = rs(["x"], [[1], [2], [3]]);
     const f = compareResults(want, rs(["x"], [[3], [1], [2]]), { ordered: true });
