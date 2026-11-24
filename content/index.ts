@@ -1,5 +1,6 @@
-import type { Lesson, Subject } from "@tintelix/schema";
+import type { Lesson, SqlLesson, Subject } from "@tintelix/schema";
 import { components } from "./components";
+import { select } from "./sql/select/lesson";
 import { subjects } from "./subjects";
 import { caching } from "./system-design/caching/lesson";
 import { cdn } from "./system-design/cdn/lesson";
@@ -66,12 +67,38 @@ export { components, subjects };
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
 export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange];
 
+/** Every written SQL lesson (task lessons, not diagram lessons). */
+export const sqlLessons: SqlLesson[] = [select];
+
+export function getSqlLesson(slug: string): SqlLesson | undefined {
+  return sqlLessons.find((l) => l.slug === slug);
+}
+
 export function getSubject(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);
 }
 
 export function getLesson(subject: string, slug: string): Lesson | undefined {
   return lessons.find((l) => l.home === subject && l.slug === slug);
+}
+
+/** What a lesson card or the continue card needs, from either kind of lesson. */
+export interface LessonFacts {
+  title: string;
+  topic: string;
+  promise: string;
+  minutes: number;
+  /** Steps of a diagram lesson, or tasks of a SQL lesson. */
+  steps: number;
+  unit: "step" | "task";
+}
+
+export function lessonFacts(subject: string, slug: string): LessonFacts | undefined {
+  const d = getLesson(subject, slug);
+  if (d) return { title: d.title, topic: d.topic, promise: d.promise, minutes: d.minutes, steps: d.steps.length, unit: "step" };
+  const s = subject === "sql" ? getSqlLesson(slug) : undefined;
+  if (s) return { title: s.title, topic: s.topic, promise: s.promise, minutes: s.minutes, steps: s.tasks.length, unit: "task" };
+  return undefined;
 }
 
 export interface LessonSummary {
@@ -99,7 +126,7 @@ export function lessonSummaries(subjectId: string): LessonSummary[] {
       summary: stub.summary,
       module: m.title,
       order: ++order,
-      available: lessons.some((l) => l.id === stub.id),
+      available: lessons.some((l) => l.id === stub.id) || sqlLessons.some((l) => l.id === stub.id),
     })),
   );
 }

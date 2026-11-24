@@ -1,5 +1,5 @@
 import { checkContent } from "@tintelix/schema";
-import { components, getLesson, lessonSummaries, lessons, subjects } from "./index";
+import { components, getLesson, lessonFacts, lessonSummaries, lessons, subjects } from "./index";
 
 describe("content", () => {
   it("passes every content check", () => {
@@ -41,6 +41,12 @@ describe("content", () => {
 
   it("finds Caching by subject and slug", () => {
     expect(getLesson("system-design", "caching")?.title).toBe("Survive the flash sale");
+  });
+
+  it("gives the facts a lesson card needs for either kind of lesson", () => {
+    expect(lessonFacts("system-design", "caching")).toMatchObject({ title: "Survive the flash sale", unit: "step", steps: getLesson("system-design", "caching")!.steps.length });
+    expect(lessonFacts("sql", "select")).toMatchObject({ title: "Pick the columns you need", topic: "SELECT", unit: "task", steps: 4 });
+    expect(lessonFacts("sql", "nope")).toBeUndefined();
   });
 
   it("returns undefined for an unknown slug", () => {

@@ -18,7 +18,7 @@ export function SubjectCard({ subject, lessons }: { subject: Subject; lessons: L
   const look = LOOK[subject.id];
   const open = lessons.filter((l) => l.available);
   const preview = [...open, ...lessons.filter((l) => !l.available && l.title)].slice(0, 3);
-  const live = subject.phase === 1;
+  const live = open.length > 0;
   return (
     <article className={`subject s-${subject.id}${live ? " live" : ""}`}>
       <header>

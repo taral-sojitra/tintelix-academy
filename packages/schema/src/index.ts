@@ -5,3 +5,4 @@ export { Component } from "./component";
 export { Control, Lesson, SCENE_KINDS, SCENE_MODES, SceneNode, SceneSpec, Step, type SceneKind } from "./lesson";
 export type { Inputs, Model, Outputs } from "./model";
 export { LessonStub, Subject, SubjectId, SUBJECT_IDS } from "./subject";
+export { SqlLesson, SqlTask } from "./sql";

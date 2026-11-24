@@ -11,7 +11,7 @@
     "build": "pnpm --filter @tintelix/web build",
     "start": "pnpm --filter @tintelix/web start",
     "test": "vitest run",
-    "test:content": "vitest run content packages/schema",
+    "test:content": "vitest run content packages/schema packages/sql",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @tintelix/web typecheck",
     "lint": "eslint .",
     "check": "pnpm typecheck && pnpm lint && pnpm test"

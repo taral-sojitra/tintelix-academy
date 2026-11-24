@@ -15,6 +15,8 @@ export interface ContinueTarget {
   order: number;
   total: number;
   steps: number;
+  /** What `steps` counts: steps of a diagram lesson (the default) or tasks of a SQL lesson. */
+  unit?: "step" | "task";
   minutes: number;
 }
 
@@ -54,7 +56,7 @@ export function ContinueCard({ lessons }: { lessons: ContinueTarget[] }) {
   const { target, mode, step } = pick(lessons, all);
   const started = mode !== "start";
   const left = Math.max(1, Math.round(target.minutes * (1 - step / target.steps)));
-  const sub = mode === "finished" ? `all ${target.steps} steps done` : mode === "continue" ? `${left} minutes left` : `${target.minutes} minutes`;
+  const sub = mode === "finished" ? `all ${target.steps} ${target.unit ?? "step"}s done` : mode === "continue" ? `${left} minutes left` : `${target.minutes} minutes`;
 
   return (
     <section className="hero" aria-labelledby="hero-title">

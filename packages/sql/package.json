@@ -1,0 +1,12 @@
+{
+  "name": "@tintelix/sql",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./tables": "./src/tables.ts" },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.6.0",
+    "@tintelix/schema": "workspace:*",
+    "pgsql-ast-parser": "^12.0.2"
+  }
+}
