@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "./db";
-import { describeTable } from "./ddl";
+import { describeIndexes, describeTable } from "./ddl";
 import { buildReplay } from "./frames";
 import { runInRollback } from "./run";
 import { openShop } from "./seed";
@@ -62,5 +62,30 @@ describe("ALTER TABLE replay", () => {
     const n = await buildReplay(db, "ALTER TABLE customers ADD COLUMN points integer");
     if (!n.supported) throw new Error(n.reason);
     expect(n.frames[2]!.note).toBe("All 20 rows have NULL in points, because it has no default.");
+  });
+});
+
+describe("describeIndexes", () => {
+  it("compares indexes by their keys, not their names", async () => {
+    const a = await rowsOf("CREATE INDEX one ON orders (customer_id, ordered_at)", describeIndexes("orders"));
+    const b = await rowsOf("CREATE INDEX another_name ON orders (customer_id, ordered_at)", describeIndexes("orders"));
+    expect(b).toEqual(a);
+    expect(a).toEqual([["customer_id, ordered_at", false, false]]);
+    expect(await rowsOf("CREATE UNIQUE INDEX e ON customers (lower(email))", describeIndexes("customers"))).toContainEqual(["lower(email)", true, false]);
+  });
+});
+
+describe("CREATE INDEX replay", () => {
+  it("shows the table as stored, then the index's sorted entries", async () => {
+    const r = await buildReplay(db, "CREATE INDEX customers_city ON customers (city)");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames.map((f) => f.clause)).toEqual(["BEFORE", "CREATE INDEX"]);
+    expect(r.frames[0]!.note).toBe("Without an index, a WHERE on city reads all 20 rows of customers to find its matches.");
+    const idx = r.frames[1]!;
+    expect(idx.columns).toEqual(["city", "row (id)"]);
+    expect(idx.total).toBe(20);
+    const cities = idx.rows.map((x) => x[0]).filter((c) => c !== null) as string[];
+    expect(cities).toEqual([...cities].sort());
+    expect(idx.note).toBe("CREATE INDEX keeps city sorted, each entry pointing at its row: 20 entries. A WHERE on city can jump to its matches instead of reading every row.");
   });
 });

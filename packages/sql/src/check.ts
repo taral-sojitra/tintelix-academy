@@ -11,7 +11,6 @@ export interface Checked {
   feedback: Feedback;
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** Runs the learner's SQL for a task and says whether it's right, and if not, what's wrong. */
 export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promise<Checked> {
@@ -43,11 +42,13 @@ export async function checkSqlTask(db: Db, task: SqlTask, input: string): Promis
   if (!feedback.ok && feedback.kind === "rows") {
     const missing = minus(want.after.result.rows, mine.after.result.rows).length;
     const extra = minus(mine.after.result.rows, want.after.result.rows).length;
-    // A table description (describeTable) has one row per column, so speak of columns.
-    const unit = want.after.result.columns[0] === "column_name" && want.after.result.columns.includes("rules") ? "column" : "row";
-    const parts = [missing ? `${plural(missing, unit)} missing` : "", extra ? `${plural(extra, unit)} that shouldn't be there` : ""].filter(Boolean);
+    // describeTable has one row per column and describeIndexes one per index, so speak of those.
+    const cols = want.after.result.columns;
+    const [unit, units] = cols[0] === "column_name" && cols.includes("rules") ? ["column", "columns"] : cols[0] === "keys" && cols.includes("is_unique") ? ["index", "indexes"] : ["row", "rows"];
+    const count = (n: number) => `${n} ${n === 1 ? unit : units}`;
+    const parts = [missing ? `${count(missing)} missing` : "", extra ? `${count(extra)} that shouldn't be there` : ""].filter(Boolean);
     feedback.message = missing === extra
-      ? `After your statement, ${plural(missing, unit)} ${missing === 1 ? "doesn't" : "don't"} look the way ${missing === 1 ? "it" : "they"} should.`
+      ? `After your statement, ${count(missing)} ${missing === 1 ? "doesn't" : "don't"} look the way ${missing === 1 ? "it" : "they"} should.`
       : `After your statement, the check finds ${parts.join(" and ")}.`;
   }
   return { run: mine.outcome, feedback };

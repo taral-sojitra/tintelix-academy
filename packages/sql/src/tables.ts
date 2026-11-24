@@ -69,3 +69,15 @@ WHERE a.attrelid = to_regclass(quote_ident(${quote(table)})) AND a.attnum > 0 AN
 ORDER BY a.attnum`;
 }
 
+
+/**
+ * A verify query for index tasks: each index other than the primary key, as its keys (columns or expressions, in
+ * order), whether it's UNIQUE and whether it's partial. Names don't matter.
+ */
+export function describeIndexes(table: string): string {
+  return `SELECT string_agg(pg_get_indexdef(i.indexrelid, k.n, true), ', ' ORDER BY k.n) AS keys,
+       i.indisunique AS is_unique, i.indpred IS NOT NULL AS partial
+FROM pg_index i, generate_series(1, i.indnkeyatts::int) AS k(n)
+WHERE i.indrelid = to_regclass(quote_ident(${quote(table)})) AND NOT i.indisprimary
+GROUP BY i.indexrelid, i.indisunique, i.indpred IS NOT NULL`;
+}

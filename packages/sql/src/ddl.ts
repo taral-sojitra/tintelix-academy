@@ -1,9 +1,9 @@
 import type { Statement } from "pgsql-ast-parser";
 import type { Db } from "./db";
 import type { Frame, Mark, Replay } from "./frames";
-import { describeTable } from "./tables";
+import { describeIndexes, describeTable } from "./tables";
 
-export { describeTable };
+export { describeIndexes, describeTable };
 
 /** Table definitions: a verify query for define tasks, and replays for statements that make or change tables. */
 
@@ -88,6 +88,7 @@ export async function ddlFrames(db: Db, st: Statement, sql: string): Promise<Rep
     return { supported: true, frames: [frame] };
   }
   if (st.type === "alter table") return alterFrames(db, st.table.name, st.changes as unknown as AlterChange[], sql);
+  if (st.type === "create index") return indexFrames(db, st.table.name, sql);
   return null;
 }
 
@@ -150,6 +151,52 @@ async function alterFrames(db: Db, name: string, changes: AlterChange[], sql: st
       marks: after.map((r): Mark => (added.includes(String(r[0])) ? "new" : changed.includes(String(r[0])) ? "changed" : "plain")),
     },
     { clause: "AFTER", note: notes.join(" "), columns: rows.columns, rows: rows.rows, total: rows.total },
+  ];
+  return { supported: true, frames };
+}
+
+async function primaryKeyOf(db: Db, table: string): Promise<string[]> {
+  const key = await db.query(
+    `SELECT a.attname::text FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+     WHERE i.indrelid = ${regclass(table)} AND i.indisprimary ORDER BY array_position(i.indkey::int2[], a.attnum)`,
+  );
+  return key.rows.map((r) => String(r[0]));
+}
+
+/** CREATE INDEX: the table as stored, then the index's entries in sorted order, each pointing at its row. */
+async function indexFrames(db: Db, table: string, sql: string): Promise<Replay> {
+  const existing = new Set((await db.query(`SELECT indexrelid::int FROM pg_index WHERE indrelid = ${regclass(table)}`)).rows.map((r) => Number(r[0])));
+  const stored = await db.query(`SELECT * FROM ${ident(table)} ORDER BY ctid LIMIT 200`);
+  const total = Number((await db.query(`SELECT count(*) FROM ${ident(table)}`)).rows[0]?.[0]);
+  await db.exec(sql);
+  const made = (await db.query(`SELECT indexrelid::int, indisunique, pg_get_expr(indpred, indrelid), indnkeyatts FROM pg_index WHERE indrelid = ${regclass(table)}`)).rows.find((r) => !existing.has(Number(r[0])));
+  if (!made) return { supported: false, reason: "The replay couldn't find the new index; the result is on the right." };
+  const [oid, unique, predicate, width] = [Number(made[0]), made[1] === true, made[2] as string | null, Number(made[3])];
+  const keys = (await db.query(`SELECT pg_get_indexdef(${oid}, n, true) FROM generate_series(1, ${width}) AS n ORDER BY n`)).rows.map((r) => String(r[0]));
+  const pk = await primaryKeyOf(db, table);
+  const pointer = pk.length ? `concat_ws(', ', ${pk.map(ident).join(", ")})` : "ctid::text";
+  const entries = await db.query(
+    `SELECT ${keys.map((k, i) => `${k} AS ${ident(`k${i}`)}`).join(", ")}, ${pointer} AS ptr FROM ${ident(table)}${predicate ? ` WHERE ${predicate}` : ""} ORDER BY ${keys.join(", ")} LIMIT 200`,
+  );
+  const count = Number((await db.query(`SELECT count(*) FROM ${ident(table)}${predicate ? ` WHERE ${predicate}` : ""}`)).rows[0]?.[0]);
+  const frames: Frame[] = [
+    {
+      clause: "BEFORE",
+      note: `Without an index, a WHERE on ${keys[0]} reads all ${plural(total, "row")} of ${table} to find its matches.`,
+      columns: stored.fields.map((f) => f.name),
+      rows: stored.rows,
+      total,
+    },
+    {
+      clause: "CREATE INDEX",
+      note:
+        `CREATE INDEX keeps ${listing(keys)} sorted, each entry pointing at its row: ${plural(count, "entry", "entries")}. A WHERE on ${keys[0]} can jump to its matches instead of reading every row.` +
+        (unique ? ` UNIQUE also turns away a second row with the same ${listing(keys)}.` : "") +
+        (predicate ? ` It only holds rows where ${predicate}.` : ""),
+      columns: [...keys, `row (${pk.length ? pk.join(", ") : "ctid"})`],
+      rows: entries.rows,
+      total: count,
+    },
   ];
   return { supported: true, frames };
 }

@@ -1,0 +1,75 @@
+import type { SqlLesson } from "@tintelix/schema";
+import { describeIndexes } from "@tintelix/sql/tables";
+
+export const createIndex: SqlLesson = {
+  id: "sql-create-index",
+  home: "sql",
+  slug: "create-index",
+  topic: "CREATE INDEX",
+  title: "Find it without reading all",
+  promise: "Give Postgres a sorted lookup for the columns you search by, and know what each index costs.",
+  minutes: 9,
+  level: 2,
+  explain: [
+    "Without an index, `WHERE city = 'Pune'` reads every row to find the matches. An **index** is a sorted copy of one or more columns, each entry pointing at its row, so Postgres can jump straight to Pune.",
+    "`CREATE INDEX name ON table (column)` builds one. For several columns, order matters: an index on (customer_id, ordered_at) helps a WHERE on customer_id, or on both, but not on ordered_at alone. A **UNIQUE** index also turns away duplicates.",
+    "Indexes aren't free: every INSERT and UPDATE keeps them sorted too, and they take space. On a 20-row table Postgres may still read everything, because that's quicker at this size. Index what your WHERE and JOIN clauses look up often.",
+  ],
+  syntax: {
+    code: "CREATE INDEX customers_city ON customers (city);\nCREATE INDEX orders_customer_date ON orders (customer_id, ordered_at);\nCREATE UNIQUE INDEX products_name ON products (name);",
+    notes: [
+      "The name is yours to choose; make it say what's indexed.",
+      "Several columns: the first one does most of the work.",
+      "`ON customers (lower(email))` indexes a worked-out value.",
+    ],
+  },
+  mistake: "Indexing every column just in case. Each index slows down every write and takes space, and Postgres only uses the ones that match how you search. Index what your WHERE and JOIN clauses actually use.",
+  tasks: [
+    {
+      id: "city",
+      kind: "define",
+      prompt: "Customers are often looked up by **city**. Add an index on customers' city. The starter is the slow lookup.",
+      starter: "SELECT name\nFROM customers\nWHERE city = 'Pune';",
+      hint: "CREATE INDEX customers_city ON customers (city);",
+      solution: "CREATE INDEX customers_city ON customers (city);",
+      ordered: false,
+      verify: describeIndexes("customers"),
+    },
+    {
+      id: "two-columns",
+      kind: "define",
+      prompt: "Orders are looked up by customer and date together. Index orders on (**customer_id**, **ordered_at**), in that order. The starter indexes only the first.",
+      starter: "CREATE INDEX orders_customer ON orders (customer_id);",
+      hint: "List both columns in the brackets: (customer_id, ordered_at).",
+      solution: "CREATE INDEX orders_customer_date ON orders (customer_id, ordered_at);",
+      ordered: false,
+      verify: describeIndexes("orders"),
+    },
+    {
+      id: "lower-email",
+      kind: "define",
+      prompt: "Logins match emails ignoring capitals, with `WHERE lower(email) = …`. Index customers on **lower(email)**. The starter indexes email as typed.",
+      starter: "CREATE INDEX customers_email ON customers (email);",
+      hint: "Put the expression in the brackets: (lower(email)).",
+      solution: "CREATE INDEX customers_email_lower ON customers (lower(email));",
+      ordered: false,
+      verify: describeIndexes("customers"),
+    },
+    {
+      id: "unique-name",
+      kind: "define",
+      prompt: "No two products should share a **name**. Make the index on products' name a UNIQUE one. The starter's index allows duplicates.",
+      starter: "CREATE INDEX products_name ON products (name);",
+      hint: "CREATE UNIQUE INDEX …",
+      solution: "CREATE UNIQUE INDEX products_name ON products (name);",
+      ordered: false,
+      verify: describeIndexes("products"),
+    },
+  ],
+  buildsOn: ["sql-where"],
+  cheatsheet: [
+    { heading: "Build an index", text: ["`CREATE INDEX customers_city ON customers (city);`", "`CREATE UNIQUE INDEX products_name ON products (name);` also refuses duplicates."] },
+    { heading: "Several columns", text: ["(customer_id, ordered_at) helps WHERE on customer_id, or both, not ordered_at alone."] },
+    { heading: "Costs", text: ["Every write keeps every index sorted.", "Index what WHERE and JOIN use often, not everything."] },
+  ],
+};

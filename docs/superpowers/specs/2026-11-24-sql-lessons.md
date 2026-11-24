@@ -151,3 +151,12 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   marked), then the rows after with what a new column got ("All 15 rows got discount = 0.00." or "All 20 rows have NULL
   in points, because it has no default."). Renamed columns are matched to their old names.
 - Error: NOT NULL on a new column of a table with rows now says to give it a DEFAULT.
+
+## 19. CREATE INDEX: Find it without reading all
+
+- Tasks: index customers' city (the starter is the slow lookup); a two-column index in the right order; an
+  expression index on lower(email); a UNIQUE index on product names.
+- Checking: `describeIndexes(table)` lists each non-primary index's keys (from `pg_get_indexdef`, so expressions
+  count), whether it's UNIQUE and whether it's partial; index names don't matter. Feedback speaks of indexes.
+- Replay: CREATE INDEX shows the table in stored order ("Without an index, a WHERE on city reads all 20 rows…"),
+  then the index's entries sorted by its keys, each pointing at its row's primary key.
