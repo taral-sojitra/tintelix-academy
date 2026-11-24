@@ -54,7 +54,11 @@ export function createBoardScene(o: { fx: Effects; rand: () => number; scene: Sc
   };
 
   return {
-    router: boardRouter({ flows: running, failShare: (out) => Math.min(1, Math.max(0, (live()[out] ?? 0) / 100)) }),
+    router: boardRouter({
+      flows: running,
+      failShare: (out) => Math.min(1, Math.max(0, (live()[out] ?? 0) / 100)),
+      ordered: () => !!b.modes[modeOf(live())]?.sequence,
+    }),
     fx,
     legend: b.legend as [PaletteKey, string][],
     sim: { ratePerSec: 3 },

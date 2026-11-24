@@ -62,6 +62,8 @@ export type BoardWidget = z.infer<typeof BoardWidget>;
 /** What runs in one mode: which flows, in what proportions (a number or an output's name), and the tiles. */
 export const BoardMode = z.object({
   flows: z.array(z.object({ flow: z.string(), weight: z.union([z.number(), z.string()]) })),
+  /** Play the flows in turn, in the order listed, like messages in a protocol exchange (SYN, SYN-ACK, ACK). */
+  sequence: z.boolean().optional(),
   rate: z.number().positive().optional(),
   tiles: z.array(BoardTile),
 });
