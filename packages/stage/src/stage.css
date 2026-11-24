@@ -816,3 +816,17 @@
 .tx-dns-cache em { font-style: normal; color: var(--node-sub); }
 .tx-dns-cache span { color: var(--node-sub); }
 .tx-dns-cache span.known { color: var(--green); }
+
+/* Networks: a page load in round trips for HTTP/1.1, /2 and /3. */
+.tx-wf { margin-top: 4px; display: grid; gap: 4px; }
+.tx-wf-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; gap: 10px; align-items: center; }
+.tx-wf-row[hidden] { display: none; }
+.tx-wf-row em { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--node-sub); }
+.tx-node .tx-wf-row b { display: block; font-family: var(--mono); font-size: 12px; font-weight: 600; text-align: right; color: var(--node-ink); }
+.tx-wf-bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--node-stroke) 25%, transparent); }
+.tx-wf-bar i { display: block; height: 100%; transition: width .4s ease; }
+.tx-wf-bar .s, .tx-wf-key .s::before { background: color-mix(in srgb, var(--amber) 55%, transparent); }
+.tx-wf-bar .h, .tx-wf-key .h::before { background: color-mix(in srgb, var(--violet) 55%, transparent); }
+.tx-wf-bar .r, .tx-wf-key .r::before { background: color-mix(in srgb, var(--cyan) 55%, transparent); }
+.tx-wf-key { margin: 0; display: flex; gap: 14px; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-wf-key span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 2px; vertical-align: -1px; }

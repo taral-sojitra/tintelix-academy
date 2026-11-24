@@ -316,3 +316,27 @@ describe("dnswalk widget", () => {
     expect(dnsCache(root)).toBe("www.example.com → 203.0.113.80 · 288 s left");
   });
 });
+
+const waterfall: BoardWidget = { kind: "custom", name: "waterfall" };
+const wfOut = (h2On: number, h3On: number) => ({ h1Setup: 2, h1Html: 1, h1Res: 7, h2Setup: 2, h2Html: 1, h2Res: 1, h3Setup: 1, h3Html: 1, h3Res: 1, rttMs: 80, h2On, h3On });
+const wfRows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tx-wf-row")].filter((r) => !r.hidden);
+
+describe("waterfall widget", () => {
+  it("shows HTTP/1.1 alone first, scaled so its bar fills the width", () => {
+    const root = mount(waterfall, wfOut(0, 0));
+    const rows = wfRows(root);
+    expect(rows.map((r) => r.querySelector("em")!.textContent)).toEqual(["HTTP/1.1"]);
+    expect(rows[0]!.querySelector("b")!.textContent).toBe("800 ms");
+    expect([...rows[0]!.querySelectorAll<HTMLElement>(".tx-wf-bar i")].map((i) => i.style.width)).toEqual(["20%", "10%", "70%"]);
+  });
+
+  it("adds HTTP/2 and HTTP/3 on the same scale", () => {
+    const rows = wfRows(mount(waterfall, wfOut(100, 100)));
+    expect(rows.map((r) => [r.querySelector("em")!.textContent, r.querySelector("b")!.textContent])).toEqual([
+      ["HTTP/1.1", "800 ms"],
+      ["HTTP/2", "320 ms"],
+      ["HTTP/3", "240 ms"],
+    ]);
+    expect(rows[2]!.querySelector<HTMLElement>(".tx-wf-bar i")!.style.width).toBe("10%");
+  });
+});
