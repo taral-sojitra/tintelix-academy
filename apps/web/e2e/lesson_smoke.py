@@ -212,6 +212,15 @@ async def home_start_here(page):
     return "a new learner's Home card starts at Lesson 1 of 59, The average is lying"
 
 
+async def vercel_scripts(page):
+    await page.goto(BASE + "/", wait_until="load")
+    await expect(page.locator("script[src$='/_vercel/insights/script.js']")).to_have_count(1)
+    await expect(page.locator("script[src$='/_vercel/speed-insights/script.js']")).to_have_count(1)
+    await page.goto(BASE + "/networks/dns", wait_until="load")
+    await expect(page.locator("script[src$='/_vercel/insights/script.js']")).to_have_count(1)
+    return "every page loads Vercel Analytics and Speed Insights once"
+
+
 async def lesson_switch_latency(page):
     await page.goto(BASE + "/system-design/latency-percentiles", wait_until="load")
     await page.wait_for_selector(STAGE_READY, timeout=10000)
@@ -1985,7 +1994,7 @@ async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow, net_firewall_flow, net_vpn_flow, net_latency_flow, net_bandwidth_flow]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, vercel_scripts, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow, net_firewall_flow, net_vpn_flow, net_latency_flow, net_bandwidth_flow]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []
