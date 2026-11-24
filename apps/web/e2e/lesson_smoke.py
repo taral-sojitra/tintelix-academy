@@ -1487,6 +1487,7 @@ SQL_LESSONS = [
     ("row-number", "Each customer's latest order", "FROM starts with every row of orders: 60 rows."),
     ("insert", "Add a new product", "FROM starts with every row of products: 15 rows."),
     ("update", "Change some rows, not all", "There's no WHERE, so UPDATE changes every row: all 15."),
+    ("delete", "Remove only what you mean", "WHERE kept 1 of 20 rows."),
 ]
 
 

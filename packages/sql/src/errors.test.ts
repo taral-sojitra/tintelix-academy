@@ -13,6 +13,14 @@ describe("plainError", () => {
   it("sends a window function in WHERE to a WITH step", () => {
     expect(plainError("42P20", "window functions are not allowed in WHERE")).toBe("Window functions can't go in WHERE, because they're worked out after it. Number the rows in a WITH step, then filter in the main query.");
   });
+  it("says which rows still point at the rows being deleted", () => {
+    expect(plainError("23503", 'update or delete on table "orders" violates foreign key constraint "order_items_order_id_fkey" on table "order_items"'))
+      .toBe("Rows in order_items still point at the orders rows you're removing. Delete or change those first.");
+  });
+  it("says a new row would point at nothing", () => {
+    expect(plainError("23503", 'insert or update on table "orders" violates foreign key constraint "orders_customer_id_fkey"'))
+      .toBe("That orders row would point at a row that doesn't exist (orders_customer_id_fkey).");
+  });
   it("names the unknown column", () => {
     expect(plainError("42703", 'column "nme" does not exist')).toBe("There's no column called nme. Check the spelling against the dataset card.");
   });

@@ -121,3 +121,11 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
   changes nobody, and the replay says 20 hit a NULL); AND instead of OR.
 - Feedback: when a change leaves the same number of rows wrong on both sides, it now reads "After your statement,
   14 rows don't look the way they should." instead of "14 rows missing and 14 that shouldn't be there".
+
+## 16. DELETE: Remove only what you mean
+
+- Tasks: delete a customer who never ordered (the starter only SELECTs); order 58's lines (the starter tests
+  product_id and deletes nothing); every cancelled order, lines first then orders, two statements in one run (the
+  prompt invites deleting the orders alone to see Postgres refuse); USB-C lines only from cancelled orders.
+- Error: a delete blocked by a foreign key now says "Rows in order_items still point at the orders rows you're
+  removing. Delete or change those first."; an insert or update pointing at nothing names the table and constraint.
