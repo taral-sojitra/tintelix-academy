@@ -49,7 +49,7 @@ describe("content", () => {
 
   it("marks the built lessons as available, in teaching order", () => {
     const open = lessonSummaries("system-design").filter((l) => l.available);
-    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region", "design-method", "url-shortener", "unique-ids", "key-value-store", "distributed-rate-limiter", "web-crawler", "search-engine", "search-autocomplete", "notification-service", "photo-feed"]);
+    expect(open.map((l) => l.id)).toEqual(["latency-percentiles", "queueing", "availability", "estimation", "vertical-horizontal-scaling", "load-balancing", "proxies", "health-checks", "stateless-services", "caching", "cdn", "sql-vs-nosql", "indexing", "replication", "sharding", "consistent-hashing", "bloom-filters", "object-storage", "cap-theorem", "consistency-models", "distributed-transactions", "message-queues", "idempotency", "rate-limiting", "fan-out", "api-gateway", "monolith-vs-microservices", "retries-and-circuit-breakers", "leader-election", "multi-region", "design-method", "url-shortener", "unique-ids", "key-value-store", "distributed-rate-limiter", "web-crawler", "search-engine", "search-autocomplete", "notification-service", "photo-feed", "chat-app"]);
     expect(lessonSummaries("system-design").find((l) => l.id === "caching")).toMatchObject({ module: "Speed", order: 10 });
   });
 
@@ -168,6 +168,10 @@ describe("content", () => {
 
   it("lists lesson 32, Turn a long link into seven characters", () => {
     expect(lessonSummaries("system-design")[31]).toMatchObject({ id: "url-shortener", module: "Case studies: the method and the classics", order: 32, available: true, title: "Turn a long link into seven characters" });
+  });
+
+  it("lists lesson 41, Delivered, read, and in order", () => {
+    expect(lessonSummaries("system-design")[40]).toMatchObject({ id: "chat-app", order: 41, available: true, title: "Delivered, read, and in order" });
   });
 
   it("lists lesson 40, Fill the home feed in a blink", () => {

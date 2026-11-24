@@ -8,6 +8,9 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** Sample contacts: name and seconds since last seen (null = online now). */
+const PRESENCE: [string, number | null][] = [["Ravi", null], ["Meera", null], ["Dev", 180], ["Kiran", 3700]];
+
 /** The channels a broadcast fans out to: output prefix and label. One real second plays 20 broadcast seconds. */
 const LANES: [string, string][] = [["push", "push"], ["email", "email"], ["sms", "SMS"]];
 const LANE_SPEEDUP = 20;
@@ -29,6 +32,25 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** A contact list: who is online now, and how long ago the others were last seen (counting up). */
+  presence: {
+    html: (key) =>
+      `<div class="tx-pres" data-w="${key}">${PRESENCE.map(([name]) => `<div class="tx-pres-row"><i></i><em>${esc(name)}</em><b></b></div>`).join("")}</div>`,
+    paint(root, _d, clock) {
+      root.querySelectorAll<HTMLElement>(".tx-pres-row").forEach((row, i) => {
+        const [, seenAgo] = PRESENCE[i]!;
+        const online = seenAgo === null;
+        row.classList.toggle("on", online);
+        let text = "online";
+        if (!online) {
+          const ago = seenAgo + Math.max(0, clock);
+          text = ago >= 3600 ? `last seen ${Math.floor(ago / 3600)} h ago` : `last seen ${Math.max(1, Math.floor(ago / 60))} min ago`;
+        }
+        const b = row.querySelector("b")!;
+        if (b.textContent !== text) b.textContent = text;
+      });
+    },
+  },
   /** A broadcast playing out per channel: how much of each has gone, and when each will be done. */
   lanes: {
     html: (key) =>
