@@ -20,6 +20,7 @@ import { createTable } from "./sql/create-table/lesson";
 import { alterTable } from "./sql/alter-table/lesson";
 import { createIndex } from "./sql/create-index/lesson";
 import { dropTable } from "./sql/drop-table/lesson";
+import { truncate } from "./sql/truncate/lesson";
 import { subjects } from "./subjects";
 import { caching } from "./system-design/caching/lesson";
 import { cdn } from "./system-design/cdn/lesson";
@@ -87,7 +88,7 @@ export { components, subjects };
 export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange];
 
 /** Every written SQL lesson (task lessons, not diagram lessons). */
-export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset, aggregates, groupBy, having, caseWhen, innerJoin, leftJoin, cte, rowNumber, insert, update, remove, createTable, alterTable, createIndex, dropTable];
+export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset, aggregates, groupBy, having, caseWhen, innerJoin, leftJoin, cte, rowNumber, insert, update, remove, createTable, alterTable, createIndex, dropTable, truncate];
 
 export function getSqlLesson(slug: string): SqlLesson | undefined {
   return sqlLessons.find((l) => l.slug === slug);

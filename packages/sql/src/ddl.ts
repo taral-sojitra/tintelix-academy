@@ -90,6 +90,7 @@ export async function ddlFrames(db: Db, st: Statement, sql: string): Promise<Rep
   if (st.type === "alter table") return alterFrames(db, st.table.name, st.changes as unknown as AlterChange[], sql);
   if (st.type === "create index") return indexFrames(db, st.table.name, sql);
   if (st.type === "drop table") return dropFrames(db, "TABLE", st.names.map((n) => n.name), sql);
+  if (st.type === "truncate table") return truncateFrames(db, st.tables.map((t) => t.name), sql);
   return null;
 }
 
@@ -242,6 +243,34 @@ export async function dropFrames(db: Db, what: "TABLE" | "VIEW", named: string[]
   const frames: Frame[] = [
     { clause: "BEFORE", note: `The shop has ${plural(before.length, "table or view", "tables and views")} before the DROP.`, columns: heads, rows: before, total: before.length, marks: before.map((r): Mark => (left.has(String(r[0])) ? "plain" : "gone")) },
     { clause: what === "TABLE" ? "DROP TABLE" : "DROP VIEW", note: parts.join(" "), columns: heads, rows: after, total: after.length },
+  ];
+  return { supported: true, frames };
+}
+
+/** TRUNCATE: the table's rows all marked to go, then the empty table, and what CASCADE also emptied. */
+async function truncateFrames(db: Db, named: string[], sql: string): Promise<Replay> {
+  const counts = async () => {
+    const out = new Map<string, number>();
+    for (const r of await relations(db)) if (r[1] === "table") out.set(String(r[0]), Number(r[2]));
+    return out;
+  };
+  const main = named[0]!;
+  const before = await tableRows(db, main);
+  const had = await counts();
+  await db.exec(sql);
+  const now = await counts();
+  const emptied = [...had].filter(([t, n]) => n > 0 && now.get(t) === 0).map(([t]) => t);
+  const also = emptied.filter((t) => !named.includes(t));
+  const gone = named.reduce((sum, t) => sum + (had.get(t) ?? 0), 0);
+  const after = await tableRows(db, main);
+  const many = named.length > 1;
+  const note =
+    `TRUNCATE emptied ${listing(named)} in one go: ${plural(gone, "row")} gone. The table${many ? "s" : ""} and ${many ? "their" : "its"} columns stay.` +
+    (also.length ? ` CASCADE also emptied ${listing(also)}, which ${also.length === 1 ? "points" : "point"} at it.` : "") +
+    (/RESTART\s+IDENTITY/i.test(sql) ? " RESTART IDENTITY set the id counter back to 1." : "");
+  const frames: Frame[] = [
+    { clause: "BEFORE", note: `${main} has ${plural(before.total, "row")}.`, columns: before.columns, rows: before.rows, total: before.total, marks: before.rows.map((): Mark => "gone") },
+    { clause: "TRUNCATE", note, columns: after.columns, rows: after.rows, total: after.total },
   ];
   return { supported: true, frames };
 }

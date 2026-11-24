@@ -127,3 +127,27 @@ describe("dependents in the refusal", () => {
     if (!r.outcome.ok) expect(r.outcome.message).toBe("Other things depend on coupons (view v depends on table coupons). Add CASCADE to drop them too, or drop them first.");
   });
 });
+
+describe("TRUNCATE replay", () => {
+  it("shows every row going at once while the table stays", async () => {
+    const r = await buildReplay(db, "TRUNCATE order_items");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames.map((f) => f.clause)).toEqual(["BEFORE", "TRUNCATE"]);
+    expect(r.frames[0]!.marks?.every((m) => m === "gone")).toBe(true);
+    expect(r.frames[1]!.total).toBe(0);
+    expect(r.frames[1]!.columns).toEqual(["order_id", "product_id", "quantity", "unit_price"]);
+    expect(r.frames[1]!.note).toBe("TRUNCATE emptied order_items in one go: 150 rows gone. The table and its columns stay.");
+  });
+
+  it("says what CASCADE also emptied", async () => {
+    const r = await buildReplay(db, "TRUNCATE orders CASCADE");
+    if (!r.supported) throw new Error(r.reason);
+    expect(r.frames[1]!.note).toBe("TRUNCATE emptied orders in one go: 60 rows gone. The table and its columns stay. CASCADE also emptied order_items, which points at it.");
+  });
+
+  it("explains the refusal when other tables point at it", async () => {
+    const r = await runInRollback(db, "TRUNCATE orders");
+    expect(r.outcome.ok).toBe(false);
+    if (!r.outcome.ok) expect(r.outcome.message).toBe("order_items points at orders, so orders can't be emptied on its own. Empty both in the same TRUNCATE, or add CASCADE.");
+  });
+});
