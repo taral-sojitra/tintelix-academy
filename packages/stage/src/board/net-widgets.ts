@@ -370,4 +370,28 @@ export const NET_CUSTOM: Record<string, Custom> = {
       cache.classList.toggle("known", cached);
     },
   },
+  /**
+   * A page load as round trips for HTTP/1.1, HTTP/2 and HTTP/3: setup (TCP and TLS, or QUIC), the HTML,
+   * then the page's other files, from `h1Setup`, `h1Html`, `h1Res` and the same for h2 and h3, on one
+   * scale. `h2On` and `h3On` (0 or 100) show the later rows; `rttMs` turns round trips into time.
+   */
+  waterfall: {
+    html: (key) =>
+      `<div class="tx-wf" data-w="${key}">${["HTTP/1.1", "HTTP/2", "HTTP/3"].map((n) => `<div class="tx-wf-row"><em>${n}</em><div class="tx-wf-bar"><i class="s"></i><i class="h"></i><i class="r"></i></div><b></b></div>`).join("")}<p class="tx-wf-key"><span class="s">connect + encrypt</span><span class="h">the HTML</span><span class="r">the other files</span></p></div>`,
+    paint(root, d) {
+      const parts = ["h1", "h2", "h3"].map((p) => [num(d, `${p}Setup`, 0), num(d, `${p}Html`, 0), num(d, `${p}Res`, 0)]);
+      const totals = parts.map((p) => p[0]! + p[1]! + p[2]!);
+      const scale = Math.max(1, ...totals);
+      const on = [true, num(d, "h2On", 0) > 0, num(d, "h3On", 0) > 0];
+      const rtt = num(d, "rttMs", 0);
+      root.querySelectorAll<HTMLElement>(".tx-wf-row").forEach((row, n) => {
+        row.hidden = !on[n];
+        row.querySelectorAll<HTMLElement>(".tx-wf-bar i").forEach((seg, k) => {
+          const w = `${Math.round((parts[n]![k]! / scale) * 1000) / 10}%`;
+          if (seg.style.width !== w) seg.style.width = w;
+        });
+        setText(row.querySelector("b")!, `${Math.round(totals[n]! * rtt)} ms`);
+      });
+    },
+  },
 };
