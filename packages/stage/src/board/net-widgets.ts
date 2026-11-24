@@ -71,6 +71,17 @@ const SOCK_NEW_PER_SEC = 5;
 const DNS_STEP_SEC = 1;
 const DNS_CYCLE_SEC = 7;
 
+/** Switch A's ports, in the order it learns them. */
+const MAC_PORTS: [string, string][] = [["A1", "port 1"], ["A2", "port 2"], ["A3", "port 3"], ["router", "port 4"]];
+/** The learning cycle: three frames, 1.4 s each, then a hold; [entries known, what happens]. */
+const MAC_LEARN: [number, string][] = [
+  [1, "A1 → A2: learn A1 is on port 1; A2 unknown, so flood every port"],
+  [2, "A2 → A1: learn A2 is on port 2; A1 known, so port 1 only"],
+  [2, "A1 → A2: A2 known, so port 2 only"],
+];
+const MAC_STEP_SEC = 1.4;
+const MAC_CYCLE_SEC = 6;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -392,6 +403,32 @@ export const NET_CUSTOM: Record<string, Custom> = {
         });
         setText(row.querySelector("b")!, `${Math.round(totals[n]! * rtt)} ms`);
       });
+    },
+  },
+  /**
+   * A switch's MAC table. `macStage` 0: empty. 1: learning from three frames, flooding while the
+   * destination is unknown. 2: full, one port per frame. 3: full, with a frame for another network.
+   */
+  mactable: {
+    html: (key) =>
+      `<div class="tx-mac" data-w="${key}"><div class="tx-mac-rows">${'<p class="tx-mac-row"><em></em><span></span></p>'.repeat(4)}</div><p class="tx-calc-s tx-mac-now"></p></div>`,
+    paint(root, d, clock) {
+      const stage = Math.min(3, Math.max(0, Math.round(num(d, "macStage", 0))));
+      const phase = Math.min(MAC_LEARN.length - 1, Math.floor((Math.max(0, clock) % MAC_CYCLE_SEC) / MAC_STEP_SEC));
+      const known = stage === 0 ? 0 : stage === 1 ? MAC_LEARN[phase]![0] : MAC_PORTS.length;
+      root.querySelectorAll<HTMLElement>(".tx-mac-row").forEach((row, n) => {
+        row.hidden = n >= known;
+        row.classList.toggle("new", stage === 1 && n === known - 1 && phase < 2);
+        setText(row.querySelector("em")!, MAC_PORTS[n]![0]);
+        setText(row.querySelector("span")!, MAC_PORTS[n]![1]);
+      });
+      const text = [
+        "table empty: the switch knows nobody yet",
+        MAC_LEARN[phase]![1],
+        "every frame goes out of one port",
+        "A1 → B1: another network, so the frame goes to the router's MAC, port 4",
+      ][stage]!;
+      setText(root.querySelector(".tx-mac-now")!, text);
     },
   },
 };
