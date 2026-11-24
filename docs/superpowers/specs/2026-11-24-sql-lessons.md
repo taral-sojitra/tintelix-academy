@@ -49,3 +49,11 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Call: the first starter is `SELECT status FROM orders`, not the erroring `SELECT status, count(*)`, because the HLD
   says starters always run. The hint invites the learner to try count(*) without GROUP BY and read the plain-word
   error, and the content check now enforces "starters run" for every lesson.
+
+## 8. HAVING: Only the big spenders
+
+- Tasks: customers with 4+ orders; categories holding over 300 items; big spenders over ₹20,000 without cancelled
+  orders (the starter counts cancelled ones, so a WHERE is missing, not a HAVING); statuses with more than 10 orders.
+- Errors: `WHERE count(*) > 3` now says summaries belong in HAVING (it shares Postgres's grouping-error code, which
+  had produced the GROUP BY message). An unknown column that is an AS name in the query, as in `HAVING spent > …`,
+  now explains that WHERE and HAVING run before SELECT names columns.

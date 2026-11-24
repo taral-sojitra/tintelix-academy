@@ -33,6 +33,11 @@ describe("runInRollback", () => {
       expect(r.outcome.code).toBe("42601");
     }
   });
+  it("explains that an AS name doesn't exist yet in WHERE or HAVING", async () => {
+    const r = await runInRollback(db, "SELECT customer_id, sum(total) AS spent FROM orders GROUP BY customer_id HAVING spent > 20000");
+    expect(r.outcome.ok).toBe(false);
+    if (!r.outcome.ok) expect(r.outcome.message).toBe("spent is a name you gave with AS, but WHERE and HAVING run before SELECT names its columns. Repeat the expression instead.");
+  });
   it("asks for a query when the editor is empty", async () => {
     const r = await runInRollback(db, "  -- nothing\n");
     expect(r.outcome).toEqual({ ok: false, message: "Write a query first." });

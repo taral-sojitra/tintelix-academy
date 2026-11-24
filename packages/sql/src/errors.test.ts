@@ -7,6 +7,9 @@ describe("plainError", () => {
     expect(m).toContain("Every column in SELECT must be in GROUP BY or inside a summary like SUM");
     expect(m).toContain("customers.name");
   });
+  it("sends a summary in WHERE to HAVING", () => {
+    expect(plainError("42803", "aggregate functions are not allowed in WHERE")).toBe("Summaries like count(*) can't go in WHERE, because WHERE runs before rows are grouped. Test them in HAVING.");
+  });
   it("names the unknown column", () => {
     expect(plainError("42703", 'column "nme" does not exist')).toBe("There's no column called nme. Check the spelling against the dataset card.");
   });

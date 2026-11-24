@@ -1,0 +1,70 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const having: SqlLesson = {
+  id: "sql-having",
+  home: "sql",
+  slug: "having",
+  topic: "HAVING",
+  title: "Only the big spenders",
+  promise: "Keep or drop whole groups by their totals, and know when a test belongs in WHERE instead.",
+  minutes: 8,
+  level: 2,
+  explain: [
+    "**HAVING** tests whole groups after GROUP BY has folded them. `HAVING count(*) >= 4` keeps customers with at least four orders.",
+    "WHERE tests single rows before grouping, so it can't see a group's count or sum. HAVING comes after, so it can. Use both: WHERE drops rows, HAVING drops groups.",
+    "Postgres works in this order: FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY. SELECT comes after HAVING, so HAVING can't use an AS name: write `HAVING sum(total) > 20000`, not `HAVING spent > 20000`.",
+  ],
+  syntax: {
+    code: "SELECT customer_id, sum(total) AS spent\nFROM orders\nWHERE status <> 'cancelled'\nGROUP BY customer_id\nHAVING sum(total) > 20000;",
+    notes: [
+      "HAVING goes after GROUP BY and tests summaries.",
+      "A test on plain columns belongs in WHERE, before grouping.",
+      "Repeat the summary in HAVING; AS names don't exist yet.",
+    ],
+  },
+  mistake: "Testing a summary in WHERE, like `WHERE count(*) > 3`. Postgres stops, because summaries don't exist yet when WHERE runs. Move the test to HAVING. The reverse is a waste: a plain row test in HAVING still works, but WHERE would have dropped those rows before grouping them.",
+  tasks: [
+    {
+      id: "four-plus",
+      prompt: "Which customers have placed **4 or more** orders? Show **customer_id** and the count as `orders`.",
+      starter: "SELECT customer_id, count(*) AS orders\nFROM orders\nGROUP BY customer_id;",
+      hint: "Add HAVING count(*) >= 4 after GROUP BY.",
+      solution: "SELECT customer_id, count(*) AS orders\nFROM orders\nGROUP BY customer_id\nHAVING count(*) >= 4;",
+      ordered: false,
+      namedColumns: ["customer_id", "orders"],
+    },
+    {
+      id: "deep-stock",
+      prompt: "Show each **category** whose products hold more than **300** items of stock in all, with the total as `stock`.",
+      starter: "SELECT category, sum(stock) AS stock\nFROM products\nGROUP BY category;",
+      hint: "HAVING sum(stock) > 300. HAVING can't use the name stock from AS, so write the sum out.",
+      solution: "SELECT category, sum(stock) AS stock\nFROM products\nGROUP BY category\nHAVING sum(stock) > 300;",
+      ordered: false,
+      namedColumns: ["category", "stock"],
+    },
+    {
+      id: "big-spenders",
+      prompt: "Big spenders: customers whose orders, **not counting cancelled ones**, add up to more than ₹20,000. Show **customer_id** and `spent`, biggest first. The starter counts cancelled orders too.",
+      starter: "SELECT customer_id, sum(total) AS spent\nFROM orders\nGROUP BY customer_id\nHAVING sum(total) > 20000\nORDER BY spent DESC;",
+      hint: "Dropping cancelled orders is a row test, so it goes in WHERE, before GROUP BY.",
+      solution: "SELECT customer_id, sum(total) AS spent\nFROM orders\nWHERE status <> 'cancelled'\nGROUP BY customer_id\nHAVING sum(total) > 20000\nORDER BY spent DESC, customer_id;",
+      ordered: true,
+      namedColumns: ["customer_id", "spent"],
+    },
+    {
+      id: "busy-statuses",
+      prompt: "Show the statuses that cover more than **10** orders, with the count as `orders` and the average total, rounded to the rupee, as `average`.",
+      starter: "SELECT status, count(*) AS orders, round(avg(total)) AS average\nFROM orders\nGROUP BY status;",
+      hint: "HAVING count(*) > 10 drops the small groups.",
+      solution: "SELECT status, count(*) AS orders, round(avg(total)) AS average\nFROM orders\nGROUP BY status\nHAVING count(*) > 10;",
+      ordered: false,
+      namedColumns: ["status", "orders", "average"],
+    },
+  ],
+  buildsOn: ["sql-where", "sql-group-by"],
+  cheatsheet: [
+    { heading: "Test groups", text: ["`HAVING count(*) >= 4` keeps groups with at least four rows.", "`HAVING sum(total) > 20000` keeps groups by their total."] },
+    { heading: "WHERE or HAVING?", text: ["A test on a row's own columns: WHERE.", "A test on a count, sum or average: HAVING."] },
+    { heading: "Order of work", text: ["FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY.", "So HAVING can't use AS names; repeat the summary."] },
+  ],
+};

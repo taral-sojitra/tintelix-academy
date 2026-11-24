@@ -54,6 +54,14 @@ function success(results: QueryResult[], command: string, ms: number): RunOutcom
   return { ok: true, result: { columns, rows }, command, rowCount: columns.length ? rows.length : (r?.affectedRows ?? 0) - before, ms };
 }
 
+/** An unknown column that is really an AS name used too early gets its own explanation. */
+function explainAlias(outcome: RunOutcome, sql: string): RunOutcome {
+  if (outcome.ok || outcome.code !== "42703") return outcome;
+  const name = /There's no column called (\S+)\. /.exec(outcome.message)?.[1];
+  if (!name || !new RegExp(`\\bAS\\s+"?${name.replace(/[^\w]/g, "")}"?\\b`, "i").test(sql)) return outcome;
+  return { ...outcome, message: `${name} is a name you gave with AS, but WHERE and HAVING run before SELECT names its columns. Repeat the expression instead.` };
+}
+
 /**
  * Runs the learner's SQL inside BEGIN … ROLLBACK, so every run starts from the untouched shop.
  * `after` (a verify query) runs in the same transaction, after the learner's statements.
@@ -73,7 +81,7 @@ export async function runInRollback(db: Db, sql: string, after?: string): Promis
       const kind = kinds[kinds.length - 1]!;
       outcome = success(results, kind === "WITH" && results[results.length - 1]?.fields.length ? "SELECT" : kind, now() - t0);
     } catch (e) {
-      return { outcome: failure(e) };
+      return { outcome: explainAlias(failure(e), sql) };
     }
     if (!after) return { outcome };
     try {

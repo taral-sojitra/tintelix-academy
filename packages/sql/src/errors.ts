@@ -10,7 +10,10 @@ const RULES: Record<string, (message: string) => string> = {
   },
   "42703": (m) => `There's no column called ${quoted(m)}. Check the spelling against the dataset card.`,
   "42P01": (m) => `There's no table called ${quoted(m)}. Check the spelling against the dataset card.`,
-  "42803": (m) => `Every column in SELECT must be in GROUP BY or inside a summary like SUM. ${quoted(m)} is neither.`,
+  "42803": (m) =>
+    /not allowed in WHERE/i.test(m)
+      ? "Summaries like count(*) can't go in WHERE, because WHERE runs before rows are grouped. Test them in HAVING."
+      : `Every column in SELECT must be in GROUP BY or inside a summary like SUM. ${quoted(m)} is neither.`,
   "42702": (m) => `${quoted(m)} is in more than one table here. Say which one you mean, like o.id or c.id.`,
   "42883": (m) => `Postgres has no function or operator that fits here (${m}). The types may not match: text and numbers don't mix.`,
   "42P07": (m) => `There's already a table called ${quoted(m)}.`,
