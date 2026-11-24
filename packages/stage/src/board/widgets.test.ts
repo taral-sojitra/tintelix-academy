@@ -178,6 +178,25 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("funnel widget narrows millions of passages to a few the model reads, stage by stage", () => {
+    const w: BoardWidget = { kind: "custom", name: "funnel" };
+    const d = { chunks: 6e6, annVisited: 2000, topK: 5 };
+    const root = mount(w, d, 0);
+    const rows = () => [...root.querySelectorAll(".tx-fun-row")];
+    const lit = () => rows().filter((r) => r.classList.contains("on")).length;
+    expect(rows().map((r) => r.querySelector("em")!.textContent)).toEqual(["passages", "compared", "in the prompt", "answer"]);
+    expect(rows().map((r) => r.querySelector("b")!.textContent)).toEqual(["6,000,000", "2,000", "5", "1"]);
+    const widths = rows().map((r) => parseFloat(r.querySelector<HTMLElement>("span i")!.style.width));
+    expect(widths[0]).toBe(100);
+    expect(widths[1]! > widths[2]! && widths[2]! > widths[3]!).toBe(true);
+    expect(lit()).toBe(0);
+    paintWidget(root, w, d, 1.5);
+    expect(lit()).toBe(2);
+    paintWidget(root, w, d, 3.2);
+    expect(lit()).toBe(4);
+    expect(root.querySelector(".tx-fun-cap")!.textContent).toBe("the model reads 5 passages, not 6,000,000");
+  });
+
   it("sortedset widget keeps the board in score order as your score climbs past others", () => {
     const w: BoardWidget = { kind: "custom", name: "sortedset" };
     const d = { logSteps: 23.25 };

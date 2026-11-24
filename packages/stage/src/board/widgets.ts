@@ -8,6 +8,11 @@ type Custom = { html(key: string): string; paint(root: HTMLElement, d: Outputs, 
 const pct = (v: number, max: number) => `${Math.round(Math.min(1, Math.max(0, (Number.isFinite(v) ? v : 0) / max)) * 100)}%`;
 const group = (n: number) => Math.round(n).toLocaleString("en-US");
 
+/** The retrieval funnel's stages and when each lights up within a 4 s cycle. */
+const FUN_STAGES = ["passages", "compared", "in the prompt", "answer"];
+const FUN_AT = [0.5, 1.2, 2, 3];
+const FUN_CYCLE_SEC = 4;
+
 /** A slice of the board around you, starting at rank 1,203. Your score rises 50 a second over a 5 s cycle. */
 const ZS_OTHERS: [string, number][] = [["Asha", 9820], ["Ken", 9705], ["Lola", 9650], ["Omar", 9580], ["Priya", 9555]];
 const ZS_FIRST_RANK = 1203;
@@ -113,6 +118,29 @@ const STEPS: [string, number][] = [["requirements", 5], ["estimates", 5], ["API"
 
 /** Widgets a lesson needs that the shared kinds can't draw, by name. */
 export const CUSTOM: Record<string, Custom> = {
+  /** Retrieval as a funnel: every passage, the few thousand the index compares, the handful in the prompt, one answer. */
+  funnel: {
+    html: (key) =>
+      `<div class="tx-fun" data-w="${key}">${FUN_STAGES.map((label) => `<div class="tx-fun-row"><em>${esc(label)}</em><span><i></i></span><b></b></div>`).join("")}<p class="tx-calc-s tx-fun-cap"></p></div>`,
+    paint(root, d, clock) {
+      const values = [d.chunks ?? 0, d.annVisited ?? 0, d.topK ?? 0, 1];
+      const top = Math.log10(Math.max(1, values[0]!)) + 1;
+      const t = Math.max(0, clock) % FUN_CYCLE_SEC;
+      root.querySelectorAll<HTMLElement>(".tx-fun-row").forEach((row, n) => {
+        const v = values[n]!;
+        row.classList.toggle("on", t >= FUN_AT[n]!);
+        const width = `${+Math.min(100, ((Math.log10(Math.max(1, v)) + 1) / top) * 100).toFixed(1)}%`;
+        const bar = row.querySelector<HTMLElement>("span i")!;
+        if (bar.style.width !== width) bar.style.width = width;
+        const b = row.querySelector("b")!;
+        const text = group(v);
+        if (b.textContent !== text) b.textContent = text;
+      });
+      const text = `the model reads ${group(values[2]!)} passages, not ${group(values[0]!)}`;
+      const cap = root.querySelector(".tx-fun-cap")!;
+      if (cap.textContent !== text) cap.textContent = text;
+    },
+  },
   /** A sorted set: players kept in score order, so your rank and neighbours are a lookup, not a count. */
   sortedset: {
     html: (key) =>
