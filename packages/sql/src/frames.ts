@@ -2,7 +2,7 @@ import { parse, toSql, type Expr, type SelectedColumn, type SelectFromStatement,
 import { changeFrames, type Change } from "./changes";
 import { normalise } from "./compare";
 import { ddlFrames, dropFrames } from "./ddl";
-import { splitStatements } from "./run";
+import { hasTransactionControl, splitStatements } from "./run";
 import type { Db, QueryResult } from "./db";
 
 /**
@@ -153,6 +153,8 @@ export async function buildReplay(db: Db, sql: string): Promise<Replay> {
   const parts = splitStatements(sql);
   const lastPart = parts[parts.length - 1];
   if (!lastPart) return no("There's nothing to replay.");
+  // The replay runs inside its own BEGIN … ROLLBACK; a COMMIT in the text would keep its changes.
+  if (hasTransactionControl(parts.map((p) => p.kind))) return no("Every run happens in its own transaction, so leave out BEGIN, COMMIT and ROLLBACK.");
   const lastSql = lastPart.text;
   const first = parts.slice(0, -1).map((p) => p.text).join(";\n");
   // The parser can't read DROP VIEW, so that one is matched by hand.

@@ -237,6 +237,12 @@ describe("buildReplay", () => {
     expect(frame(s2, "WHERE").note).toBe("WHERE kept 15 of 15 rows.");
   });
 
+  it("never lets a draft's COMMIT keep its changes", async () => {
+    const r = await buildReplay(db, "DELETE FROM order_items; COMMIT; SELECT count(*) FROM order_items");
+    expect(r.supported).toBe(false);
+    expect(Number((await db.query("SELECT count(*) FROM order_items")).rows[0]?.[0])).toBe(150);
+  });
+
   it("shows only the result for shapes it can't follow yet", async () => {
     for (const sql of [
       "WITH RECURSIVE n AS (SELECT 1 AS i UNION ALL SELECT i + 1 FROM n WHERE i < 3) SELECT i FROM n",
