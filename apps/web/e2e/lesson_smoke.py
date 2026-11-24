@@ -1476,6 +1476,7 @@ SQL_LESSONS = [
     ("where", "Only the rows that match", "FROM starts with every row of products: 15 rows."),
     ("order-by", "Who comes first?", "FROM starts with every row of products: 15 rows."),
     ("distinct", "Every city, once", "FROM starts with every row of products: 15 rows."),
+    ("limit-offset", "The top five, then the next", "FROM starts with every row of products: 15 rows."),
 ]
 
 

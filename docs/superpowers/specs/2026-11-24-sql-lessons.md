@@ -25,3 +25,9 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Tasks: categories once each; cities without the missing ones (the starter's DISTINCT keeps one NULL row, so it has
   one row too many); country and city pairs (DISTINCT covers every listed column); customer ids that ordered, sorted.
 - The mistake note warns against DISTINCT as a cover for repeats a join caused, which lesson 10 comes back to.
+
+## 5. LIMIT and OFFSET: The top five, then the next
+
+- Tasks: top three by price; the five latest orders (the starter's LIMIT without ORDER BY gets the five oldest);
+  page 2 at four a page; the 4th to 6th biggest orders. Solutions carry tiebreakers so the no-ties check passes, even
+  where the learner's top rows don't tie.
