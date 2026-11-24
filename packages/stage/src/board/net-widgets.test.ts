@@ -205,3 +205,43 @@ describe("order widget", () => {
     expect(ordCap(root)).toBe("4 resent 120 ms later: TCP delivers 4–8 in order");
   });
 });
+
+const ladder: BoardWidget = { kind: "custom", name: "ladder" };
+const ladRows = (root: HTMLElement) =>
+  [...root.querySelectorAll<HTMLElement>(".tx-lad-row")].filter((r) => !r.hidden).map((r) => [r.querySelector("em")!.textContent, r.querySelector("span")!.textContent, r.classList.contains("l") ? "←" : "→"]);
+const ladCap = (root: HTMLElement) => root.querySelector(".tx-lad-cap")!.textContent;
+
+describe("ladder widget", () => {
+  it("is empty before any connection", () => {
+    const root = mount(ladder, { ladderStage: 0, rttMs: 80 }, 3);
+    expect(ladRows(root)).toEqual([]);
+    expect(ladCap(root)).toBe("no connection yet");
+  });
+
+  it("draws SYN, SYN-ACK and ACK at half-round-trip times", () => {
+    const root = mount(ladder, { ladderStage: 1, rttMs: 80 }, 0.5);
+    expect(ladRows(root)).toEqual([["0 ms", "SYN seq=1000", "→"]]);
+    paintWidget(root, ladder, { ladderStage: 1, rttMs: 80 }, 3);
+    expect(ladRows(root)).toEqual([
+      ["0 ms", "SYN seq=1000", "→"],
+      ["40 ms", "SYN-ACK seq=5000 ack=1001", "←"],
+      ["80 ms", "ACK ack=5001", "→"],
+    ]);
+    expect(ladCap(root)).toBe("connected after 80 ms: one round trip");
+  });
+
+  it("sends the request with the ACK; the reply lands after two round trips", () => {
+    const root = mount(ladder, { ladderStage: 2, rttMs: 100 }, 4);
+    expect(ladRows(root).slice(2)).toEqual([
+      ["100 ms", "ACK + GET /", "→"],
+      ["200 ms", "200 OK, the page", "←"],
+    ]);
+    expect(ladCap(root)).toBe("first byte of the page at 200 ms: two round trips");
+  });
+
+  it("closes with a FIN and an ACK from each side", () => {
+    const root = mount(ladder, { ladderStage: 3, rttMs: 80 }, 4);
+    expect(ladRows(root).map((r) => r[1])).toEqual(["FIN", "ACK", "FIN", "ACK"]);
+    expect(ladCap(root)).toBe("closed: each side sent a FIN and got an ACK");
+  });
+});

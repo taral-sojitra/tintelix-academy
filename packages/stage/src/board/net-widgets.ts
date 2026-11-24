@@ -42,6 +42,19 @@ const hours = (h: number) => `${Number.isInteger(h) ? h : h.toFixed(1)} h`;
 const ORD_STEP_SEC = 1;
 const ORD_CYCLE_SEC = 6;
 
+/**
+ * TCP ladders by `ladderStage`: each message as [when, in one-way trips; direction; label], and the line
+ * under them. One more message every 0.9 s, then the whole ladder holds for 2 s.
+ */
+const LADDERS: [number, "r" | "l", string][][] = [
+  [],
+  [[0, "r", "SYN seq=1000"], [1, "l", "SYN-ACK seq=5000 ack=1001"], [2, "r", "ACK ack=5001"]],
+  [[0, "r", "SYN seq=1000"], [1, "l", "SYN-ACK seq=5000 ack=1001"], [2, "r", "ACK + GET /"], [4, "l", "200 OK, the page"]],
+  [[0, "r", "FIN"], [1, "l", "ACK"], [1, "l", "FIN"], [2, "r", "ACK"]],
+];
+const LAD_STEP_SEC = 0.9;
+const LAD_HOLD_SEC = 2;
+
 /** Custom widgets for the Networks lessons, merged into the board's CUSTOM registry. */
 export const NET_CUSTOM: Record<string, Custom> = {
   /**
@@ -240,6 +253,40 @@ export const NET_CUSTOM: Record<string, Custom> = {
         `4 resent ${stall} ms later: TCP delivers 4–8 in order`,
       ][phase]!;
       setText(root.querySelector(".tx-ord-cap")!, text);
+    },
+  },
+  /**
+   * A TCP ladder: the messages between client (left) and server (right) with their times, from `rttMs`.
+   * `ladderStage` 1 is the handshake, 2 the handshake with a request, 3 the close; 0 draws nothing.
+   */
+  ladder: {
+    html: (key) =>
+      `<div class="tx-lad" data-w="${key}"><div class="tx-lad-head"><em></em><span>client</span><span>server</span></div>${'<div class="tx-lad-row"><em></em><span></span></div>'.repeat(4)}<p class="tx-calc-s tx-lad-cap"></p></div>`,
+    paint(root, d, clock) {
+      const stage = Math.min(LADDERS.length - 1, Math.max(0, Math.round(num(d, "ladderStage", 0))));
+      const rtt = Math.max(0, num(d, "rttMs", 80));
+      const msgs = LADDERS[stage]!;
+      const cycle = msgs.length * LAD_STEP_SEC + LAD_HOLD_SEC;
+      const seen = msgs.length ? Math.min(msgs.length, Math.floor((Math.max(0, clock) % cycle) / LAD_STEP_SEC) + 1) : 0;
+      root.querySelectorAll<HTMLElement>(".tx-lad-row").forEach((row, n) => {
+        const m = msgs[n];
+        if (!m) {
+          row.hidden = true;
+          return;
+        }
+        row.className = `tx-lad-row ${m[1]}`;
+        row.hidden = n >= seen;
+        setText(row.querySelector("em")!, `${Math.round((m[0] * rtt) / 2)} ms`);
+        setText(row.querySelector("span")!, m[2]);
+      });
+      const r = Math.round(rtt);
+      const text = [
+        "no connection yet",
+        `connected after ${r} ms: one round trip`,
+        `first byte of the page at ${2 * r} ms: two round trips`,
+        "closed: each side sent a FIN and got an ACK",
+      ][stage]!;
+      setText(root.querySelector(".tx-lad-cap")!, text);
     },
   },
 };
