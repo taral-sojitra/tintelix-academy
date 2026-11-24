@@ -1,0 +1,87 @@
+import type { Step } from "@tintelix/schema";
+
+export const handshakeSteps: Step[] = [
+  {
+    id: "before-data",
+    tag: "problem",
+    title: "Agree before you send",
+    short: "Before data",
+    text: [
+      "TCP promises every byte, in order. That only works if both sides agree where the numbering starts, and each knows the other is really there and ready. A server shouldn't start sending to an address that never asked.",
+      "So before any data, TCP opens a **connection**: a short exchange that sets up the numbers in both directions. It costs time, and the time is the round trip between the two machines, here **{rttMs}**.",
+    ],
+    sim: { mode: "none", speed: 1 },
+    model: { mode: 0 },
+    live: "BEFORE DATA",
+  },
+  {
+    id: "syn-synack-ack",
+    tag: "technique",
+    title: "SYN, SYN-ACK, ACK",
+    short: "Three messages",
+    text: [
+      "**SYN**: the browser picks a random starting number, say 1000, and sends it with the SYN flag. **SYN-ACK**: the server picks its own, 5000, and acknowledges the browser's with ack=1001, meaning \"next I expect byte 1001.\" **ACK**: the browser acknowledges 5001.",
+      "Three messages, and both sides know both numbers. The connection is open after **{handshakeMs}**: one round trip.",
+    ],
+    note: { kind: "idea", text: "Starting numbers are random so a stray packet from an old connection can't be mistaken for part of a new one." },
+    changed: [{ kind: "add", label: "Connection", value: "SYN, SYN-ACK, ACK" }],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · three messages",
+  },
+  {
+    id: "one-round-trip",
+    tag: "technique",
+    title: "A round trip before the request",
+    short: "The cost",
+    text: [
+      "The browser can put its request in the same packet as the final ACK, so **GET /** leaves after **{handshakeMs}**. The first byte of the page comes back at **{firstByteMs}**: two round trips, and half of that wait was setup.",
+      "A round trip is set by distance. Across a city it's a few milliseconds; to a server on another continent it can be 150 or more. Every new connection pays it again.",
+    ],
+    note: { kind: "turn", text: "Drag the round trip. The setup cost grows with it, one for one." },
+    controls: ["rttMs"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · the cost",
+  },
+  {
+    id: "fin",
+    tag: "technique",
+    title: "Closing: a FIN each way",
+    short: "Closing",
+    text: [
+      "A TCP connection carries data both ways, so each side closes its own direction. The browser sends **FIN** (\"I'm done sending\"); the server ACKs it. When the server is done too, it sends its own FIN, and the browser ACKs that.",
+      "Four messages, about a round trip. Until the last one, the side that's still open can keep sending.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · closing",
+  },
+  {
+    id: "reuse",
+    tag: "solution",
+    title: "Open once, ask many times",
+    short: "Reuse it",
+    text: [
+      "A page needs many requests. Open a new connection for each and every one pays the handshake: {requests} requests take **{newEachMs}**. Keep one connection open and only the first does: **{reusedMs}**, **{savedPct}** faster.",
+      "That's why browsers keep connections alive, and why servers and databases use **connection pools**: the handshake is paid once and the connection is lent out again and again.",
+    ],
+    note: { kind: "watch", text: "A SYN flood sends thousands of SYNs and never ACKs, filling the server's half-open list. SYN cookies let a server answer without keeping that list." },
+    controls: ["rttMs", "requests"],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 4 },
+    live: "LIVE · reuse it",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "Hello before the data",
+    short: "Recap",
+    text: [
+      "SYN, SYN-ACK, ACK agree on starting numbers in both directions and cost one round trip; the request rides with the ACK, so the first byte comes back after two. A FIN and an ACK each way close the connection. Reusing connections pays the handshake once.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "RECAP",
+  },
+];

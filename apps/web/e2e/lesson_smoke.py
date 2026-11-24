@@ -351,7 +351,12 @@ async def lb_flow(page):
     await expect(page.locator(".narr h2")).to_have_text("Layer 4 or layer 7")
     await expect(page.locator("[data-tile='lookups'] .tx-v")).to_have_text("16 ms", timeout=8000)
     await expect(page.locator("[data-compare-row].on")).to_contain_text("Layer 7 by path")
-    return "Load balancing lesson: one server 48% served, round robin 82 ms, least connections 27 ms, layer 7 by path 16 ms"
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("What a layer 4 or layer 7 balancer reads")
+    await page.goto(BASE + "/networks", wait_until="load")
+    await page.locator("main a[href='/system-design/load-balancing']").first.click()
+    await expect(page).to_have_url(BASE + "/system-design/load-balancing")
+    return "Load balancing lesson: one server 48% served, round robin 82 ms, least connections 27 ms, layer 7 by path 16 ms, then what each layer reads; Networks links in"
 
 
 async def proxy_flow(page):
@@ -1469,9 +1474,13 @@ async def subject_page(page):
     return "System Design lists 59 lessons in 13 modules, 59 open"
 
 
+# Written Networks lessons, in order; Load balancers (shared with System Design) is open as well.
+NET_LESSONS = ["osi-model", "tcp-ip-model", "ip-addressing", "subnetting", "arp", "dhcp", "tcp-vs-udp", "handshake", "ports-sockets", "dns", "http", "tls", "switches-routers", "routing", "nat", "firewalls", "proxies-vpns", "latency", "bandwidth"]
+
+
 async def net_flow(page):
     await page.goto(BASE + "/networks", wait_until="load")
-    await expect(page.get_by_text("20 lessons in 6 modules · 2 open now")).to_be_visible()
+    await expect(page.get_by_text(f"20 lessons in 6 modules · {len(NET_LESSONS) + 1} open now")).to_be_visible()
     await expect(page.locator("main a[href='/system-design/load-balancing']").first).to_be_visible()
     await page.goto(BASE + "/networks/osi-model", wait_until="load")
     await expect(page.get_by_role("heading", level=1)).to_have_text("Seven layers, one message")
@@ -1491,7 +1500,363 @@ async def net_flow(page):
     await expect(size.locator(".try-readout")).to_contain_text("37%")
     res = await page.goto(BASE + "/networks/osi-model/cheatsheet", wait_until="load")
     assert res and res.status == 200, "osi cheatsheet"
-    return "Networks lists 20 lessons in 6 modules, 2 open, with Load balancers linking to System Design; the OSI lesson wraps a 3,000-byte message into 1,518-byte frames, and a 100-byte message spends 37% on headers"
+    return f"Networks lists 20 lessons in 6 modules, {len(NET_LESSONS) + 1} open, with Load balancers linking to System Design; the OSI lesson wraps a 3,000-byte message into 1,518-byte frames, and a 100-byte message spends 37% on headers"
+
+
+async def net_tcpip_flow(page):
+    await page.goto(BASE + "/networks/tcp-ip-model", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("The four layers that ship")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("4")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("A router only climbs two layers")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("13", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("End to end, or hop by hop")
+    hops = page.locator("section.try", has=page.locator("#ctl-hops"))
+    await set_range(page, "#ctl-hops", 70)
+    await expect(hops.locator(".try-readout")).to_contain_text("TTL ends at 0")
+    await expect(page.locator("[data-node='tally']")).to_contain_text("packet dropped")
+    return "TCP/IP lesson: 4 layers; 12 routers rewrite Ethernet 13 times; at 70 routers the TTL runs out and the packet is dropped"
+
+
+async def net_ip_flow(page):
+    await page.goto(BASE + "/networks/ip-addressing", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Where on the internet?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("192.168.1.42")
+    await expect(page.locator("[data-node='bits'] .tx-ip-cap")).to_have_text("mask 255.255.255.0 · network 192.168.1.0/24")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("The prefix sets the network's size")
+    size = page.locator("section.try", has=page.locator("#ctl-prefixLen"))
+    await set_range(page, "#ctl-prefixLen", 26)
+    await expect(size.locator(".try-readout")).to_contain_text("62")
+    await expect(page.locator("[data-node='bits'] .tx-ip-cap")).to_have_text("mask 255.255.255.192 · network 192.168.1.0/26")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Running out, and IPv6")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("3.4 × 10^38", timeout=8000)
+    return "IP addressing lesson: 192.168.1.42/24 in bits; a /26 leaves 62 devices with mask 255.255.255.192; IPv6 has 3.4 × 10^38 addresses"
+
+
+async def net_subnet_flow(page):
+    await page.goto(BASE + "/networks/subnetting", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Same street or across town?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-node='split'] .tx-sn-cap")).to_have_text("same subnet: A sends straight to B")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("4", timeout=8000)
+    await expect(page.locator("[data-node='split'] .tx-sn-cap")).to_have_text("different subnets: A sends it to the router")
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Same street or across town?")
+    host = page.locator("section.try", has=page.locator("#ctl-hostB"))
+    await set_range(page, "#ctl-hostB", 50)
+    await expect(host.locator(".try-readout")).to_contain_text("router hops: 0")
+    await expect(page.locator("[data-node='split'] .tx-sn-cap")).to_have_text("same subnet: A sends straight to B")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("/21", timeout=8000)
+    return "Subnetting lesson: a /26 cuts the block into 4 and puts B at .100 behind the router; B at .50 shares A's subnet; 2,000 devices fit a /21"
+
+
+async def net_arp_flow(page):
+    await page.goto(BASE + "/networks/arp", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Who has 192.168.1.1?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-node='arp'] .tx-arp-row")).to_have_text("192.168.1.1 → ?")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Ask everyone, hear from one")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("19", timeout=8000)
+    await expect(page.locator("[data-node='arp'] .tx-arp-row")).to_have_text("192.168.1.1 → 02:aa:bb:cc:dd:01", timeout=8000)
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Why every device caches")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("11,400/min", timeout=8000)
+    devices = page.locator("section.try", has=page.locator("#ctl-devices"))
+    await set_range(page, "#ctl-devices", 101)
+    await expect(devices.locator(".try-readout")).to_contain_text("60,000")
+    return "ARP lesson: the question reaches 19 devices, the answer lands in the cache; with no cache 600 packets a minute mean 11,400 broadcast frames, 60,000 with 101 devices"
+
+
+async def net_dhcp_flow(page):
+    await page.goto(BASE + "/networks/dhcp", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("An address for a newcomer")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("None")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Discover, offer, request, acknowledge")
+    await expect(page.locator("[data-node='dora'] .tx-dhcp-set b").first).to_have_text("192.168.1.101", timeout=10000)
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Long leases run the pool dry")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("50%", timeout=8000)
+    lease = page.locator("section.try", has=page.locator("#ctl-leaseHours"))
+    await set_range(page, "#ctl-leaseHours", 24)
+    await expect(lease.locator(".try-readout")).to_contain_text("67%")
+    return "DHCP lesson: the phone starts with no IP, four messages later has 192.168.1.101; 4-hour leases fill half the café's pool, day-long leases refuse 67% of newcomers"
+
+
+async def net_tcpudp_flow(page):
+    await page.goto(BASE + "/networks/tcp-vs-udp", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Every byte, or right now?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("Nothing")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("98%", timeout=8000)
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("One lost packet holds up the rest")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("12%", timeout=8000)
+    await expect(page.locator("[data-node='order'] .tx-ord-cap")).to_contain_text("resent 120 ms later", timeout=8000)
+    rtt = page.locator("section.try", has=page.locator("#ctl-rttMs"))
+    await set_range(page, "#ctl-rttMs", 200)
+    await expect(rtt.locator(".try-readout")).to_contain_text("300 ms")
+    return "TCP vs UDP lesson: at 2% loss UDP delivers 98%; each loss stalls TCP 120 ms, freezing a call 12% of the time; a 200 ms round trip makes it 300 ms"
+
+
+async def net_handshake_flow(page):
+    await page.goto(BASE + "/networks/handshake", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Hello before the data")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-node='ladder'] .tx-lad-cap")).to_have_text("no connection yet")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-node='ladder'] .tx-lad-cap")).to_have_text("connected after 80 ms: one round trip", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("A round trip before the request")
+    rtt = page.locator("section.try", has=page.locator("#ctl-rttMs"))
+    await set_range(page, "#ctl-rttMs", 150)
+    await expect(rtt.locator(".try-readout")).to_contain_text("300 ms")
+    await expect(page.locator("[data-node='ladder'] .tx-lad-cap")).to_have_text("first byte of the page at 300 ms: two round trips")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Open once, ask many times")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("45%", timeout=8000)
+    return "Handshake lesson: connected after one 80 ms round trip; at 150 ms the first byte lands at 300 ms; reusing one connection makes 10 requests 45% faster"
+
+
+async def net_ports_flow(page):
+    await page.goto(BASE + "/networks/ports-sockets", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Which program gets this?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-node='server'] .tx-sock-cap")).to_have_text("3 programs listening, one port each")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("The client picks a port too")
+    await expect(page.locator("[data-node='server'] .tx-sock-row.pick")).to_have_count(2, timeout=8000)
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("A client can run out of ports")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("43%", timeout=8000)
+    conns = page.locator("section.try", has=page.locator("#ctl-connsPerSec"))
+    await set_range(page, "#ctl-connsPerSec", 1000)
+    await expect(conns.locator(".try-readout")).to_contain_text("53%")
+    return "Ports lesson: 3 programs listening; two tabs told apart by source port; 200 new connections a second hold 43% of client ports, 1,000 a second make 53% fail"
+
+
+async def net_dns_flow(page):
+    await page.goto(BASE + "/networks/dns", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("From a name to an address")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-node='walk'] .tx-dns-cache span")).to_have_text("empty")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("170 ms", timeout=8000)
+    await expect(page.locator("[data-node='walk'] .tx-dns-cache span")).to_have_text("www.example.com → 203.0.113.80 · 300 s", timeout=10000)
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("TTL: fast or fresh")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("99%", timeout=8000)
+    ttl = page.locator("section.try", has=page.locator("#ctl-ttlSec"))
+    await set_range(page, "#ctl-ttlSec", 30)
+    await expect(ttl.locator(".try-readout")).to_contain_text("88%")
+    return "DNS lesson: a cold walk takes 170 ms and fills the resolver's cache; a 300 s TTL answers 99% from the cache, 30 s only 88%"
+
+
+async def net_http_flow(page):
+    await page.goto(BASE + "/networks/http", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("One request or many at once?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("800 ms")
+    await expect(page.locator("[data-node='load'] .tx-wf-row:not([hidden])")).to_have_count(1)
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("HTTP/3: the same streams over QUIC")
+    await expect(page.locator("[data-node='load'] .tx-wf-row:not([hidden])")).to_have_count(3, timeout=8000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("240 ms")
+    await page.keyboard.press("ArrowRight")
+    files = page.locator("section.try", has=page.locator("#ctl-resources"))
+    await set_range(page, "#ctl-resources", 90)
+    await expect(files.locator(".try-readout")).to_contain_text("1600 ms")
+    return "HTTP lesson: 30 files take 800 ms on HTTP/1.1, 240 ms on HTTP/3; 90 files take 1600 ms on HTTP/1.1"
+
+
+async def net_tls_flow(page):
+    await page.goto(BASE + "/networks/tls", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Private before the first byte")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-node='story']")).to_contain_text("readable text")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Prove who's on the other end")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("≤ 200 days", timeout=8000)
+    await expect(page.locator("[data-node='story']")).to_contain_text("the chain checks out")
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Fewer round trips with each version")
+    rtt = page.locator("section.try", has=page.locator("#ctl-rttMs"))
+    await set_range(page, "#ctl-rttMs", 150)
+    await expect(rtt.locator(".try-readout")).to_contain_text("600 ms")
+    return "TLS lesson: plain HTTP is readable; certificates last at most 200 days and the chain checks out; at a 150 ms round trip TLS 1.2's first byte comes at 600 ms"
+
+
+async def net_switch_flow(page):
+    await page.goto(BASE + "/networks/switches-routers", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Next door or another network?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-node='table'] .tx-mac-now")).to_have_text("table empty: the switch knows nobody yet")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-node='table'] .tx-mac-now")).to_contain_text("A2 known, so port 2 only", timeout=10000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("One port, not all of them")
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("23 times", timeout=8000)
+    devices = page.locator("section.try", has=page.locator("#ctl-devices"))
+    await set_range(page, "#ctl-devices", 4)
+    await expect(devices.locator(".try-readout")).to_contain_text("67%")
+    return "Switches lesson: the MAC table learns and stops flooding; a 24-port hub copies every frame 23 times, a 4-port one wastes 67% of its copies"
+
+
+async def net_routing_flow(page):
+    await page.goto(BASE + "/networks/routing", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Hop by hop across the world")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("A table of prefixes, longest match wins")
+    await expect(page.locator("[data-node='table'] .tx-rt-cap")).to_have_text("198.51.100.200: 3 routes match, /25 is longest → R5", timeout=8000)
+    dest = page.locator("section.try", has=page.locator("#ctl-destD"))
+    await set_range(page, "#ctl-destD", 42)
+    await expect(dest.locator(".try-readout")).to_contain_text("/24")
+    await expect(page.locator("[data-node='table'] .tx-rt-cap")).to_contain_text("/24 is longest → R4")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Everything else: the default route")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("121 ms", timeout=8000)
+    return "Routing lesson: .200 matches 3 routes and /25 wins; .42 goes via the /24; anywhere else takes the default route, 121 ms"
+
+
+async def net_nat_flow(page):
+    await page.goto(BASE + "/networks/nat", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Twenty devices, one address")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-node='table'] .tx-nat-ev")).to_have_text("out: 192.168.1.42:51000 becomes 203.0.113.10:40001", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("The table sends replies home")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("1.2%", timeout=8000)
+    conns = page.locator("section.try", has=page.locator("#ctl-connsPerDevice"))
+    await set_range(page, "#ctl-connsPerDevice", 200)
+    await expect(conns.locator(".try-readout")).to_contain_text("323")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-node='table'] .tx-nat-ev")).to_have_text("in: to 203.0.113.10:22, no entry, dropped", timeout=8000)
+    return "NAT lesson: the laptop's .42:51000 becomes .10:40001; 800 entries use 1.2% of the ports, 200 connections each caps it near 323 devices; unasked packets are dropped"
+
+
+async def net_firewall_flow(page):
+    await page.goto(BASE + "/networks/firewalls", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Who gets in?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("3")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Rules: allow or drop by address and port")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("200/min", timeout=8000)
+    await expect(page.locator("[data-node='rules'] .tx-fw-rule:not([hidden])")).to_have_count(3)
+    probes = page.locator("section.try", has=page.locator("#ctl-probesPerMin"))
+    await set_range(page, "#ctl-probesPerMin", 3000)
+    await expect(probes.locator(".try-readout")).to_contain_text("2,000")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Remember who asked")
+    await expect(page.locator("[data-node='rules'] .tx-fw-rule:not([hidden])")).to_have_count(4, timeout=8000)
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("28,232 ports")
+    return "Firewall lesson: 3 ports open with no firewall; rules drop 200 of 300 probes a minute (2,000 of 3,000); stateful adds a rule for replies instead of opening 28,232 ports"
+
+
+async def net_vpn_flow(page):
+    await page.goto(BASE + "/networks/proxies-vpns", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("A tunnel or a middleman?")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("Unreachable")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-node='sees'] .tx-tun-sees span").first).to_have_text("only a tunnel to 198.51.100.20", timeout=8000)
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Full tunnel: everything via the office")
+    vpn = page.locator("section.try", has=page.locator("#ctl-toVpnMs"))
+    await set_range(page, "#ctl-toVpnMs", 200)
+    await expect(vpn.locator(".try-readout")).to_contain_text("230 ms")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(2):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("A proxy: one app's middleman")
+    await expect(page.locator("[data-node='sees'] .tx-tun-pkt")).to_contain_text("CONNECT example.com:443")
+    return "Proxies and VPNs lesson: the office app is unreachable until the tunnel; the café sees only a tunnel; a VPN server 200 ms away makes the web 230 ms; the proxy carries CONNECT example.com:443"
+
+
+async def net_latency_flow(page):
+    await page.goto(BASE + "/networks/latency", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Where the milliseconds go")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='a'] .tx-v")).to_have_text("497 ms")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    await page.keyboard.press("ArrowRight")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("70 ms", timeout=8000)
+    dist = page.locator("section.try", has=page.locator("#ctl-distanceKm"))
+    await set_range(page, "#ctl-distanceKm", 1000)
+    await expect(dist.locator(".try-readout")).to_contain_text("10 ms")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Move closer, or ask less often")
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("68 ms", timeout=8000)
+    return "Latency lesson: the page takes 497 ms from 7,000 km; 70 ms of it per round trip is fibre, 10 ms at 1,000 km; an edge 50 km away loads it in 68 ms"
+
+
+async def net_bandwidth_flow(page):
+    await page.goto(BASE + "/networks/bandwidth", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("A wide pipe, a slow trickle")
+    await page.wait_for_selector(STAGE_READY, timeout=10000)
+    await expect(page.locator("[data-tile='c'] .tx-v")).to_have_text("2 min")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("A little loss, a big slowdown")
+    await expect(page.locator("[data-tile='b'] .tx-v")).to_have_text("5.6 Mbit/s", timeout=8000)
+    await expect(page.locator("[data-node='pipe'] .tx-pipe-cap")).to_have_text("the narrowest limit wins: loss and round trip")
+    rtt = page.locator("section.try", has=page.locator("#ctl-rttMs"))
+    await set_range(page, "#ctl-rttMs", 10)
+    await expect(rtt.locator(".try-readout")).to_contain_text("45 Mbit/s")
+    return "Bandwidth lesson: 100 MB takes 2 min on a 100 Mbit/s plan from London; 0.1% loss at 80 ms allows 5.6 Mbit/s, 45 at 10 ms"
 
 
 SQL_READY = ".sql-clauses, .sql-stage.empty .sql-stage-msg"
@@ -1620,7 +1985,7 @@ async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow, net_firewall_flow, net_vpn_flow, net_latency_flow, net_bandwidth_flow]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

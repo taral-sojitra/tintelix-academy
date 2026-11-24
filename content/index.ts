@@ -1,6 +1,24 @@
 import type { Lesson, SqlLesson, Subject } from "@tintelix/schema";
 import { components } from "./components";
 import { osiLesson } from "./networks/osi-model/lesson";
+import { tcpIpLesson } from "./networks/tcp-ip-model/lesson";
+import { ipLesson } from "./networks/ip-addressing/lesson";
+import { subnetLesson } from "./networks/subnetting/lesson";
+import { arpLesson } from "./networks/arp/lesson";
+import { dhcpLesson } from "./networks/dhcp/lesson";
+import { tcpUdpLesson } from "./networks/tcp-vs-udp/lesson";
+import { handshakeLesson } from "./networks/handshake/lesson";
+import { portsLesson } from "./networks/ports-sockets/lesson";
+import { dnsLesson } from "./networks/dns/lesson";
+import { httpLesson } from "./networks/http/lesson";
+import { tlsLesson } from "./networks/tls/lesson";
+import { switchLesson } from "./networks/switches-routers/lesson";
+import { routingLesson } from "./networks/routing/lesson";
+import { natLesson } from "./networks/nat/lesson";
+import { firewallLesson } from "./networks/firewalls/lesson";
+import { vpnLesson } from "./networks/proxies-vpns/lesson";
+import { latencyLesson } from "./networks/latency/lesson";
+import { bandwidthLesson } from "./networks/bandwidth/lesson";
 import { select } from "./sql/select/lesson";
 import { where } from "./sql/where/lesson";
 import { orderBy } from "./sql/order-by/lesson";
@@ -86,7 +104,7 @@ import { statelessServices } from "./system-design/stateless-services/lesson";
 export { components, subjects };
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
-export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange, osiLesson];
+export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange, osiLesson, tcpIpLesson, ipLesson, subnetLesson, arpLesson, dhcpLesson, tcpUdpLesson, handshakeLesson, portsLesson, dnsLesson, httpLesson, tlsLesson, switchLesson, routingLesson, natLesson, firewallLesson, vpnLesson, latencyLesson, bandwidthLesson];
 
 /** Every written SQL lesson (task lessons, not diagram lessons). */
 export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitOffset, aggregates, groupBy, having, caseWhen, innerJoin, leftJoin, cte, rowNumber, insert, update, remove, createTable, alterTable, createIndex, dropTable, truncate];

@@ -716,3 +716,182 @@
 .tx-env-row .p-3 { background: color-mix(in srgb, var(--green) 22%, transparent); }
 .tx-env-row.new em { color: var(--node-ink); font-weight: 650; }
 .tx-env-cap { margin: 6px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: an IP address in decimal and in bits, network part (cyan) and host part (amber). */
+.tx-ip { margin-top: 6px; display: grid; gap: 6px; }
+.tx-ip-dec { margin: 0; font-family: var(--mono); font-size: 20px; letter-spacing: 0.02em; color: var(--node-sub); }
+.tx-ip-dec .net { color: var(--cyan); }
+.tx-ip-dec .host { color: var(--amber); }
+.tx-ip-dec .mix { color: var(--violet); }
+.tx-ip-bits { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tx-ip-bits[hidden] { display: none; }
+.tx-ip-bits span { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 2px; }
+.tx-ip-bits i { font-style: normal; font-family: var(--mono); font-size: 11px; line-height: 20px; text-align: center; border-radius: 3px; color: var(--node-ink); }
+.tx-ip-bits i.net { background: color-mix(in srgb, var(--cyan) 26%, transparent); }
+.tx-ip-bits i.host { background: color-mix(in srgb, var(--amber) 26%, transparent); }
+.tx-ip-cap { margin: 0; font-family: var(--mono); color: var(--node-sub); }
+
+/* Networks: a /24 cut into subnets, hosts A and B marked, and the mask test. */
+.tx-sn { margin-top: 6px; display: grid; gap: 5px; }
+.tx-sn-bar { position: relative; height: 26px; margin-bottom: 4px; }
+.tx-sn-segs { display: flex; gap: 2px; height: 100%; }
+.tx-sn-seg { flex: 1 1 0; min-width: 0; border-radius: 4px; font-family: var(--mono); font-size: 10.5px; line-height: 26px; padding-left: 5px; color: var(--node-sub); background: color-mix(in srgb, var(--node-stroke) 35%, transparent); overflow: hidden; }
+.tx-sn-seg.a { background: color-mix(in srgb, var(--cyan) 28%, transparent); color: var(--node-ink); }
+.tx-sn-seg.b { background: color-mix(in srgb, var(--amber) 30%, transparent); color: var(--node-ink); }
+.tx-sn-seg.a.b { background: color-mix(in srgb, var(--green) 30%, transparent); }
+.tx-sn-mark { position: absolute; top: -7px; transform: translateX(-50%); font-style: normal; font-family: var(--mono); font-size: 10px; font-weight: 700; line-height: 14px; padding: 0 4px; border-radius: 4px; color: #fff; }
+.tx-sn-mark.a { background: var(--cyan); }
+.tx-sn-mark.b { background: var(--amber); top: 19px; }
+.tx-sn-and { margin: 0; font-family: var(--mono); font-size: 11px; color: var(--node-ink); white-space: nowrap; }
+.tx-sn-cap { margin: 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: ARP from the laptop's side, the question, the answer and the cache. */
+.tx-arp { margin-top: 6px; display: grid; gap: 5px; }
+.tx-arp-line { margin: 0; font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 5px; color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-arp-line[hidden] { display: none; }
+.tx-arp-line.ask { background: color-mix(in srgb, var(--amber) 24%, transparent); }
+.tx-arp-line.ans { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.tx-arp-line.use { background: color-mix(in srgb, var(--cyan) 22%, transparent); }
+.tx-arp-cache { margin: 0; display: flex; gap: 10px; align-items: baseline; font-family: var(--mono); font-size: 11.5px; }
+.tx-arp-cache em { font-style: normal; color: var(--node-sub); }
+.tx-arp-row { color: var(--node-sub); }
+.tx-arp-row.known { color: var(--green); }
+
+/* Networks: DHCP from the newcomer's side, the four messages and the settings it ends up with. */
+.tx-dhcp { margin-top: 6px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
+.tx-dhcp-msgs { display: grid; gap: 4px; align-content: start; }
+.tx-dhcp-msg { margin: 0; font-family: var(--mono); font-size: 11.5px; padding: 2px 8px; border-radius: 5px; color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-dhcp-msg[hidden] { display: none; }
+.tx-dhcp-msg.up { background: color-mix(in srgb, var(--amber) 24%, transparent); }
+.tx-dhcp-msg.down { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.tx-dhcp-set { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; align-content: start; font-family: var(--mono); font-size: 11.5px; }
+.tx-dhcp-set div { display: flex; justify-content: space-between; gap: 8px; }
+.tx-dhcp-set dt { color: var(--node-sub); }
+.tx-dhcp-set b { display: inline; font-weight: 400; font-size: 11.5px; letter-spacing: 0; color: var(--node-sub); }
+.tx-dhcp-set.known b { color: var(--green); }
+
+/* Networks: TCP vs UDP at the receiver, packets 1-8 with number 4 lost. */
+.tx-ord { margin-top: 6px; display: grid; gap: 6px; }
+.tx-ord-row { display: grid; grid-template-columns: 40px repeat(8, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.tx-ord-row em { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--node-sub); }
+.tx-ord-row i { font-style: normal; font-family: var(--mono); font-size: 11px; line-height: 22px; text-align: center; border-radius: 5px; color: var(--node-sub); border: 1px dashed var(--node-stroke); }
+.tx-ord-row i.ok { background: color-mix(in srgb, var(--green) 26%, transparent); color: var(--node-ink); border-style: solid; }
+.tx-ord-row i.lost { background: color-mix(in srgb, var(--red) 20%, transparent); color: var(--red); border-color: var(--red); }
+.tx-ord-row i.wait { background: color-mix(in srgb, var(--amber) 26%, transparent); color: var(--node-ink); border-style: solid; }
+.tx-ord-row i.resent { background: color-mix(in srgb, var(--cyan) 28%, transparent); color: var(--node-ink); border-style: solid; }
+.tx-ord-cap { margin: 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a TCP ladder, client on the left, server on the right, an arrow per message. */
+.tx-lad { margin-top: 6px; display: grid; gap: 6px; }
+.tx-lad-head, .tx-lad-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); align-items: center; }
+.tx-lad-head { grid-template-columns: 70px minmax(0, 1fr) minmax(0, 1fr); font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-lad-head span:last-child { text-align: right; }
+.tx-lad-row[hidden] { display: none; }
+.tx-lad-row em { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--node-sub); }
+.tx-lad-row span { position: relative; font-family: var(--mono); font-size: 11.5px; color: var(--node-ink); text-align: center; padding-bottom: 3px; border-bottom: 2px solid var(--cyan); }
+.tx-lad-row.l span { border-bottom-color: var(--green); }
+.tx-lad-row span::after { content: ""; position: absolute; bottom: -6px; border: 5px solid transparent; }
+.tx-lad-row.r span::after { right: -2px; border-left: 8px solid var(--cyan); border-right: 0; }
+.tx-lad-row.l span::after { left: -2px; border-right: 8px solid var(--green); border-left: 0; }
+.tx-lad-cap { margin: 2px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a server's socket table, listening programs and connections. */
+.tx-sock { margin-top: 8px; display: grid; gap: 3px; }
+.tx-sock-head, .tx-sock-row { display: grid; grid-template-columns: 46px 112px minmax(0, 1fr) 70px; gap: 6px; font-family: var(--mono); font-size: 10.5px; }
+.tx-sock-head { color: var(--node-sub); }
+.tx-sock-row { padding: 2px 4px; margin: 0 -4px; border-radius: 4px; color: var(--node-ink); }
+.tx-sock-row[hidden] { display: none; }
+.tx-sock-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-sock-row.pick { background: color-mix(in srgb, var(--amber) 26%, transparent); }
+.tx-sock-cap { margin: 4px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a DNS lookup from the resolver's side, and its cache. */
+.tx-dns { margin-top: 6px; display: grid; gap: 4px; }
+.tx-dns-row { margin: 0; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; font-family: var(--mono); font-size: 11.5px; padding: 2px 8px; border-radius: 5px; background: color-mix(in srgb, var(--violet) 14%, transparent); }
+.tx-dns-row[hidden] { display: none; }
+.tx-dns-row em { font-style: normal; color: var(--node-sub); }
+.tx-dns-row span { color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-dns-row.answer { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.tx-dns-cache { margin: 2px 0 0; display: flex; gap: 10px; font-family: var(--mono); font-size: 11.5px; }
+.tx-dns-cache em { font-style: normal; color: var(--node-sub); }
+.tx-dns-cache span { color: var(--node-sub); }
+.tx-dns-cache span.known { color: var(--green); }
+
+/* Networks: a page load in round trips for HTTP/1.1, /2 and /3. */
+.tx-wf { margin-top: 4px; display: grid; gap: 4px; }
+.tx-wf-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; gap: 10px; align-items: center; }
+.tx-wf-row[hidden] { display: none; }
+.tx-wf-row em { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--node-sub); }
+.tx-node .tx-wf-row b { display: block; font-family: var(--mono); font-size: 12px; font-weight: 600; text-align: right; color: var(--node-ink); }
+.tx-wf-bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--node-stroke) 25%, transparent); }
+.tx-wf-bar i { display: block; height: 100%; transition: width .4s ease; }
+.tx-wf-bar .s, .tx-wf-key .s::before { background: color-mix(in srgb, var(--amber) 55%, transparent); }
+.tx-wf-bar .h, .tx-wf-key .h::before { background: color-mix(in srgb, var(--violet) 55%, transparent); }
+.tx-wf-bar .r, .tx-wf-key .r::before { background: color-mix(in srgb, var(--cyan) 55%, transparent); }
+.tx-wf-key { margin: 0; display: flex; gap: 14px; font-family: var(--mono); font-size: 10.5px; color: var(--node-sub); }
+.tx-wf-key span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 5px; border-radius: 2px; vertical-align: -1px; }
+
+/* Networks: a switch's MAC table and what it does with the current frame. */
+.tx-mac { margin-top: 6px; display: grid; gap: 6px; }
+.tx-mac-rows { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tx-mac-row { margin: 0; display: flex; justify-content: space-between; gap: 6px; padding: 4px 8px; border-radius: 6px; font-family: var(--mono); font-size: 11.5px; background: color-mix(in srgb, var(--cyan) 18%, transparent); }
+.tx-mac-row[hidden] { display: none; }
+.tx-mac-row em { font-style: normal; color: var(--node-ink); }
+.tx-mac-row span { color: var(--node-sub); }
+.tx-mac-row.new { background: color-mix(in srgb, var(--amber) 28%, transparent); }
+.tx-mac-now { margin: 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a routing table with longest-prefix match, and traceroute's hop list. */
+.tx-rt, .tx-tr { margin-top: 6px; display: grid; gap: 4px; }
+.tx-rt-row { margin: 0; display: flex; justify-content: space-between; gap: 8px; padding: 3px 8px; border-radius: 5px; font-family: var(--mono); font-size: 11.5px; color: var(--node-sub); border: 1px dashed var(--node-stroke); }
+.tx-rt-row em { font-style: normal; }
+.tx-rt-row.match { color: var(--node-ink); border-style: solid; background: color-mix(in srgb, var(--cyan) 14%, transparent); }
+.tx-rt-row.pick { background: color-mix(in srgb, var(--green) 26%, transparent); border-color: var(--green); }
+.tx-rt-cap { margin: 2px 0 0; font-family: var(--mono); color: var(--cyan); }
+.tx-tr-row { margin: 0; display: grid; grid-template-columns: 52px minmax(0, 1fr) 56px; gap: 8px; font-family: var(--mono); font-size: 11.5px; }
+.tx-tr-row[hidden] { display: none; }
+.tx-tr-row em { font-style: normal; color: var(--node-sub); }
+.tx-tr-row span { color: var(--node-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-node .tx-tr-row b { display: block; font-size: 11.5px; font-weight: 400; text-align: right; color: var(--amber); }
+
+/* Networks: a home router's NAT table. */
+.tx-nat { margin-top: 6px; display: grid; gap: 3px; }
+.tx-nat-head, .tx-nat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; font-family: var(--mono); font-size: 11px; }
+.tx-nat-head { color: var(--node-sub); }
+.tx-nat-row { padding: 2px 6px; margin: 0 -6px; border-radius: 5px; color: var(--node-ink); }
+.tx-nat-row[hidden] { display: none; }
+.tx-nat-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-nat-row span:nth-child(2) { color: var(--amber); }
+.tx-nat-row.pick { background: color-mix(in srgb, var(--cyan) 18%, transparent); }
+.tx-nat-ev { margin: 4px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a firewall's rules, checked top to bottom; the first match decides. */
+.tx-fw { margin-top: 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; }
+.tx-fw-rule { margin: 0; display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 6px; padding: 3px 8px; white-space: nowrap; overflow: hidden; border-radius: 5px; font-family: var(--mono); font-size: 11.5px; color: var(--node-sub); border: 1px solid transparent; }
+.tx-fw-rule[hidden] { display: none; }
+.tx-fw-rule em { font-style: normal; }
+.tx-fw-rule.hit { color: var(--node-ink); border-color: var(--green); background: color-mix(in srgb, var(--green) 20%, transparent); }
+.tx-fw-rule.hit.deny { border-color: var(--red); background: color-mix(in srgb, var(--red) 16%, transparent); }
+.tx-fw-now { grid-column: 1 / -1; margin: 2px 0 0; font-family: var(--mono); color: var(--cyan); }
+
+/* Networks: a packet plain, inside a VPN tunnel, or through a proxy, and who sees what. */
+.tx-tun { margin-top: 6px; display: grid; gap: 8px; }
+.tx-tun-pkt { margin: 0; display: flex; gap: 3px; flex-wrap: wrap; font-family: var(--mono); font-size: 11.5px; }
+.tx-tun-pkt span { padding: 3px 8px; border-radius: 5px; color: var(--node-ink); }
+.tx-tun-pkt .o { background: color-mix(in srgb, var(--amber) 26%, transparent); }
+.tx-tun-pkt .s { background: color-mix(in srgb, var(--violet) 26%, transparent); }
+.tx-tun-sees { display: grid; gap: 3px; }
+.tx-tun-sees p { margin: 0; display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; font-family: var(--mono); font-size: 11.5px; }
+.tx-tun-sees em { font-style: normal; color: var(--node-sub); }
+.tx-tun-sees span { color: var(--cyan); }
+
+/* Networks: bandwidth vs throughput, the narrowest limit lit. */
+.tx-pipe { margin-top: 6px; display: grid; gap: 6px; }
+.tx-pipe-row { display: grid; grid-template-columns: 140px minmax(0, 1fr) 90px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 11px; }
+.tx-pipe-row em { font-style: normal; color: var(--node-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-pipe-row span { color: var(--node-ink); text-align: right; }
+.tx-pipe-bar { height: 14px; border-radius: 7px; background: color-mix(in srgb, var(--node-stroke) 25%, transparent); overflow: hidden; }
+.tx-pipe-bar i { display: block; height: 100%; border-radius: 7px; background: color-mix(in srgb, var(--cyan) 55%, transparent); transition: width .4s ease; }
+.tx-pipe-row.limit em, .tx-pipe-row.limit span { color: var(--amber); }
+.tx-pipe-row.limit .tx-pipe-bar i { background: color-mix(in srgb, var(--amber) 65%, transparent); }
+.tx-pipe-cap { margin: 2px 0 0; font-family: var(--mono); color: var(--cyan); }

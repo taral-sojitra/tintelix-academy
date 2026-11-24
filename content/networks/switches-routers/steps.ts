@@ -1,0 +1,88 @@
+import type { Step } from "@tintelix/schema";
+
+export const switchSteps: Step[] = [
+  {
+    id: "two-boxes",
+    tag: "problem",
+    title: "Two networks, two kinds of box",
+    short: "Two boxes",
+    text: [
+      "An office has two subnets, like the ones from the subnetting lesson: network A, 10.0.1.0/24, and network B, 10.0.2.0/24. Inside each, every device plugs into a **switch**. Between them sits a **router**.",
+      "They look alike, boxes with cables, but they read different headers and do different jobs. Mixing them up is one of the most common confusions in networking.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 0 },
+    live: "LIVE · two boxes",
+  },
+  {
+    id: "learning",
+    tag: "technique",
+    title: "A switch learns where everyone is",
+    short: "Learning",
+    text: [
+      "A switch reads only the Ethernet header: MAC addresses. Each time a frame comes in, it notes the **source** MAC and the port it came from in its **MAC table**.",
+      "Then it looks up the **destination**. Unknown: it **floods** the frame out of every other port, and only the right device keeps it. Known: it sends the frame out of that **one port**. After a few frames, the switch knows everyone, and flooding stops.",
+    ],
+    note: { kind: "watch", text: "The first frame goes everywhere (amber). After A2 replies, the switch knows both and sends straight." },
+    changed: [{ kind: "add", label: "MAC table", value: "learned from traffic" }],
+    scene: { focus: ["a1", "a2", "a3", "swA", "router", "table"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 1 },
+    live: "LIVE · learning",
+  },
+  {
+    id: "one-port",
+    tag: "technique",
+    title: "One port, not all of them",
+    short: "Switch vs hub",
+    text: [
+      "Before switches, networks used **hubs**, which repeat every frame out of every port. With **{devices}** devices, each frame is copied **{hubCopies}** times, and **{wastedPct}** of those copies go to devices that throw them away, while everyone waits their turn on the wire.",
+      "A switch sends each frame only where it needs to go, so two pairs of devices can talk at full speed at the same time.",
+    ],
+    controls: ["devices"],
+    scene: { focus: ["a1", "a2", "a3", "swA", "table"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 2 },
+    live: "LIVE · switch vs hub",
+  },
+  {
+    id: "router",
+    tag: "technique",
+    title: "A router joins networks",
+    short: "The router",
+    text: [
+      "A1 wants B1 at 10.0.2.21. A1's mask test says it's on **another network**, so A1 doesn't look for B1's MAC at all. It sends the frame to the **router's** MAC, its default gateway; switch A forwards it out of port 4.",
+      "The router reads the **IP** header, finds 10.0.2.0/24 in its table, lowers the TTL, writes a **new Ethernet header** for network B and sends it to switch B, which delivers it to B1.",
+    ],
+    note: { kind: "next", text: "With many routers between you and the destination, each must pick the next hop. That's routing, next." },
+    scene: { focus: ["a1", "swA", "router", "swB", "b1", "b2", "table"] },
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 3 },
+    live: "LIVE · the router",
+  },
+  {
+    id: "layers",
+    tag: "solution",
+    title: "Layer 2 inside, layer 3 between",
+    short: "Layer 2 vs 3",
+    text: [
+      "A **switch** works at layer 2: MAC addresses, inside one network. Broadcasts like ARP and DHCP pass through it to everyone. A **router** works at layer 3: IP addresses, between networks. Broadcasts **stop** at the router, so splitting a big network with routers keeps each broadcast to a smaller crowd.",
+      "Your home \"router\" is several boxes in one: a router, a small switch for its cable ports, a Wi-Fi access point, a DHCP server and NAT.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 4 },
+    live: "LIVE · layer 2 vs 3",
+  },
+  {
+    id: "recap",
+    tag: "recap",
+    title: "Next door or another network?",
+    short: "Recap",
+    text: [
+      "A switch learns which port each MAC address is on, floods only while it doesn't know, and otherwise sends a frame out of one port. A router reads IP addresses and moves packets between networks, rewriting the Ethernet header and lowering the TTL. Switch inside a network, router between.",
+    ],
+    sim: { mode: "steady", speed: 1 },
+    model: { mode: 4 },
+    live: "RECAP",
+  },
+];
