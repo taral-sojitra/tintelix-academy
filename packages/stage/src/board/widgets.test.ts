@@ -178,6 +178,25 @@ describe("board widgets", () => {
     paintWidget(root, w, { ...d, geoLen: 4, cellW: 39.1, cellH: 19.5, cellsX: 3, cellsY: 3 }, 0);
     expect(read.style.width).toBe("150px");
   });
+  it("ledger widget writes every movement as a debit and a credit that always balance", () => {
+    const w: BoardWidget = { kind: "custom", name: "ledger" };
+    const root = mount(w, {}, 0.5);
+    const shown = () => [...root.querySelectorAll<HTMLElement>(".tx-dbl-row")].filter((r) => !r.hidden);
+    const cells = (r: HTMLElement) => [r.querySelector("em")!.textContent, r.querySelector("b")!.textContent, r.querySelector("span")!.textContent];
+    const caption = () => root.querySelector(".tx-dbl-cap")!.textContent;
+    expect(shown().map(cells)).toEqual([
+      ["card network", "2,499", ""],
+      ["merchant owed", "", "2,499"],
+    ]);
+    expect(caption()).toBe("debits = credits = ₹2,499");
+    paintWidget(root, w, {}, 2.5);
+    expect(shown()).toHaveLength(6);
+    expect(cells(shown()[4]!)).toEqual(["merchant owed", "499", ""]);
+    expect(caption()).toBe("debits = credits = ₹3,048");
+    paintWidget(root, w, {}, 3.8);
+    expect(shown()).toHaveLength(6);
+  });
+
   it("locking widget shows two guests racing for one room, with and without the database refusing", () => {
     const w: BoardWidget = { kind: "custom", name: "locking" };
     const root = mount(w, { locked: 0 }, 0.5);
