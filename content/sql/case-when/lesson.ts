@@ -1,0 +1,78 @@
+import type { SqlLesson } from "@tintelix/schema";
+
+export const caseWhen: SqlLesson = {
+  id: "sql-case-when",
+  home: "sql",
+  slug: "case-when",
+  topic: "CASE WHEN",
+  title: "Label every order",
+  promise: "Give each row a label by rules, count only the rows you care about, and sort in an order you choose.",
+  minutes: 9,
+  level: 2,
+  explain: [
+    "**CASE** works out a value row by row: `CASE WHEN total > 10000 THEN 'big' ELSE 'small' END`. Postgres checks the WHEN rules top to bottom and uses the first one that's true.",
+    "So order matters: put the narrowest rule first. If no rule matches and there's no ELSE, the result is NULL.",
+    "CASE goes anywhere a value can: in SELECT to label rows, inside count to count only some rows, in ORDER BY for an order of your own. For \"this value, or a fallback when it's NULL\", `coalesce(city, 'unknown')` is shorter.",
+  ],
+  syntax: {
+    code: "SELECT id, total,\n  CASE WHEN total > 10000 THEN 'big'\n       WHEN total >= 3000 THEN 'medium'\n       ELSE 'small'\n  END AS size\nFROM orders;",
+    notes: [
+      "The first true WHEN wins; later ones aren't checked.",
+      "No match and no ELSE gives NULL.",
+      "`CASE status WHEN 'placed' THEN 1 … END` compares one value against each WHEN.",
+    ],
+  },
+  mistake: "Putting a broad rule first. With `WHEN price >= 800 … WHEN price >= 2000 …`, the second rule never fires, because every ₹2,000 product already matched the first. List rules from narrowest to broadest.",
+  tasks: [
+    {
+      id: "size",
+      prompt: "Label each order as `size`: **big** over ₹10,000, **medium** from ₹3,000, otherwise **small**. Show **id**, **total** and `size`.",
+      starter: "SELECT id, total\nFROM orders;",
+      hint: "CASE WHEN total > 10000 THEN 'big' WHEN total >= 3000 THEN 'medium' ELSE 'small' END AS size",
+      solution: "SELECT id, total,\n  CASE WHEN total > 10000 THEN 'big'\n       WHEN total >= 3000 THEN 'medium'\n       ELSE 'small'\n  END AS size\nFROM orders;",
+      ordered: false,
+      namedColumns: ["id", "total", "size"],
+    },
+    {
+      id: "band",
+      prompt: "Label products as `band`: **premium** from ₹2,000, **mid** from ₹800, else **budget**. Show **name**, **price** and `band`. The starter's rules are in the wrong order.",
+      starter: "SELECT name, price,\n  CASE WHEN price >= 800 THEN 'mid'\n       WHEN price >= 2000 THEN 'premium'\n       ELSE 'budget'\n  END AS band\nFROM products;",
+      hint: "The first true rule wins, so the premium rule has to come before the mid one.",
+      solution: "SELECT name, price,\n  CASE WHEN price >= 2000 THEN 'premium'\n       WHEN price >= 800 THEN 'mid'\n       ELSE 'budget'\n  END AS band\nFROM products;",
+      ordered: false,
+      namedColumns: ["name", "price", "band"],
+    },
+    {
+      id: "place",
+      prompt: "Show each customer's **name** and where they live as `place`: their city, or **unknown** when there's no city.",
+      starter: "SELECT name,\n  CASE WHEN city = NULL THEN 'unknown' ELSE city END AS place\nFROM customers;",
+      hint: "= NULL is never true. Use IS NULL, or coalesce(city, 'unknown').",
+      solution: "SELECT name,\n  CASE WHEN city IS NULL THEN 'unknown' ELSE city END AS place\nFROM customers;",
+      ordered: false,
+      namedColumns: ["name", "place"],
+    },
+    {
+      id: "count-some",
+      prompt: "In one row, count the **delivered** orders as `delivered` and the **cancelled** ones as `cancelled`.",
+      starter: "SELECT count(*) AS delivered, count(*) AS cancelled\nFROM orders;",
+      hint: "count skips NULLs, and a CASE with no ELSE gives NULL: count(CASE WHEN status = 'delivered' THEN 1 END).",
+      solution: "SELECT count(CASE WHEN status = 'delivered' THEN 1 END) AS delivered,\n       count(CASE WHEN status = 'cancelled' THEN 1 END) AS cancelled\nFROM orders;",
+      ordered: false,
+      namedColumns: ["delivered", "cancelled"],
+    },
+    {
+      id: "custom-order",
+      prompt: "List orders' **id**, **status** and **ordered_at** with **placed** first, then **shipped**, then the rest; within each, newest first (higher id first on the same day).",
+      starter: "SELECT id, status, ordered_at\nFROM orders\nORDER BY status, ordered_at DESC, id DESC;",
+      hint: "Sort by a CASE that turns each status into a number: CASE status WHEN 'placed' THEN 1 WHEN 'shipped' THEN 2 ELSE 3 END.",
+      solution: "SELECT id, status, ordered_at\nFROM orders\nORDER BY CASE status WHEN 'placed' THEN 1 WHEN 'shipped' THEN 2 ELSE 3 END,\n         ordered_at DESC, id DESC;",
+      ordered: true,
+    },
+  ],
+  buildsOn: ["sql-select"],
+  cheatsheet: [
+    { heading: "Label rows", text: ["`CASE WHEN total > 10000 THEN 'big' ELSE 'small' END AS size`", "Rules are checked top to bottom; the first true one wins."] },
+    { heading: "Count some rows", text: ["`count(CASE WHEN status = 'delivered' THEN 1 END)` counts delivered orders only.", "`sum(CASE WHEN … THEN total ELSE 0 END)` adds up only some totals."] },
+    { heading: "Fallbacks and order", text: ["`coalesce(city, 'unknown')` fills in NULLs.", "`ORDER BY CASE status WHEN 'placed' THEN 1 … END` sorts in your own order."] },
+  ],
+};

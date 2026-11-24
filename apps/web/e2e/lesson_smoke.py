@@ -1480,6 +1480,7 @@ SQL_LESSONS = [
     ("aggregates", "How many, how much?", "FROM starts with every row of customers: 20 rows."),
     ("group-by", "Who spends the most?", "FROM starts with every row of orders: 60 rows."),
     ("having", "Only the big spenders", "FROM starts with every row of orders: 60 rows."),
+    ("case-when", "Label every order", "FROM starts with every row of orders: 60 rows."),
 ]
 
 

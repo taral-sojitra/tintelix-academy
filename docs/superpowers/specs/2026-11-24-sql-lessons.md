@@ -57,3 +57,9 @@ deliberately wrong in the way the lesson is about, so the first run's feedback t
 - Errors: `WHERE count(*) > 3` now says summaries belong in HAVING (it shares Postgres's grouping-error code, which
   had produced the GROUP BY message). An unknown column that is an AS name in the query, as in `HAVING spent > …`,
   now explains that WHERE and HAVING run before SELECT names columns.
+
+## 9. CASE WHEN: Label every order
+
+- Tasks: size labels on orders; price bands where the starter's broad rule comes first (four products land in the
+  wrong band); a place label where the starter repeats lesson 2's `= NULL` trap inside CASE; counting delivered and
+  cancelled orders in one row with `count(CASE … END)`; a custom sort order with CASE in ORDER BY.
