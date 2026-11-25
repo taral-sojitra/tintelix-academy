@@ -56,6 +56,9 @@ export function DsaLessonView({ slug }: { slug: string }) {
   const frame = frames[Math.min(frameIndex, frames.length - 1)];
   const asking = pending && frameIndex === slice.predictAt;
   const outputs = useMemo(() => runCounts(lesson, preset.id, code.algos), [lesson, preset.id, code.algos]);
+  // The form shows and checks only the fields this run takes; the rest come from the step's preset.
+  const fields = run.args ?? Object.keys(lesson.input);
+  const runSpec = useMemo(() => Object.fromEntries(fields.map((f) => [f, lesson.input[f]!])), [fields, lesson.input]);
   const listing = useMemo(() => parseListing(code.listings[run.listing]![lang], lang), [code, run.listing, lang]);
 
   // Saved step, language, predictions and ticks, read once.
@@ -254,11 +257,13 @@ export function DsaLessonView({ slug }: { slug: string }) {
           <kbd>←</kbd> <kbd>→</kbd> step · <kbd>,</kbd> <kbd>.</kbd> one move · <kbd>Space</kbd> play or pause
         </p>
         <InputPanel
+          key={fields.join(",")}
           presets={lesson.presets}
-          spec={lesson.input}
+          spec={runSpec}
+          initial={preset.input}
           active={source.kind === "other" ? source.preset : null}
           onPreset={(p) => setSource({ kind: "other", input: p.input, label: p.label, preset: p.id })}
-          onCustom={(value) => setSource({ kind: "other", input: value, label: "your input", preset: null })}
+          onCustom={(value) => setSource({ kind: "other", input: { ...preset.input, ...value }, label: "your input", preset: null })}
         />
       </div>
     </div>

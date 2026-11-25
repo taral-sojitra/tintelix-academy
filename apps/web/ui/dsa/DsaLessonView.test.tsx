@@ -11,12 +11,28 @@ describe("DsaLessonView", () => {
     const { container } = render(<DsaLessonView slug="hashing" />);
     await waitFor(() => expect(scene(container).dataset.ready).toBe("true"));
     fireEvent.click(track(container, 2));
-    await waitFor(() => expect(container.querySelector(".dsa-predict.ask")).not.toBeNull(), { timeout: 5000 });
+    // Playback runs on real timers (700 ms a move), and the full suite runs in parallel, so the waits are generous.
+    await waitFor(() => expect(container.querySelector(".dsa-predict.ask")).not.toBeNull(), { timeout: 15000 });
     fireEvent.click(screen.getByRole("button", { name: "Bucket 1, with 8" }));
     // Still playing, and already past frame 6, where the next step's prediction sits.
-    await waitFor(() => expect(Number(scene(container).dataset.frame)).toBeGreaterThanOrEqual(6), { timeout: 5000 });
+    await waitFor(() => expect(Number(scene(container).dataset.frame)).toBeGreaterThanOrEqual(6), { timeout: 15000 });
     act(() => fireEvent.click(track(container, 3)));
-    await waitFor(() => expect(container.querySelector(".dsa-predict.ask")).not.toBeNull(), { timeout: 8000 });
+    await waitFor(() => expect(container.querySelector(".dsa-predict.ask")).not.toBeNull(), { timeout: 15000 });
     expect(scene(container).dataset.frame).toBe("6");
-  }, 20000);
+  }, 60000);
+});
+
+describe("DsaLessonView input form", () => {
+  const fields = (c: HTMLElement) => [...c.querySelectorAll<HTMLInputElement>(".dsa-form input")].map((i) => i.name);
+  it("shows only the fields the step's run takes, and runs a custom value with the rest from the preset", async () => {
+    const { container } = render(<DsaLessonView slug="stacks-queues" />);
+    await waitFor(() => expect(scene(container).dataset.ready).toBe("true"));
+    fireEvent.click(track(container, 2));
+    expect(fields(container)).toEqual(["s"]);
+    fireEvent.click(track(container, 7));
+    expect(fields(container)).toEqual(["temps"]);
+    fireEvent.change(container.querySelector<HTMLInputElement>(".dsa-form input[name='temps']")!, { target: { value: "30, 60, 90" } });
+    fireEvent.submit(container.querySelector(".dsa-form")!);
+    await waitFor(() => expect([...container.querySelectorAll(".ts-array[data-id='wait'] .ts-cell b")].map((b) => b.textContent)).toEqual(["1", "1", "0"]), { timeout: 20000 });
+  }, 60000);
 });
