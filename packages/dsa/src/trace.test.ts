@@ -20,7 +20,7 @@ describe("trace", () => {
     const run = trace(pairs, { nums: [4, 7] });
     expect(run.frames.map((f) => f.site)).toEqual(["look", "look", "done"]);
     expect(run.frames[0]!.structs.nums).toEqual({ kind: "array", values: [4, 7], marks: ["compare", null] });
-    expect(run.frames[1]!.structs.nums!.marks).toEqual([null, "compare"]);
+    expect((run.frames[1]!.structs.nums as { values: unknown[]; marks: unknown[] }).marks).toEqual([null, "compare"]);
     expect(run.result).toBe(2);
     expect(run.stopped).toBeUndefined();
   });
@@ -48,9 +48,9 @@ describe("trace", () => {
       },
       {},
     );
-    expect(run.frames[0]!.structs.a!.values).toEqual([1]);
+    expect((run.frames[0]!.structs.a as { values: unknown[]; marks: unknown[] }).values).toEqual([1]);
     expect(run.frames[0]!.vars).toEqual({});
-    expect(run.frames[1]!.structs.a!.values).toEqual([9]);
+    expect((run.frames[1]!.structs.a as { values: unknown[]; marks: unknown[] }).values).toEqual([9]);
   });
 
   it("stops a run that never ends at the frame limit", () => {
@@ -67,5 +67,24 @@ describe("trace", () => {
   it("hides a pointer that has left its structure", () => {
     const run = trace(pairs, { nums: [5] });
     expect(run.frames.at(-1)!.pointers).toEqual([]);
+  });
+});
+
+describe("trace grids", () => {
+  it("records a grid's cells and marks, copied per frame", () => {
+    const run = trace(
+      (t: Tracer) => {
+        const g = t.grid("g", 2, 3);
+        g.put(0, 1, 5);
+        g.mark(0, 1, "active");
+        t.at("one", "one");
+        g.put(1, 2, 7);
+        g.clearMarks();
+        t.at("two", "two");
+      },
+      {},
+    );
+    expect(run.frames[0]!.structs.g).toEqual({ kind: "grid", rows: [[null, 5, null], [null, null, null]], marks: [[null, "active", null], [null, null, null]] });
+    expect(run.frames[1]!.structs.g).toEqual({ kind: "grid", rows: [[null, 5, null], [null, null, 7]], marks: [[null, null, null], [null, null, null]] });
   });
 });

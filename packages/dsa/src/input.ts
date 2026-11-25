@@ -62,9 +62,14 @@ export function formatInput(spec: InputSpec, value: Record<string, unknown>): Re
   return Object.fromEntries(Object.entries(spec).map(([name, f]) => [name, f.kind === "ints" ? ((value[name] as number[]) ?? []).join(", ") : String(value[name] ?? "")]));
 }
 
-/** The input's fields as arguments, in the order the spec lists them. */
-export function argsFor(spec: InputSpec, value: Record<string, unknown>): unknown[] {
-  return Object.keys(spec).map((name) => value[name]);
+/** The input's fields as arguments: the run's own `args`, or every field in the order the spec lists them. Copies, so a listing can't change a preset. */
+export function argsFor(spec: InputSpec, value: Record<string, unknown>, only?: string[]): unknown[] {
+  return (only ?? Object.keys(spec)).map((name) => structuredClone(value[name]));
+}
+
+/** What a run should return on a preset: its own `expectByRun` entry, or the preset's `expect`. */
+export function expectedFor(preset: { expect?: unknown; expectByRun?: Record<string, unknown> }, run: string): unknown {
+  return preset.expectByRun && run in preset.expectByRun ? preset.expectByRun[run] : preset.expect;
 }
 
 /** A preset's problems against the spec, as "field: message". */

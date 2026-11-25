@@ -929,3 +929,9 @@
 .tx-struct .ts-steps { margin: 0; padding: 8px 12px; border-radius: 999px; background: var(--primary-soft); color: var(--primary-ink); font: 600 12.5px/1.2 var(--sans); text-align: center; }
 @media (max-width: 640px) { .tx-struct { grid-template-columns: 1fr; padding: 24px 14px; } .tx-struct .ts-side { grid-template-columns: 1fr auto; align-items: center; } }
 @media (prefers-reduced-motion: reduce) { .tx-struct .ts-ptr, .tx-struct .ts-cell { transition: none; } }
+.tx-struct .ts-grid { display: grid; gap: 4px; justify-items: start; }
+.tx-struct .ts-grid table { border-collapse: collapse; font: 600 15px/1 var(--mono); }
+.tx-struct .ts-grid th { padding: 0 8px 6px 0; font: 500 10px/1 var(--mono); color: var(--faint); text-align: center; }
+.tx-struct .ts-grid tbody th { padding: 0 8px 0 0; text-align: right; }
+.tx-struct .ts-grid td { width: 42px; height: 42px; text-align: center; background: var(--node-bg); border: 1px solid var(--node-stroke); color: var(--node-ink); transition: background-color .2s, box-shadow .2s; }
+@media (max-width: 640px) { .tx-struct .ts-grid td { width: 34px; height: 34px; } }

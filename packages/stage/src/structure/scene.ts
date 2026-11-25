@@ -25,6 +25,26 @@ export function createStructureScene(root: HTMLElement): StructureScene {
   const side = el("div", "ts-side", root);
   const arrays = new Map<string, { box: HTMLElement; row: HTMLElement; ptrs: HTMLElement }>();
 
+  const grids = new Map<string, HTMLElement>();
+
+  function drawGrid(id: string, snap: Extract<Snapshot, { kind: "grid" }>) {
+    let box = grids.get(id);
+    if (!box) {
+      box = el("div", "ts-grid", main);
+      box.dataset.id = id;
+      el("span", "ts-name", box).textContent = id;
+      el("table", "", box);
+      grids.set(id, box);
+    }
+    const cols = snap.rows[0]?.length ?? 0;
+    const table = box.querySelector("table")!;
+    const head = `<thead><tr><th></th>${Array.from({ length: cols }, (_, c) => `<th>${c}</th>`).join("")}</tr></thead>`;
+    const body = snap.rows
+      .map((row, r) => `<tr><th>${r}</th>${row.map((v, c) => `<td${snap.marks[r]?.[c] ? ` class="m-${snap.marks[r]![c]}"` : ""}>${v === null ? "" : String(v).replace(/[&<>]/g, "")}</td>`).join("")}</tr>`)
+      .join("");
+    table.innerHTML = head + `<tbody>${body}</tbody>`;
+  }
+
   function drawArray(id: string, snap: Extract<Snapshot, { kind: "array" }>, frame: Frame) {
     let a = arrays.get(id);
     if (!a) {
@@ -78,7 +98,15 @@ export function createStructureScene(root: HTMLElement): StructureScene {
           a.box.remove();
           arrays.delete(id);
         }
-      for (const [id, snap] of Object.entries(frame.structs)) if (snap.kind === "array") drawArray(id, snap, frame);
+      for (const [id, g] of grids)
+        if (!ids.has(id)) {
+          g.remove();
+          grids.delete(id);
+        }
+      for (const [id, snap] of Object.entries(frame.structs)) {
+        if (snap.kind === "array") drawArray(id, snap, frame);
+        else drawGrid(id, snap);
+      }
 
       side.replaceChildren();
       const vars = Object.entries(frame.vars);
@@ -95,6 +123,7 @@ export function createStructureScene(root: HTMLElement): StructureScene {
       root.replaceChildren();
       root.classList.remove("tx-struct");
       arrays.clear();
+      grids.clear();
     },
   };
 }

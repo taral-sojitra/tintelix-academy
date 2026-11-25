@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { argsFor, parseListing } from "@tintelix/dsa";
+import { argsFor, expectedFor, parseListing } from "@tintelix/dsa";
 import { hasPython, runPyListing } from "@tintelix/dsa/check";
 import { dsaCode, dsaLessons } from "../index";
 
@@ -14,9 +14,9 @@ describe.skipIf(!python)("DSA Python listings", () => {
       it(`${lesson.id}: ${name} (${run.listing}.py) returns each preset's answer`, () => {
         const code = parseListing(dsaCode[lesson.slug]!.listings[run.listing]!.py, "py").code;
         for (const p of lesson.presets) {
-          const got = runPyListing(code, argsFor(lesson.input, p.input));
+          const got = runPyListing(code, argsFor(lesson.input, p.input, run.args));
           if (lesson.accept) expect(lesson.accept(p.input, got), p.id).toBe(true);
-          else expect(got, p.id).toEqual(p.expect ?? null);
+          else expect(got, p.id).toEqual(expectedFor(p, name) ?? null);
         }
       });
 });
