@@ -936,3 +936,10 @@
 .tx-struct .ts-grid td { width: 42px; height: 42px; text-align: center; background: var(--node-bg); border: 1px solid var(--node-stroke); color: var(--node-ink); transition: background-color .2s, box-shadow .2s; }
 @media (max-width: 640px) { .tx-struct .ts-grid td { width: 34px; height: 34px; } }
 .tx-struct .ts-ptrs:empty { height: 0; }
+.tx-struct .ts-map { display: grid; gap: 4px; justify-items: start; }
+.tx-struct .ts-map table { border-collapse: collapse; font: 600 14px/1 var(--mono); }
+.tx-struct .ts-map td { min-width: 38px; height: 30px; padding: 0 10px; background: var(--node-bg); border: 1px solid var(--node-stroke); color: var(--node-ink); transition: background-color .2s; }
+.tx-struct .ts-map td:first-child { color: var(--muted); font-weight: 500; }
+.tx-struct .ts-map tr.m-active td, .tx-struct .ts-map tr.m-compare td { background: var(--primary-soft); }
+.tx-struct .ts-map tr.m-found td { background: var(--green-soft); color: var(--green-ink); }
+.tx-struct .ts-map tr.m-bad td { background: var(--red-soft); color: var(--red-ink); }

@@ -88,3 +88,18 @@ describe("createStructureScene grids", () => {
     expect([...el.querySelectorAll(".ts-grid tbody th")].map((c) => c.textContent)).toEqual(["0", "1"]);
   });
 });
+
+describe("createStructureScene maps", () => {
+  it("draws a map as key and value rows", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(frame({ structs: { counts: { kind: "map", entries: [["r", 2], ["a", 0]], marks: ["active", null] } }, pointers: [] }));
+    const rows = el.querySelectorAll(".ts-map[data-id='counts'] tbody tr");
+    expect([...rows].map((r) => [...r.children].map((c) => c.textContent))).toEqual([["r", "2"], ["a", "0"]]);
+    expect(rows[0]!.className).toBe("m-active");
+  });
+  it("says an empty map is empty", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(frame({ structs: { counts: { kind: "map", entries: [], marks: [] } }, pointers: [] }));
+    expect(el.querySelector(".ts-map .ts-empty")!.textContent).toBe("empty");
+  });
+});

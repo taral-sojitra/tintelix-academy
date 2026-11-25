@@ -50,3 +50,20 @@ describe("formatInput, argsFor and checkValue", () => {
     expect(checkValue(spec, { nums: [1] })).toEqual(["target: missing"]);
   });
 });
+
+describe("text fields", () => {
+  const words: InputSpec = { s: { kind: "text", label: "Word", alphabet: "a-z", length: [0, 24] } };
+  it("reads lowercase letters, trimmed", () => {
+    expect(parseInput(words, { s: "  racecar " })).toEqual({ ok: true, value: { s: "racecar" } });
+    expect(parseInput(words, { s: "" })).toEqual({ ok: true, value: { s: "" } });
+  });
+  it("names a character outside the alphabet", () => {
+    expect(parseInput(words, { s: "Race" })).toEqual({ ok: false, errors: { s: "Use the letters a to z only: “R” isn't one." } });
+    expect(parseInput(words, { s: "a b" })).toEqual({ ok: false, errors: { s: "Use the letters a to z only: “ ” isn't one." } });
+  });
+  it("keeps text short enough to fit", () => {
+    expect(parseInput(words, { s: "a".repeat(25) })).toEqual({ ok: false, errors: { s: "Keep it to 24 letters so every cell fits." } });
+    expect(checkValue(words, { s: "abc" })).toEqual([]);
+    expect(formatInput(words, { s: "abc" })).toEqual({ s: "abc" });
+  });
+});

@@ -88,3 +88,23 @@ describe("trace grids", () => {
     expect(run.frames[1]!.structs.g).toEqual({ kind: "grid", rows: [[null, 5, null], [null, null, 7]], marks: [[null, null, null], [null, null, null]] });
   });
 });
+
+describe("trace maps", () => {
+  it("keeps entries in the order they were first set, with marks", () => {
+    const run = trace(
+      (t: Tracer) => {
+        const m = t.map("counts");
+        m.put("b", 1);
+        m.put("a", 2);
+        m.put("b", 3);
+        m.mark("a", "active");
+        t.at("one", "one");
+        m.remove("b");
+        t.at("two", "two");
+      },
+      {},
+    );
+    expect(run.frames[0]!.structs.counts).toEqual({ kind: "map", entries: [["b", 3], ["a", 2]], marks: [null, "active"] });
+    expect(run.frames[1]!.structs.counts).toEqual({ kind: "map", entries: [["a", 2]], marks: ["active"] });
+  });
+});

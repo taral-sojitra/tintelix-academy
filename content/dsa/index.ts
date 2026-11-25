@@ -6,14 +6,18 @@ import { listings as arraysListings } from "./arrays-big-o/listings";
 import * as howToSolveAlgos from "./how-to-solve/algo";
 import { howToSolve } from "./how-to-solve/lesson";
 import { listings as howToSolveListings } from "./how-to-solve/listings";
+import * as stringsAlgos from "./strings/algo";
+import { strings } from "./strings/lesson";
+import { listings as stringsListings } from "./strings/listings";
 
 /** Every written DSA lesson, in teaching order. */
-export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO];
+export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO, strings];
 
 /** Each lesson's algorithms (by export name) and listings (by key), keyed by lesson slug. */
 export const dsaCode: Record<string, { algos: Record<string, Algo>; listings: Record<string, { ts: string; py: string }> }> = {
   "how-to-solve": { algos: howToSolveAlgos as Record<string, Algo>, listings: howToSolveListings },
   "arrays-big-o": { algos: arraysAlgos as Record<string, Algo>, listings: arraysListings },
+  strings: { algos: stringsAlgos as Record<string, Algo>, listings: stringsListings },
 };
 
 export { dsa } from "./subject";
