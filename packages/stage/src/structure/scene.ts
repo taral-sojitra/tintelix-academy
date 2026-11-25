@@ -73,7 +73,11 @@ export function createStructureScene(root: HTMLElement): StructureScene {
   return {
     render(frame, opts = {}) {
       const ids = new Set(Object.keys(frame.structs));
-      for (const [id, a] of arrays) if (!ids.has(id)) (a.box.remove(), arrays.delete(id));
+      for (const [id, a] of arrays)
+        if (!ids.has(id)) {
+          a.box.remove();
+          arrays.delete(id);
+        }
       for (const [id, snap] of Object.entries(frame.structs)) if (snap.kind === "array") drawArray(id, snap, frame);
 
       side.replaceChildren();
