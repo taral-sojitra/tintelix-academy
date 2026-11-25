@@ -12,12 +12,15 @@ import { listings as howToSolveListings } from "./how-to-solve/listings";
 import * as twoPointersAlgos from "./two-pointers/algo";
 import { twoPointers } from "./two-pointers/lesson";
 import { listings as twoPointersListings } from "./two-pointers/listings";
+import * as slidingWindowAlgos from "./sliding-window/algo";
+import { slidingWindow } from "./sliding-window/lesson";
+import { listings as slidingWindowListings } from "./sliding-window/listings";
 import * as stringsAlgos from "./strings/algo";
 import { strings } from "./strings/lesson";
 import { listings as stringsListings } from "./strings/listings";
 
 /** Every written DSA lesson, in teaching order. */
-export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO, strings, hashing, twoPointers];
+export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO, strings, hashing, twoPointers, slidingWindow];
 
 /** Each lesson's algorithms (by export name) and listings (by key), keyed by lesson slug. */
 export const dsaCode: Record<string, { algos: Record<string, Algo>; listings: Record<string, { ts: string; py: string }> }> = {
@@ -26,6 +29,7 @@ export const dsaCode: Record<string, { algos: Record<string, Algo>; listings: Re
   strings: { algos: stringsAlgos as Record<string, Algo>, listings: stringsListings },
   hashing: { algos: hashingAlgos as Record<string, Algo>, listings: hashingListings },
   "two-pointers": { algos: twoPointersAlgos as Record<string, Algo>, listings: twoPointersListings },
+  "sliding-window": { algos: slidingWindowAlgos as Record<string, Algo>, listings: slidingWindowListings },
 };
 
 export { dsa } from "./subject";

@@ -2013,7 +2013,7 @@ async def pref_saved(page, key):
 
 async def dsa_subject(page):
     await page.goto(BASE + "/dsa", wait_until="load")
-    await expect(page.get_by_text("24 lessons in 8 modules · 5 open now")).to_be_visible()
+    await expect(page.get_by_text("24 lessons in 8 modules · 6 open now")).to_be_visible()
     await expect(page.locator("main a[href='/dsa/how-to-solve']").first).to_be_visible()
     return "DSA subject page lists 24 lessons in 8 modules with the written ones open"
 
@@ -2220,12 +2220,45 @@ async def dsa_two_pointers_flow(page):
     await expect(page.locator(".sheet-code div.chg")).to_have_count(2)
     return "DSA lesson 5: hi-moves prediction right, 4 + 6 in 5 checks; 120 vs 15; skip prediction right, 1 2 3 5 kept in 7 steps; unsorted pointers meet and miss; card; 5 problems; cheatsheet"
 
+async def dsa_window_flow(page):
+    await page.goto(BASE + "/dsa/sliding-window", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("The longest run with no repeats")
+    await page.wait_for_selector(DSA_READY, timeout=10000)
+    await page.locator(".track .st").nth(1).click()
+    await expect(page.locator(".dsa-predict.ask")).to_be_visible(timeout=10000)
+    await page.locator(".dsa-predict").get_by_role("button", name="1", exact=True).click()
+    await expect(page.locator(".dsa-predict .verdict")).to_have_text("Right: 1.")
+    await expect(page.locator(".dsa-scene")).to_have_attribute("data-site", "done", timeout=15000)
+    await expect(page.locator(".dsa-scene .ts-steps")).to_have_text("Steps: 9")
+    await page.locator(".track .st").nth(4).click()
+    await expect(page.locator(".dsa-predict.ask")).to_be_visible(timeout=10000)
+    await page.locator(".dsa-predict").get_by_role("button", name="left drops the first a, then a joins", exact=True).click()
+    await expect(page.locator(".dsa-scene")).to_have_attribute("data-site", "done", timeout=20000)
+    await expect(page.locator(".dsa-scene .ts-steps")).to_have_text("Steps: 15")
+    await expect(page.locator(".dsa-scene .ts-vars dd")).to_have_text("3")
+    await page.locator(".track .st").nth(5).click()
+    await expect(page.locator(".dsa-compare b")).to_have_text(["136", "16"])
+    # Custom letters: pwwkew's longest run is wke.
+    await page.locator(".dsa-form input[name='s']").fill("pwwkew")
+    await page.locator(".dsa-form").get_by_role("button", name="Run it").click()
+    await expect(page.locator(".dsa-scene")).to_have_attribute("data-site", "done", timeout=15000)
+    await expect(page.locator(".dsa-scene .ts-vars dd")).to_have_text("3")
+    await page.locator(".track .st").nth(6).click()
+    await expect(page.locator(".dsa-scene .ts-steps")).to_have_text("Steps: 9", timeout=15000)
+    await page.locator(".track .st").nth(8).click()
+    await expect(page.locator(".dsa-card dd").first).to_have_text("The best run of neighbouring items in an array or string: longest, shortest, or a fixed size")
+    await page.locator(".track .st").nth(9).click()
+    await expect(page.locator(".dsa-practice a")).to_have_count(5)
+    await page.goto(BASE + "/dsa/sliding-window/cheatsheet", wait_until="load")
+    await expect(page.locator(".sheet-code div.chg")).to_have_count(1)
+    return "DSA lesson 6: slide prediction right in 9 steps; shrink prediction right, abc found in 15 steps; 136 vs 16; pwwkew gives 3; bbbbb in 9; card; 5 problems; cheatsheet"
+
 
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, vercel_scripts, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow, net_firewall_flow, net_vpn_flow, net_latency_flow, net_bandwidth_flow, dsa_subject, dsa_intro_flow, dsa_practice_flow, dsa_arrays_flow, dsa_strings_flow, dsa_hashing_flow, dsa_two_pointers_flow]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, vercel_scripts, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow, net_firewall_flow, net_vpn_flow, net_latency_flow, net_bandwidth_flow, dsa_subject, dsa_intro_flow, dsa_practice_flow, dsa_arrays_flow, dsa_strings_flow, dsa_hashing_flow, dsa_two_pointers_flow, dsa_window_flow]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []

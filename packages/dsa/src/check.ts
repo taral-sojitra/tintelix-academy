@@ -29,7 +29,10 @@ export function runTsListing(code: string, args: unknown[]): unknown {
   new Function("exports", js)(exports);
   const fns = Object.values(exports).filter((v): v is (...a: unknown[]) => unknown => typeof v === "function");
   if (fns.length !== 1) throw new Error(`a listing must export exactly one function, found ${fns.length}`);
-  return fns[0]!(...args);
+  const fn = fns[0]!;
+  // JavaScript ignores extra arguments, so a run passing the wrong ones would otherwise pass here and fail only in Python.
+  if (fn.length !== args.length) throw new Error(`the listing's function takes ${fn.length} argument${fn.length === 1 ? "" : "s"} but the run passes ${args.length}`);
+  return fn(...args);
 }
 
 const HARNESS = `

@@ -162,6 +162,7 @@ describe("checkDsaLesson with several runs", () => {
 describe("runTsListing, runCounts and stepSlice", () => {
   it("runs a TypeScript listing", () => {
     expect(runTsListing(TS, [[-1, 5]])).toBe(1);
+    expect(() => runTsListing(TS, [[-1, 5], 3])).toThrow("the listing's function takes 1 argument but the run passes 2");
   });
   it("counts each run's steps on a preset", () => {
     expect(runCounts(base(), "example", code.algos)).toEqual({ slowSteps: 3 });
