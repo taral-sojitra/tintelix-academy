@@ -15,7 +15,10 @@ export function CodePanel({ listing, lit, lang, onLang }: { listing: Listing; li
   useEffect(() => {
     const line = ref.current?.querySelector<HTMLElement>("li.lit");
     const box = ref.current?.parentElement;
-    if (line && box) box.scrollTop = Math.max(0, line.offsetTop - box.clientHeight / 2 + line.clientHeight / 2);
+    if (!line || !box) return;
+    // Measured against the scrolling box itself: offsetTop counts from the nearest positioned ancestor, which isn't the box.
+    const offset = line.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    box.scrollTop = Math.max(0, offset - box.clientHeight / 2 + line.clientHeight / 2);
   }, [lit, lang]);
   return (
     <section className="dsa-code" aria-label="Code">
