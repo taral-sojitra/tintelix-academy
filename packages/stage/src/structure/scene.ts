@@ -47,28 +47,33 @@ export function createStructureScene(root: HTMLElement): StructureScene {
 
   const maps = new Map<string, HTMLElement>();
 
+  /** Rows per column: longer maps wrap into side-by-side tables so the stage stays short. */
+  const MAP_ROWS = 8;
+
   function drawMap(id: string, snap: Extract<Snapshot, { kind: "map" }>) {
     let box = maps.get(id);
     if (!box) {
       box = el("div", "ts-map", main);
       box.dataset.id = id;
       el("span", "ts-name", box).textContent = id;
-      el("table", "", box);
+      el("div", "ts-cols", box);
       maps.set(id, box);
     }
-    const table = box.querySelector("table")!;
-    box.querySelector(".ts-empty")?.remove();
-    table.replaceChildren();
+    const cols = box.querySelector<HTMLElement>(".ts-cols")!;
+    cols.replaceChildren();
     if (!snap.entries.length) {
-      el("span", "ts-empty", box).textContent = "empty";
+      el("span", "ts-empty", cols).textContent = "empty";
       return;
     }
-    const body = el("tbody", "", table as unknown as HTMLElement);
-    snap.entries.forEach(([k, v], i) => {
-      const tr = el("tr", snap.marks[i] ? `m-${snap.marks[i]}` : "", body);
-      el("td", "", tr).textContent = k;
-      el("td", "", tr).textContent = text(v);
-    });
+    for (let start = 0; start < snap.entries.length; start += MAP_ROWS) {
+      const body = el("tbody", "", el("table", "", cols));
+      snap.entries.slice(start, start + MAP_ROWS).forEach(([k, v], i) => {
+        const mark = snap.marks[start + i];
+        const tr = el("tr", mark ? `m-${mark}` : "", body);
+        el("td", "", tr).textContent = k;
+        el("td", "", tr).textContent = text(v);
+      });
+    }
   }
 
   function drawArray(id: string, snap: Extract<Snapshot, { kind: "array" }>, frame: Frame) {

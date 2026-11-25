@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dsaCode, getDsaLesson } from "@tintelix/content";
 import { parseListing, runCounts, stepSlice, trace, type Slice } from "@tintelix/dsa";
 import { createStructureScene, type StructureScene } from "@tintelix/stage";
+import type { Frame } from "@tintelix/schema";
 import { getStore } from "../store";
 import { Icon } from "../Icon";
 import { CodePanel, type Lang } from "./CodePanel";
@@ -96,11 +97,14 @@ export function DsaLessonView({ slug }: { slug: string }) {
     if (frame) sceneRef.current?.render(frame, { counter: lesson.counter });
   }, [frame, lesson.counter]);
 
-  // A new step, preset or custom input starts at the slice's first frame and plays.
-  useEffect(() => {
+  // A new step, preset or custom input starts at the slice's first frame and plays. This is set while
+  // rendering, not in an effect, so the play loop never weighs the old step's frame against the new step's stop.
+  const [shown, setShown] = useState<{ frames: Frame[]; start: number; end: number } | null>(null);
+  if (!shown || shown.frames !== frames || shown.start !== slice.start || shown.end !== slice.end) {
+    setShown({ frames, start: slice.start, end: slice.end });
     setFrameIndex(slice.start);
     setPlaying(true);
-  }, [slice.start, slice.end, frames]);
+  }
 
   useEffect(() => {
     if (!playing || !ready) return;
