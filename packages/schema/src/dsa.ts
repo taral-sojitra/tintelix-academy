@@ -13,7 +13,16 @@ export type Snapshot =
   | { kind: "grid"; rows: Value[][]; marks: (Mark | null)[][] }
   | { kind: "map"; entries: [string, Value][]; marks: (Mark | null)[] }
   | { kind: "calls"; frames: CallFrame[] }
-  | { kind: "tree"; root: string | null; nodes: TreeNode[] };
+  | { kind: "tree"; root: string | null; nodes: TreeNode[] }
+  | { kind: "list"; head: string | null; nodes: ListNode[]; tags: { name: string; at: string }[] };
+
+/** A linked-list node; nodes keep the order they were made in, so a re-pointed arrow shows. */
+export interface ListNode {
+  id: string;
+  value: Value;
+  next: string | null;
+  mark: Mark | null;
+}
 
 /** One waiting call on the call stack: `fn(args)`, and what it returned once it has. */
 export interface CallFrame {
