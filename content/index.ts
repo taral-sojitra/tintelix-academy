@@ -1,4 +1,4 @@
-import type { Lesson, SqlLesson, Subject } from "@tintelix/schema";
+import type { DsaLesson, Lesson, SqlLesson, Subject } from "@tintelix/schema";
 import { components } from "./components";
 import { osiLesson } from "./networks/osi-model/lesson";
 import { tcpIpLesson } from "./networks/tcp-ip-model/lesson";
@@ -41,6 +41,7 @@ import { createIndex } from "./sql/create-index/lesson";
 import { dropTable } from "./sql/drop-table/lesson";
 import { truncate } from "./sql/truncate/lesson";
 import { subjects } from "./subjects";
+import { dsaLessons as allDsaLessons } from "./dsa";
 import { caching } from "./system-design/caching/lesson";
 import { cdn } from "./system-design/cdn/lesson";
 import { latencyPercentiles } from "./system-design/latency-percentiles/lesson";
@@ -102,6 +103,7 @@ import { sqlVsNosql } from "./system-design/sql-vs-nosql/lesson";
 import { statelessServices } from "./system-design/stateless-services/lesson";
 
 export { components, subjects };
+export { dsaCode, dsaLessons, LEETCODE, leetcodeUrl, type LeetCodeProblem } from "./dsa";
 
 /** Every written lesson. A lesson listed in a subject but missing here is "coming soon". */
 export const lessons: Lesson[] = [latencyPercentiles, queueing, availability, estimation, scaling, loadBalancing, proxies, healthChecks, statelessServices, caching, cdn, sqlVsNosql, indexing, replication, sharding, consistentHashing, bloomFilters, objectStorage, capTheorem, consistencyModels, distributedTransactions, messageQueues, idempotency, rateLimiting, fanOut, apiGateway, monolithVsMicroservices, retriesAndCircuitBreakers, leaderElection, multiRegion, designMethod, urlShortener, uniqueIds, keyValueStore, distributedRateLimiter, webCrawler, searchEngine, searchAutocomplete, notificationService, photoFeed, chatApp, proximityService, nearbyFriends, rideHailing, mapsNavigation, videoStreaming, fileSync, objectStoreInternals, emailService, messageQueueDesign, metricsAlerting, clickAggregation, leaderboard, ragServing, hotelBooking, ordersInventory, paymentSystem, digitalWallet, stockExchange, osiLesson, tcpIpLesson, ipLesson, subnetLesson, arpLesson, dhcpLesson, tcpUdpLesson, handshakeLesson, portsLesson, dnsLesson, httpLesson, tlsLesson, switchLesson, routingLesson, natLesson, firewallLesson, vpnLesson, latencyLesson, bandwidthLesson];
@@ -111,6 +113,11 @@ export const sqlLessons: SqlLesson[] = [select, where, orderBy, distinct, limitO
 
 export function getSqlLesson(slug: string): SqlLesson | undefined {
   return sqlLessons.find((l) => l.slug === slug);
+}
+
+/** A written DSA lesson by slug. */
+export function getDsaLesson(slug: string): DsaLesson | undefined {
+  return allDsaLessons.find((l) => l.slug === slug);
 }
 
 export function getSubject(id: string): Subject | undefined {
@@ -137,6 +144,8 @@ export function lessonFacts(subject: string, slug: string): LessonFacts | undefi
   if (d) return { title: d.title, topic: d.topic, promise: d.promise, minutes: d.minutes, steps: d.steps.length, unit: "step" };
   const s = subject === "sql" ? getSqlLesson(slug) : undefined;
   if (s) return { title: s.title, topic: s.topic, promise: s.promise, minutes: s.minutes, steps: s.tasks.length, unit: "task" };
+  const a = subject === "dsa" ? getDsaLesson(slug) : undefined;
+  if (a) return { title: a.title, topic: a.topic, promise: a.promise, minutes: a.minutes, steps: a.steps.length, unit: "step" };
   return undefined;
 }
 
@@ -169,7 +178,7 @@ export function lessonSummaries(subjectId: string): LessonSummary[] {
       summary: stub.summary,
       module: m.title,
       order: ++order,
-      available: lessons.some((l) => l.id === stub.id) || sqlLessons.some((l) => l.id === stub.id),
+      available: lessons.some((l) => l.id === stub.id) || sqlLessons.some((l) => l.id === stub.id) || allDsaLessons.some((l) => l.id === stub.id),
       home: stub.home ?? subjectId,
       href: `/${stub.home ?? subjectId}/${stub.slug}`,
     })),
