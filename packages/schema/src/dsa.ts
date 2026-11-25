@@ -11,7 +11,27 @@ export type Mark = (typeof MARKS)[number];
 export type Snapshot =
   | { kind: "array"; values: Value[]; marks: (Mark | null)[] }
   | { kind: "grid"; rows: Value[][]; marks: (Mark | null)[][] }
-  | { kind: "map"; entries: [string, Value][]; marks: (Mark | null)[] };
+  | { kind: "map"; entries: [string, Value][]; marks: (Mark | null)[] }
+  | { kind: "calls"; frames: CallFrame[] }
+  | { kind: "tree"; root: string | null; nodes: TreeNode[] };
+
+/** One waiting call on the call stack: `fn(args)`, and what it returned once it has. */
+export interface CallFrame {
+  fn: string;
+  args: string;
+  ret?: Value;
+}
+
+/** A node of a call tree (children) or a binary tree (left and right); `sub` is a small second label. */
+export interface TreeNode {
+  id: string;
+  label: string;
+  sub?: string;
+  children?: string[];
+  left?: string | null;
+  right?: string | null;
+  mark: Mark | null;
+}
 
 /** A named index shown under a structure, such as `left` under cell 3. */
 export interface Pointer {
@@ -63,6 +83,8 @@ export const DsaRun = z.object({
   space: z.string().min(1),
   /** The input fields the listing takes, in order; all of them when absent. */
   args: z.array(z.string().min(1)).optional(),
+  /** A run that never finishes on purpose (no base case): the build checks it reaches the frame limit and doesn't run its listings. */
+  endless: z.literal(true).optional(),
 });
 export type DsaRun = z.infer<typeof DsaRun>;
 

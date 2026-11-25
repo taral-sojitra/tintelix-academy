@@ -944,3 +944,24 @@
 .tx-struct .ts-map tr.m-found td { background: var(--green-soft); color: var(--green-ink); }
 .tx-struct .ts-map tr.m-bad td { background: var(--red-soft); color: var(--red-ink); }
 .tx-struct .ts-map .ts-cols { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+/* Call stack: cards, newest on top. */
+.tx-struct .ts-calls { display: grid; gap: 4px; align-content: start; justify-self: start; min-width: 168px; }
+.tx-struct .ts-calls ol { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.tx-struct .ts-calls li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 10px; background: var(--node-bg); border: 1px solid var(--node-stroke); border-radius: 8px; font: 600 14px/1.2 var(--mono); color: var(--node-ink); }
+.tx-struct .ts-calls li.top { background: var(--primary-soft); box-shadow: inset 0 0 0 2px var(--primary); }
+.tx-struct .ts-calls li b { color: var(--green-ink); }
+.tx-struct .ts-calls li.more, .tx-struct .ts-calls li.ts-empty { background: none; border-style: dashed; color: var(--muted); font-weight: 500; justify-content: center; }
+/* Trees: top down, scaled to fit, scrolling sideways on narrow screens rather than shrinking past reading size. */
+.tx-struct .ts-tree { display: grid; gap: 4px; min-width: 0; overflow-x: auto; }
+.tx-struct .ts-tree svg { width: 100%; max-width: calc(var(--w) * 1px); min-width: calc(var(--w) * 0.62px); height: auto; overflow: visible; }
+.tx-struct .ts-tree line { stroke: var(--node-stroke); stroke-width: 2; }
+.tx-struct .ts-tree rect { fill: var(--node-bg); stroke: var(--node-stroke); stroke-width: 1.5; transition: fill .2s; }
+.tx-struct .ts-tree text { font: 600 15px var(--mono); fill: var(--node-ink); text-anchor: middle; }
+.tx-struct .ts-tree text.ts-sub { font-size: 13px; font-weight: 700; fill: var(--green-ink); paint-order: stroke; stroke: var(--stage); stroke-width: 5px; stroke-linejoin: round; }
+.tx-struct .ts-tree .m-active rect, .tx-struct .ts-tree .m-compare rect { fill: var(--primary-soft); stroke: var(--primary); stroke-width: 3; }
+.tx-struct .ts-tree .m-done rect { fill: var(--green-soft); }
+.tx-struct .ts-tree .m-found rect { fill: var(--green-soft); stroke: var(--green); stroke-width: 3; }
+.tx-struct .ts-tree .m-bad rect { fill: var(--red-soft); stroke: var(--red-ink); }
+.tx-struct .ts-tree .m-dim { opacity: 0.4; }
+/* A tree and its call stack sit side by side when there's room. */
+@media (min-width: 641px) { .tx-struct .ts-main:has(> .ts-tree):has(> .ts-calls) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; } }
