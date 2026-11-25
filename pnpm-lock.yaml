@@ -71,6 +71,9 @@ importers:
       '@tintelix/content':
         specifier: workspace:*
         version: link:../../content
+      '@tintelix/dsa':
+        specifier: workspace:*
+        version: link:../../packages/dsa
       '@tintelix/schema':
         specifier: workspace:*
         version: link:../../packages/schema
@@ -117,12 +120,21 @@ importers:
 
   content:
     dependencies:
+      '@tintelix/dsa':
+        specifier: workspace:*
+        version: link:../packages/dsa
       '@tintelix/schema':
         specifier: workspace:*
         version: link:../packages/schema
       '@tintelix/sql':
         specifier: workspace:*
         version: link:../packages/sql
+
+  packages/dsa:
+    dependencies:
+      '@tintelix/schema':
+        specifier: workspace:*
+        version: link:../schema
 
   packages/schema:
     dependencies:

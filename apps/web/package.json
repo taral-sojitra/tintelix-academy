@@ -21,6 +21,7 @@
     "@fontsource/inter": "^5.2.8",
     "@lezer/highlight": "^1.2.5",
     "@tintelix/content": "workspace:*",
+    "@tintelix/dsa": "workspace:*",
     "@tintelix/schema": "workspace:*",
     "@tintelix/sql": "workspace:*",
     "@tintelix/stage": "workspace:*",
