@@ -15,6 +15,9 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "valid-anagram", title: "Valid Anagram", evidence: "Top Interview 150" },
   { slug: "reverse-vowels-of-a-string", title: "Reverse Vowels of a String", evidence: "LeetCode 75" },
   { slug: "ransom-note", title: "Ransom Note", evidence: "Top Interview 150" },
+  { slug: "group-anagrams", title: "Group Anagrams", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "longest-consecutive-sequence", title: "Longest Consecutive Sequence", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "subarray-sum-equals-k", title: "Subarray Sum Equals K", evidence: "Top 100 Liked" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;

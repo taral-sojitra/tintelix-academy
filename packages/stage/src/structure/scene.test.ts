@@ -103,3 +103,14 @@ describe("createStructureScene maps", () => {
     expect(el.querySelector(".ts-map .ts-empty")!.textContent).toBe("empty");
   });
 });
+
+describe("createStructureScene long maps", () => {
+  it("splits a map into columns of at most 8 rows, in order", () => {
+    const el = document.createElement("div");
+    const entries = Array.from({ length: 11 }, (_, i) => [String(i), i] as [string, number]);
+    createStructureScene(el).render(frame({ structs: { seen: { kind: "map", entries, marks: entries.map(() => null) } }, pointers: [] }));
+    const tables = el.querySelectorAll(".ts-map[data-id='seen'] table");
+    expect([...tables].map((t) => t.querySelectorAll("tr").length)).toEqual([8, 3]);
+    expect([...el.querySelectorAll(".ts-map td:first-child")].map((c) => c.textContent)).toEqual(entries.map(([k]) => k));
+  });
+});
