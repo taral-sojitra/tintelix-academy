@@ -1993,6 +1993,24 @@ async def sql_cheatsheet(page):
 DSA_READY = ".dsa-scene[data-ready='true']"
 
 
+async def pref_saved(page, key):
+    """Waits until the device store has written a preference, so a reload can't cut the write short."""
+    await page.wait_for_function(
+        """key => new Promise(done => {
+            const r = indexedDB.open('tintelix');
+            r.onsuccess = () => {
+                const db = r.result;
+                const g = db.transaction('prefs').objectStore('prefs').get(key);
+                g.onsuccess = () => { db.close(); done(!!g.result); };
+                g.onerror = () => { db.close(); done(false); };
+            };
+            r.onerror = () => done(false);
+        })""",
+        arg=key,
+        timeout=5000,
+    )
+
+
 async def dsa_subject(page):
     await page.goto(BASE + "/dsa", wait_until="load")
     await expect(page.get_by_text("24 lessons in 8 modules · 2 open now")).to_be_visible()
@@ -2038,6 +2056,8 @@ async def dsa_intro_flow(page):
     await page.get_by_role("button", name="Back to the example").click()
     await expect(page.locator(".dsa-source")).to_have_count(0)
     # A reload resumes on the same step, keeps Python and doesn't ask again.
+    await pref_saved(page, "dsa.lang")
+    await pref_saved(page, "dsa.predict.dsa-how-to-solve")
     await page.reload(wait_until="load")
     await page.wait_for_selector(DSA_READY, timeout=10000)
     await expect(page.locator(".narr h2")).to_have_text("Step 4: start with the brute force")
@@ -2056,6 +2076,7 @@ async def dsa_practice_flow(page):
     await expect(link).to_have_text("Two Sum")
     await expect(link).to_have_attribute("href", "https://leetcode.com/problems/two-sum/")
     await page.locator(".dsa-practice input").check()
+    await pref_saved(page, "dsa.leetcode")
     await page.reload(wait_until="load")
     await page.wait_for_selector(DSA_READY, timeout=10000)
     await expect(page.locator(".dsa-practice input")).to_be_checked()
