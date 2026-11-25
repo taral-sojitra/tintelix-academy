@@ -28,6 +28,11 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "minimum-size-subarray-sum", title: "Minimum Size Subarray Sum", evidence: "Top Interview 150" },
   { slug: "max-consecutive-ones-iii", title: "Max Consecutive Ones III", evidence: "LeetCode 75" },
   { slug: "minimum-window-substring", title: "Minimum Window Substring", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "search-insert-position", title: "Search Insert Position", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "search-in-rotated-sorted-array", title: "Search in Rotated Sorted Array", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "sqrtx", title: "Sqrt(x)", evidence: "Top Interview 150" },
+  { slug: "koko-eating-bananas", title: "Koko Eating Bananas", evidence: "LeetCode 75" },
+  { slug: "find-minimum-in-rotated-sorted-array", title: "Find Minimum in Rotated Sorted Array", evidence: "Top Interview 150, Top 100 Liked" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;
