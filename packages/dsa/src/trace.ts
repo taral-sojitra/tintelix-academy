@@ -24,6 +24,18 @@ export interface TGrid {
   clearMarks(): void;
 }
 
+/** A key–value map the tracer watches; entries keep the order they were first set. */
+export interface TMap {
+  readonly id: string;
+  get(key: string): Value;
+  has(key: string): boolean;
+  put(key: string, v: Value): void;
+  remove(key: string): void;
+  mark(key: string, m: Mark | null): void;
+  clearMarks(): void;
+  keys(): string[];
+}
+
 /** A named index into an array, drawn under the cell it points at. */
 export interface TPointer {
   readonly at: number;
@@ -41,6 +53,7 @@ export interface Tracer {
   set(name: string, value: Value): void;
   array(id: string, values: Value[]): TArray;
   grid(id: string, rows: number, cols: number): TGrid;
+  map(id: string): TMap;
   pointer(name: string, on: TArray, at: number): TPointer;
   mark(id: string, index: number, mark: Mark | null): void;
   result(value: unknown): void;
@@ -68,6 +81,7 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
   const frames: Frame[] = [];
   const arrays = new Map<string, ArrayState>();
   const grids = new Map<string, { rows: Value[][]; marks: (Mark | null)[][] }>();
+  const maps = new Map<string, { entries: Map<string, Value>; marks: Map<string, Mark> }>();
   const pointers: { name: string; on: string; at: number; hidden: boolean }[] = [];
   const vars: Record<string, Value> = {};
   let steps = 0;
@@ -77,6 +91,7 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
     const out: Record<string, Snapshot> = {};
     for (const [id, a] of arrays) out[id] = { kind: "array", values: [...a.values], marks: [...a.marks] };
     for (const [id, g] of grids) out[id] = { kind: "grid", rows: g.rows.map((r) => [...r]), marks: g.marks.map((r) => [...r]) };
+    for (const [id, m] of maps) out[id] = { kind: "map", entries: [...m.entries], marks: [...m.entries.keys()].map((k) => m.marks.get(k) ?? null) };
     return out;
   };
   const shownPointers = (): Pointer[] =>
@@ -129,6 +144,23 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
           if (inside(r, c)) g.marks[r]![c] = m;
         },
         clearMarks: () => g.marks.forEach((row) => row.fill(null)),
+      };
+    },
+    map(id) {
+      const m = { entries: new Map<string, Value>(), marks: new Map<string, Mark>() };
+      maps.set(id, m);
+      return {
+        id,
+        get: (k) => m.entries.get(k) ?? null,
+        has: (k) => m.entries.has(k),
+        put: (k, v) => void m.entries.set(k, v),
+        remove: (k) => {
+          m.entries.delete(k);
+          m.marks.delete(k);
+        },
+        mark: (k, mark) => void (mark ? m.marks.set(k, mark) : m.marks.delete(k)),
+        clearMarks: () => m.marks.clear(),
+        keys: () => [...m.entries.keys()],
       };
     },
     pointer(name, on, at) {

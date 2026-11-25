@@ -10,7 +10,8 @@ export type Mark = (typeof MARKS)[number];
 /** One structure's state in a frame. More kinds arrive with the lessons that first need them (LLD §12). */
 export type Snapshot =
   | { kind: "array"; values: Value[]; marks: (Mark | null)[] }
-  | { kind: "grid"; rows: Value[][]; marks: (Mark | null)[][] };
+  | { kind: "grid"; rows: Value[][]; marks: (Mark | null)[][] }
+  | { kind: "map"; entries: [string, Value][]; marks: (Mark | null)[] };
 
 /** A named index shown under a structure, such as `left` under cell 3. */
 export interface Pointer {
@@ -46,6 +47,7 @@ export const Field = z.discriminatedUnion("kind", [
     distinct: z.boolean().optional(),
   }),
   z.object({ kind: z.literal("int"), label: z.string().min(1), min: z.number().int(), max: z.number().int() }),
+  z.object({ kind: z.literal("text"), label: z.string().min(1), alphabet: z.literal("a-z"), length: z.tuple([z.number().int().min(0), z.number().int().positive()]) }),
 ]);
 export type Field = z.infer<typeof Field>;
 export const InputSpec = z.record(z.string(), Field);

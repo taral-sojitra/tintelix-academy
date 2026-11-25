@@ -53,8 +53,9 @@ export function InputPanel({
             <input
               name={name}
               value={raw[name] ?? ""}
-              inputMode={f.kind === "ints" ? "text" : "numeric"}
+              inputMode={f.kind === "int" ? "numeric" : "text"}
               autoComplete="off"
+              autoCapitalize="none"
               spellCheck={false}
               aria-invalid={!!errors[name]}
               aria-describedby={errors[name] ? `err-${name}` : undefined}

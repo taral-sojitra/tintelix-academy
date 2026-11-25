@@ -11,6 +11,10 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "best-time-to-buy-and-sell-stock", title: "Best Time to Buy and Sell Stock", evidence: "Top Interview 150" },
   { slug: "spiral-matrix", title: "Spiral Matrix", evidence: "Top Interview 150" },
   { slug: "set-matrix-zeroes", title: "Set Matrix Zeroes", evidence: "Top Interview 150" },
+  { slug: "valid-palindrome", title: "Valid Palindrome", evidence: "Top Interview 150" },
+  { slug: "valid-anagram", title: "Valid Anagram", evidence: "Top Interview 150" },
+  { slug: "reverse-vowels-of-a-string", title: "Reverse Vowels of a String", evidence: "LeetCode 75" },
+  { slug: "ransom-note", title: "Ransom Note", evidence: "Top Interview 150" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;

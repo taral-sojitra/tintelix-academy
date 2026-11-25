@@ -45,6 +45,32 @@ export function createStructureScene(root: HTMLElement): StructureScene {
     table.innerHTML = head + `<tbody>${body}</tbody>`;
   }
 
+  const maps = new Map<string, HTMLElement>();
+
+  function drawMap(id: string, snap: Extract<Snapshot, { kind: "map" }>) {
+    let box = maps.get(id);
+    if (!box) {
+      box = el("div", "ts-map", main);
+      box.dataset.id = id;
+      el("span", "ts-name", box).textContent = id;
+      el("table", "", box);
+      maps.set(id, box);
+    }
+    const table = box.querySelector("table")!;
+    box.querySelector(".ts-empty")?.remove();
+    table.replaceChildren();
+    if (!snap.entries.length) {
+      el("span", "ts-empty", box).textContent = "empty";
+      return;
+    }
+    const body = el("tbody", "", table as unknown as HTMLElement);
+    snap.entries.forEach(([k, v], i) => {
+      const tr = el("tr", snap.marks[i] ? `m-${snap.marks[i]}` : "", body);
+      el("td", "", tr).textContent = k;
+      el("td", "", tr).textContent = text(v);
+    });
+  }
+
   function drawArray(id: string, snap: Extract<Snapshot, { kind: "array" }>, frame: Frame) {
     let a = arrays.get(id);
     if (!a) {
@@ -103,9 +129,15 @@ export function createStructureScene(root: HTMLElement): StructureScene {
           g.remove();
           grids.delete(id);
         }
+      for (const [id, m] of maps)
+        if (!ids.has(id)) {
+          m.remove();
+          maps.delete(id);
+        }
       for (const [id, snap] of Object.entries(frame.structs)) {
         if (snap.kind === "array") drawArray(id, snap, frame);
-        else drawGrid(id, snap);
+        else if (snap.kind === "grid") drawGrid(id, snap);
+        else drawMap(id, snap);
       }
 
       side.replaceChildren();
@@ -124,6 +156,7 @@ export function createStructureScene(root: HTMLElement): StructureScene {
       root.classList.remove("tx-struct");
       arrays.clear();
       grids.clear();
+      maps.clear();
     },
   };
 }

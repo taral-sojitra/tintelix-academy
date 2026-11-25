@@ -8,6 +8,14 @@ const WHOLE = /^-?\d+$/;
 
 /** Checks one field's value; returns the plain-words problem, or null. */
 function problem(field: Field, value: unknown): string | null {
+  if (field.kind === "text") {
+    if (typeof value !== "string") return "Give some letters.";
+    const bad = [...value].find((ch) => ch < "a" || ch > "z");
+    if (bad !== undefined) return `Use the letters a to z only: “${bad}” isn't one.`;
+    if (value.length > field.length[1]) return `Keep it to ${field.length[1]} letters so every cell fits.`;
+    if (value.length < field.length[0]) return `Give at least ${field.length[0]} letter${field.length[0] === 1 ? "" : "s"}.`;
+    return null;
+  }
   if (field.kind === "int") {
     if (typeof value !== "number" || !Number.isInteger(value)) return "Give a whole number.";
     return value < field.min || value > field.max ? `Keep it between ${num(field.min)} and ${num(field.max)}.` : null;
@@ -36,7 +44,9 @@ export function parseInput(spec: InputSpec, raw: Record<string, string>): Parsed
   const errors: Record<string, string> = {};
   for (const [name, field] of Object.entries(spec)) {
     const text = (raw[name] ?? "").trim();
-    if (field.kind === "int") {
+    if (field.kind === "text") {
+      value[name] = text;
+    } else if (field.kind === "int") {
       if (!WHOLE.test(text)) {
         errors[name] = text ? `“${text}” isn't a whole number.` : "Give a whole number.";
         continue;
