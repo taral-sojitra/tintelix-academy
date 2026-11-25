@@ -173,3 +173,23 @@ describe("runTsListing, runCounts and stepSlice", () => {
     expect(stepSlice(frames, {})).toEqual({ start: 0, end: 3, predictAt: null });
   });
 });
+
+describe("endless runs", () => {
+  const loop = (t: Tracer) => {
+    for (let i = 0; ; i++) {
+      t.count();
+      t.at("spin", `round ${i}`);
+    }
+  };
+  it("must stop at the frame limit, and their listings aren't run", () => {
+    const lesson = base();
+    lesson.runs.spin = { algo: "loop", label: "Forever", listing: "spin", time: "∞", space: "O(1)", endless: true };
+    const withLoop = { algos: { ...code.algos, loop }, listings: { ...code.listings, spin: { ts: "export function f(nums: number[]): number { // @spin\n  throw new Error('never call me');\n}", py: "def f(nums):  # @spin\n    raise SystemExit('never call me')" } } };
+    expect(check(lesson, withLoop)).toEqual([]);
+  });
+  it("is an error when a run marked endless finishes", () => {
+    const lesson = base();
+    lesson.runs.slow = { ...lesson.runs.slow!, endless: true };
+    expect(check(lesson)).toContain("dsa-fixture: run slow is marked endless but finished on preset example");
+  });
+});

@@ -1,4 +1,4 @@
-import type { Frame, Mark, Pointer, Snapshot, Value } from "@tintelix/schema";
+import type { CallFrame, Frame, Mark, Pointer, Snapshot, TreeNode, Value } from "@tintelix/schema";
 
 /** The most frames one run may record; a run that reaches it is stopped. */
 export const FRAME_LIMIT = 400;
@@ -37,6 +37,24 @@ export interface TMap {
 }
 
 /** A named index into an array, drawn under the cell it points at. */
+/** A call stack: push on entering a call, `ret` once it has its answer, pop when it hands it back. */
+export interface TCalls {
+  readonly id: string;
+  readonly depth: number;
+  push(fn: string, args: string): void;
+  ret(value: Value): void;
+  pop(): void;
+}
+
+/** A tree drawn top down: a call tree (children in order) or, once any child is attached to a side, a binary tree. */
+export interface TTree {
+  readonly id: string;
+  node(id: string, label: string, parent?: string, side?: "left" | "right"): void;
+  sub(id: string, text: string | null): void;
+  mark(id: string, m: Mark | null): void;
+  clearMarks(): void;
+}
+
 export interface TPointer {
   readonly at: number;
   move(by: number): void;
@@ -54,6 +72,8 @@ export interface Tracer {
   array(id: string, values: Value[]): TArray;
   grid(id: string, rows: number, cols: number): TGrid;
   map(id: string): TMap;
+  calls(id: string): TCalls;
+  tree(id: string): TTree;
   pointer(name: string, on: TArray, at: number): TPointer;
   mark(id: string, index: number, mark: Mark | null): void;
   result(value: unknown): void;
@@ -82,6 +102,9 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
   const arrays = new Map<string, ArrayState>();
   const grids = new Map<string, { rows: Value[][]; marks: (Mark | null)[][] }>();
   const maps = new Map<string, { entries: Map<string, Value>; marks: Map<string, Mark> }>();
+  const stacks = new Map<string, CallFrame[]>();
+  type Node = { label: string; sub: string | null; children: string[]; left: string | null; right: string | null; mark: Mark | null };
+  const trees = new Map<string, { root: string | null; binary: boolean; nodes: Map<string, Node> }>();
   const pointers: { name: string; on: string; at: number; hidden: boolean }[] = [];
   const vars: Record<string, Value> = {};
   let steps = 0;
@@ -91,6 +114,19 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
     const out: Record<string, Snapshot> = {};
     for (const [id, a] of arrays) out[id] = { kind: "array", values: [...a.values], marks: [...a.marks] };
     for (const [id, g] of grids) out[id] = { kind: "grid", rows: g.rows.map((r) => [...r]), marks: g.marks.map((r) => [...r]) };
+    for (const [id, tr] of trees)
+      out[id] = {
+        kind: "tree",
+        root: tr.root,
+        nodes: [...tr.nodes].map(([nid, n]): TreeNode => ({
+          id: nid,
+          label: n.label,
+          ...(n.sub !== null ? { sub: n.sub } : {}),
+          ...(tr.binary ? { left: n.left, right: n.right } : { children: [...n.children] }),
+          mark: n.mark,
+        })),
+      };
+    for (const [id, c] of stacks) out[id] = { kind: "calls", frames: c.map((f) => ({ ...f })) };
     for (const [id, m] of maps) out[id] = { kind: "map", entries: [...m.entries], marks: [...m.entries.keys()].map((k) => m.marks.get(k) ?? null) };
     return out;
   };
@@ -161,6 +197,50 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
         mark: (k, mark) => void (mark ? m.marks.set(k, mark) : m.marks.delete(k)),
         clearMarks: () => m.marks.clear(),
         keys: () => [...m.entries.keys()],
+      };
+    },
+    calls(id) {
+      const frames: CallFrame[] = [];
+      stacks.set(id, frames);
+      return {
+        id,
+        get depth() {
+          return frames.length;
+        },
+        push: (fn, args) => void frames.push({ fn, args }),
+        ret: (value) => {
+          const top = frames.at(-1);
+          if (top) top.ret = value;
+        },
+        pop: () => void frames.pop(),
+      };
+    },
+    tree(id) {
+      const tr = { root: null as string | null, binary: false, nodes: new Map<string, Node>() };
+      trees.set(id, tr);
+      return {
+        id,
+        node: (nid, label, parent, side) => {
+          tr.nodes.set(nid, { label, sub: null, children: [], left: null, right: null, mark: null });
+          const p = parent === undefined ? undefined : tr.nodes.get(parent);
+          if (!p) {
+            tr.root ??= nid;
+            return;
+          }
+          if (side) {
+            tr.binary = true;
+            p[side] = nid;
+          } else p.children.push(nid);
+        },
+        sub: (nid, text) => {
+          const n = tr.nodes.get(nid);
+          if (n) n.sub = text;
+        },
+        mark: (nid, m) => {
+          const n = tr.nodes.get(nid);
+          if (n) n.mark = m;
+        },
+        clearMarks: () => tr.nodes.forEach((n) => (n.mark = null)),
       };
     },
     pointer(name, on, at) {

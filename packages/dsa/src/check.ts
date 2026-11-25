@@ -82,7 +82,9 @@ export function checkDsaLesson(lesson: DsaLesson, code: LessonCode, registry: re
     for (const p of lesson.presets) {
       const t = trace(algo, structuredClone(p.input));
       const want = expectedFor(p, name);
-      if (t.stopped) say(`run ${name} on preset ${p.id} stopped at the frame limit`);
+      if (run.endless) {
+        if (!t.stopped) say(`run ${name} is marked endless but finished on preset ${p.id}`);
+      } else if (t.stopped) say(`run ${name} on preset ${p.id} stopped at the frame limit`);
       else if (!ok(p.input, t.result, want)) say(`run ${name} on preset ${p.id} returned ${show(t.result)}, expected ${show(want)}`);
       for (const f of t.frames) emitted.add(f.site);
     }
@@ -96,15 +98,17 @@ export function checkDsaLesson(lesson: DsaLesson, code: LessonCode, registry: re
       for (const s of emitted) if (!marked.has(s)) say(`listing ${run.listing} (${lang}) has no line for site ${s}`);
       for (const s of marked) if (!emitted.has(s)) say(`listing ${run.listing} (${lang}) marks site ${s}, which the algorithm never reaches`);
     }
-    for (const p of lesson.presets) {
-      try {
-        const want = expectedFor(p, name);
-        const got = runTsListing(parseListing(listing.ts, "ts").code, argsFor(lesson.input, p.input, run.args));
-        if (!ok(p.input, got, want)) say(`listing ${run.listing} (ts) on preset ${p.id} returned ${show(got)}, expected ${show(want)}`);
-      } catch (e) {
-        say(`listing ${run.listing} (ts) on preset ${p.id} failed: ${(e as Error).message}`);
+    // An endless run's listing would never return (or overflow the stack), so only its trace is checked.
+    if (!run.endless)
+      for (const p of lesson.presets) {
+        try {
+          const want = expectedFor(p, name);
+          const got = runTsListing(parseListing(listing.ts, "ts").code, argsFor(lesson.input, p.input, run.args));
+          if (!ok(p.input, got, want)) say(`listing ${run.listing} (ts) on preset ${p.id} returned ${show(got)}, expected ${show(want)}`);
+        } catch (e) {
+          say(`listing ${run.listing} (ts) on preset ${p.id} failed: ${(e as Error).message}`);
+        }
       }
-    }
   }
 
   for (const step of lesson.steps) {

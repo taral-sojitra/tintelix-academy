@@ -33,6 +33,10 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "sqrtx", title: "Sqrt(x)", evidence: "Top Interview 150" },
   { slug: "koko-eating-bananas", title: "Koko Eating Bananas", evidence: "LeetCode 75" },
   { slug: "find-minimum-in-rotated-sorted-array", title: "Find Minimum in Rotated Sorted Array", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "n-th-tribonacci-number", title: "N-th Tribonacci Number", evidence: "LeetCode 75" },
+  { slug: "climbing-stairs", title: "Climbing Stairs", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "powx-n", title: "Pow(x, n)", evidence: "Top Interview 150" },
+  { slug: "maximum-depth-of-binary-tree", title: "Maximum Depth of Binary Tree", evidence: "LeetCode 75, Top Interview 150" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;

@@ -10,7 +10,8 @@ if (!python) console.warn("python3 not found: skipping the DSA Python listings")
 
 describe.skipIf(!python)("DSA Python listings", () => {
   for (const lesson of dsaLessons)
-    for (const [name, run] of Object.entries(lesson.runs))
+    // An endless run's listing never returns, so only its trace is checked (by the content check).
+    for (const [name, run] of Object.entries(lesson.runs).filter(([, r]) => !r.endless))
       it(`${lesson.id}: ${name} (${run.listing}.py) returns each preset's answer`, () => {
         const code = parseListing(dsaCode[lesson.slug]!.listings[run.listing]!.py, "py").code;
         for (const p of lesson.presets) {

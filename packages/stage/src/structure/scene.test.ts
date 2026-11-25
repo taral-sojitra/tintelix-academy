@@ -114,3 +114,48 @@ describe("createStructureScene long maps", () => {
     expect([...el.querySelectorAll(".ts-map td:first-child")].map((c) => c.textContent)).toEqual(entries.map(([k]) => k));
   });
 });
+
+describe("createStructureScene calls and trees", () => {
+  it("draws the call stack newest on top, with return values", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(frame({ structs: { calls: { kind: "calls", frames: [{ fn: "f", args: "3" }, { fn: "f", args: "2", ret: 1 }] } }, pointers: [] }));
+    expect([...el.querySelectorAll(".ts-calls li")].map((li) => li.textContent)).toEqual(["f(2)= 1", "f(3)"]);
+  });
+  it("shows the newest 6 calls and counts the rest", () => {
+    const el = document.createElement("div");
+    const frames = Array.from({ length: 9 }, (_, i) => ({ fn: "f", args: String(9 - i) }));
+    createStructureScene(el).render(frame({ structs: { calls: { kind: "calls", frames } }, pointers: [] }));
+    const items = [...el.querySelectorAll(".ts-calls li")].map((li) => li.textContent);
+    expect(items).toEqual(["f(1)", "f(2)", "f(3)", "f(4)", "f(5)", "f(6)", "3 more calls below"]);
+  });
+  it("draws a tree top down: one group per node, one line per parent link", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(
+      frame({
+        structs: {
+          calls: {
+            kind: "tree",
+            root: "a",
+            nodes: [
+              { id: "a", label: "f(2)", children: ["b", "c"], mark: null },
+              { id: "b", label: "f(1)", sub: "= 1", children: [], mark: "done" },
+              { id: "c", label: "f(0)", children: [], mark: "bad" },
+            ],
+          },
+        },
+        pointers: [],
+      }),
+    );
+    const svg = el.querySelector(".ts-tree[data-id='calls'] svg")!;
+    expect([...svg.querySelectorAll("g.ts-node")].map((g) => [g.getAttribute("class"), g.querySelector("text")!.textContent])).toEqual([
+      ["ts-node", "f(2)"],
+      ["ts-node m-done", "f(1)"],
+      ["ts-node m-bad", "f(0)"],
+    ]);
+    expect(svg.querySelectorAll("line")).toHaveLength(2);
+    expect(svg.querySelector("g.ts-node.m-done .ts-sub")!.textContent).toBe("= 1");
+    // The parent sits midway over its two children.
+    const x = (i: number) => Number(svg.querySelectorAll("g.ts-node")[i]!.getAttribute("data-x"));
+    expect(x(0)).toBe((x(1) + x(2)) / 2);
+  });
+});

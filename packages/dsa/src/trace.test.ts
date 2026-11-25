@@ -108,3 +108,60 @@ describe("trace maps", () => {
     expect(run.frames[1]!.structs.counts).toEqual({ kind: "map", entries: [["a", 2]], marks: ["active"] });
   });
 });
+
+describe("trace calls and trees", () => {
+  it("keeps a call stack, newest last, with a return value before the pop", () => {
+    const run = trace(
+      (t: Tracer) => {
+        const c = t.calls("calls");
+        c.push("f", "3");
+        c.push("f", "2");
+        t.at("deep", "two calls");
+        c.ret(1);
+        t.at("ret", "returned");
+        c.pop();
+        t.at("back", "one call");
+      },
+      {},
+    );
+    expect(run.frames.map((f) => f.structs.calls)).toEqual([
+      { kind: "calls", frames: [{ fn: "f", args: "3" }, { fn: "f", args: "2" }] },
+      { kind: "calls", frames: [{ fn: "f", args: "3" }, { fn: "f", args: "2", ret: 1 }] },
+      { kind: "calls", frames: [{ fn: "f", args: "3" }] },
+    ]);
+  });
+  it("builds a tree with children, binary sides, sub-labels and marks", () => {
+    const run = trace(
+      (t: Tracer) => {
+        const tr = t.tree("calls");
+        tr.node("a", "f(2)");
+        tr.node("b", "f(1)", "a");
+        tr.node("c", "f(0)", "a");
+        tr.sub("b", "= 1");
+        tr.mark("c", "bad");
+        const bt = t.tree("bst");
+        bt.node("5", "5");
+        bt.node("7", "7", "5", "right");
+        t.at("one", "built");
+      },
+      {},
+    );
+    expect(run.frames[0]!.structs.calls).toEqual({
+      kind: "tree",
+      root: "a",
+      nodes: [
+        { id: "a", label: "f(2)", children: ["b", "c"], mark: null },
+        { id: "b", label: "f(1)", sub: "= 1", children: [], mark: null },
+        { id: "c", label: "f(0)", children: [], mark: "bad" },
+      ],
+    });
+    expect(run.frames[0]!.structs.bst).toEqual({
+      kind: "tree",
+      root: "5",
+      nodes: [
+        { id: "5", label: "5", left: null, right: "7", mark: null },
+        { id: "7", label: "7", left: null, right: null, mark: null },
+      ],
+    });
+  });
+});
