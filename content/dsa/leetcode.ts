@@ -47,6 +47,11 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "delete-the-middle-node-of-a-linked-list", title: "Delete the Middle Node of a Linked List", evidence: "LeetCode 75" },
   { slug: "merge-two-sorted-lists", title: "Merge Two Sorted Lists", evidence: "Top Interview 150, Top 100 Liked" },
   { slug: "odd-even-linked-list", title: "Odd Even Linked List", evidence: "LeetCode 75" },
+  { slug: "valid-parentheses", title: "Valid Parentheses", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "removing-stars-from-a-string", title: "Removing Stars From a String", evidence: "LeetCode 75" },
+  { slug: "daily-temperatures", title: "Daily Temperatures", evidence: "LeetCode 75, Top 100 Liked" },
+  { slug: "number-of-recent-calls", title: "Number of Recent Calls", evidence: "LeetCode 75" },
+  { slug: "asteroid-collision", title: "Asteroid Collision", evidence: "LeetCode 75" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;

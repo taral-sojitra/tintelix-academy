@@ -9,11 +9,13 @@ const WHOLE = /^-?\d+$/;
 /** Checks one field's value; returns the plain-words problem, or null. */
 function problem(field: Field, value: unknown): string | null {
   if (field.kind === "text") {
-    if (typeof value !== "string") return "Give some letters.";
-    const bad = [...value].find((ch) => ch < "a" || ch > "z");
-    if (bad !== undefined) return `Use the letters a to z only: “${bad}” isn't one.`;
-    if (value.length > field.length[1]) return `Keep it to ${field.length[1]} letters so every cell fits.`;
-    if (value.length < field.length[0]) return `Give at least ${field.length[0]} letter${field.length[0] === 1 ? "" : "s"}.`;
+    const brackets = field.alphabet === "brackets";
+    const unit = brackets ? "bracket" : "letter";
+    if (typeof value !== "string") return `Give some ${unit}s.`;
+    const bad = [...value].find((ch) => (brackets ? !"()[]{}".includes(ch) : ch < "a" || ch > "z"));
+    if (bad !== undefined) return brackets ? `Use only the brackets ( ) [ ] { }: “${bad}” isn't one.` : `Use the letters a to z only: “${bad}” isn't one.`;
+    if (value.length > field.length[1]) return `Keep it to ${field.length[1]} ${unit}s so every cell fits.`;
+    if (value.length < field.length[0]) return `Give at least ${field.length[0]} ${unit}${field.length[0] === 1 ? "" : "s"}.`;
     return null;
   }
   if (field.kind === "int") {

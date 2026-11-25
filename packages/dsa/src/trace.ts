@@ -67,6 +67,23 @@ export interface TList {
   clearMarks(): void;
 }
 
+/** A stack (last in, first out) or a queue (first in, first out); index 0 is the bottom or the front. */
+export interface TSeq {
+  readonly id: string;
+  readonly size: number;
+  push(v: Value): void;
+  mark(i: number, m: Mark | null): void;
+  clearMarks(): void;
+}
+export interface TStack extends TSeq {
+  pop(): Value;
+  peek(): Value;
+}
+export interface TQueue extends TSeq {
+  shift(): Value;
+  front(): Value;
+}
+
 export interface TPointer {
   readonly at: number;
   move(by: number): void;
@@ -87,6 +104,8 @@ export interface Tracer {
   calls(id: string): TCalls;
   tree(id: string): TTree;
   list(id: string): TList;
+  stack(id: string): TStack;
+  queue(id: string): TQueue;
   pointer(name: string, on: TArray, at: number): TPointer;
   mark(id: string, index: number, mark: Mark | null): void;
   result(value: unknown): void;
@@ -119,6 +138,7 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
   type Node = { label: string; sub: string | null; children: string[]; left: string | null; right: string | null; mark: Mark | null };
   const trees = new Map<string, { root: string | null; binary: boolean; nodes: Map<string, Node> }>();
   const lists = new Map<string, { head: string | null; nodes: Map<string, Omit<ListNode, "id">>; tags: Map<string, string> }>();
+  const seqs = new Map<string, { kind: "stack" | "queue"; items: Value[]; marks: (Mark | null)[] }>();
   const pointers: { name: string; on: string; at: number; hidden: boolean }[] = [];
   const vars: Record<string, Value> = {};
   let steps = 0;
@@ -147,6 +167,7 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
         nodes: [...l.nodes].map(([nid, n]) => ({ id: nid, ...n })),
         tags: [...l.tags].map(([name, at]) => ({ name, at })),
       };
+    for (const [id, q] of seqs) out[id] = { kind: q.kind, items: [...q.items], marks: [...q.marks] };
     for (const [id, c] of stacks) out[id] = { kind: "calls", frames: c.map((f) => ({ ...f })) };
     for (const [id, m] of maps) out[id] = { kind: "map", entries: [...m.entries], marks: [...m.entries.keys()].map((k) => m.marks.get(k) ?? null) };
     return out;
@@ -289,6 +310,48 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
           if (n) n.mark = m;
         },
         clearMarks: () => l.nodes.forEach((n) => (n.mark = null)),
+      };
+    },
+    stack(id) {
+      const q = { kind: "stack" as const, items: [] as Value[], marks: [] as (Mark | null)[] };
+      seqs.set(id, q);
+      return {
+        id,
+        get size() {
+          return q.items.length;
+        },
+        push: (v) => {
+          q.items.push(v);
+          q.marks.push(null);
+        },
+        pop: () => {
+          q.marks.pop();
+          return q.items.pop() ?? null;
+        },
+        peek: () => q.items.at(-1) ?? null,
+        mark: (i, m) => void (i >= 0 && i < q.marks.length && (q.marks[i] = m)),
+        clearMarks: () => q.marks.fill(null),
+      };
+    },
+    queue(id) {
+      const q = { kind: "queue" as const, items: [] as Value[], marks: [] as (Mark | null)[] };
+      seqs.set(id, q);
+      return {
+        id,
+        get size() {
+          return q.items.length;
+        },
+        push: (v) => {
+          q.items.push(v);
+          q.marks.push(null);
+        },
+        shift: () => {
+          q.marks.shift();
+          return q.items.shift() ?? null;
+        },
+        front: () => q.items[0] ?? null,
+        mark: (i, m) => void (i >= 0 && i < q.marks.length && (q.marks[i] = m)),
+        clearMarks: () => q.marks.fill(null),
       };
     },
     pointer(name, on, at) {

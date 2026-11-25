@@ -14,7 +14,9 @@ export type Snapshot =
   | { kind: "map"; entries: [string, Value][]; marks: (Mark | null)[] }
   | { kind: "calls"; frames: CallFrame[] }
   | { kind: "tree"; root: string | null; nodes: TreeNode[] }
-  | { kind: "list"; head: string | null; nodes: ListNode[]; tags: { name: string; at: string }[] };
+  | { kind: "list"; head: string | null; nodes: ListNode[]; tags: { name: string; at: string }[] }
+  | { kind: "stack"; items: Value[]; marks: (Mark | null)[] }
+  | { kind: "queue"; items: Value[]; marks: (Mark | null)[] };
 
 /** A linked-list node; nodes keep the order they were made in, so a re-pointed arrow shows. */
 export interface ListNode {
@@ -76,7 +78,7 @@ export const Field = z.discriminatedUnion("kind", [
     distinct: z.boolean().optional(),
   }),
   z.object({ kind: z.literal("int"), label: z.string().min(1), min: z.number().int(), max: z.number().int() }),
-  z.object({ kind: z.literal("text"), label: z.string().min(1), alphabet: z.literal("a-z"), length: z.tuple([z.number().int().min(0), z.number().int().positive()]) }),
+  z.object({ kind: z.literal("text"), label: z.string().min(1), alphabet: z.enum(["a-z", "brackets"]), length: z.tuple([z.number().int().min(0), z.number().int().positive()]) }),
 ]);
 export type Field = z.infer<typeof Field>;
 export const InputSpec = z.record(z.string(), Field);

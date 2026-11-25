@@ -983,3 +983,17 @@
 .tx-struct .ts-list .m-found rect { fill: var(--green-soft); stroke: var(--green); stroke-width: 3; }
 .tx-struct .ts-list .m-visited rect { fill: var(--border); }
 .tx-struct .ts-list .m-bad rect { fill: var(--red-soft); stroke: var(--red-ink); }
+/* Stacks: a column, top first. Queues: a row, front on the left. */
+.tx-struct .ts-stack { display: grid; gap: 4px; align-content: start; justify-self: start; min-width: 96px; }
+.tx-struct .ts-stack ol { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.tx-struct .ts-stack li, .tx-struct .ts-queue li { display: grid; place-items: center; min-width: 44px; height: 34px; padding: 0 10px; background: var(--node-bg); border: 1px solid var(--node-stroke); border-radius: 8px; font: 600 15px/1 var(--mono); color: var(--node-ink); transition: background-color .2s; }
+.tx-struct .ts-stack li:first-child:not(.ts-empty) { box-shadow: inset 0 -3px 0 var(--primary); }
+.tx-struct .ts-stack li.more, .tx-struct .ts-stack li.ts-empty, .tx-struct .ts-queue li.ts-empty { background: none; border-style: dashed; color: var(--muted); font-weight: 500; font-size: 13px; }
+.tx-struct .ts-queue { display: grid; gap: 4px; min-width: 0; }
+.tx-struct .ts-qrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tx-struct .ts-qrow ol { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; flex-wrap: wrap; }
+.tx-struct .ts-qend { font: 600 11px/1 var(--mono); color: var(--label); }
+.tx-struct .ts-stack li.m-active, .tx-struct .ts-queue li.m-active, .tx-struct .ts-stack li.m-compare, .tx-struct .ts-queue li.m-compare { background: var(--primary-soft); box-shadow: inset 0 0 0 2px var(--primary); }
+.tx-struct .ts-stack li.m-found, .tx-struct .ts-queue li.m-found, .tx-struct .ts-stack li.m-done, .tx-struct .ts-queue li.m-done { background: var(--green-soft); color: var(--green-ink); }
+.tx-struct .ts-stack li.m-bad, .tx-struct .ts-queue li.m-bad { background: var(--red-soft); color: var(--red-ink); }
+.tx-struct .ts-stack li.m-dim, .tx-struct .ts-queue li.m-dim { opacity: 0.4; }

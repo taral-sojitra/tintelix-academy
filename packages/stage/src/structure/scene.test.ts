@@ -178,3 +178,26 @@ describe("createStructureScene lists", () => {
     expect(el.querySelector("path.ts-link")!.getAttribute("class")).toBe("ts-link back");
   });
 });
+
+describe("createStructureScene stacks and queues", () => {
+  it("draws a stack top first and a queue front first, labelled", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(
+      frame({
+        structs: { stack: { kind: "stack", items: ["(", "["], marks: [null, "active"] }, queue: { kind: "queue", items: [1, 2, 3], marks: [null, null, null] } },
+        pointers: [],
+      }),
+    );
+    expect([...el.querySelectorAll(".ts-stack li")].map((li) => [li.textContent, li.className])).toEqual([
+      ["[", "m-active"],
+      ["(", ""],
+    ]);
+    expect([...el.querySelectorAll(".ts-queue li b")].map((b) => b.textContent)).toEqual(["1", "2", "3"]);
+    expect(el.querySelector(".ts-queue")!.textContent).toContain("front");
+  });
+  it("says an empty stack is empty", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(frame({ structs: { stack: { kind: "stack", items: [], marks: [] } }, pointers: [] }));
+    expect(el.querySelector(".ts-stack .ts-empty")!.textContent).toBe("empty");
+  });
+});

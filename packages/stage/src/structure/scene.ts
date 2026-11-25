@@ -165,6 +165,35 @@ export function createStructureScene(root: HTMLElement): StructureScene {
     b.append(svg);
   }
 
+  /** The newest stack items shown; the rest are counted. */
+  const STACK_SHOWN = 8;
+
+  function drawStack(id: string, snap: Extract<Snapshot, { kind: "stack" }>) {
+    const b = box(id, "stack", "ts-stack");
+    b.replaceChildren();
+    el("span", "ts-name", b).textContent = `${id} · top`;
+    const ol = el("ol", "", b);
+    if (!snap.items.length) el("li", "ts-empty", ol).textContent = "empty";
+    const from = Math.max(0, snap.items.length - STACK_SHOWN);
+    for (let i = snap.items.length - 1; i >= from; i--) el("li", snap.marks[i] ? `m-${snap.marks[i]}` : "", ol).textContent = text(snap.items[i]!);
+    if (from > 0) el("li", "more", ol).textContent = `${from} more below`;
+  }
+
+  function drawQueue(id: string, snap: Extract<Snapshot, { kind: "queue" }>) {
+    const b = box(id, "queue", "ts-queue");
+    b.replaceChildren();
+    el("span", "ts-name", b).textContent = id;
+    const row = el("div", "ts-qrow", b);
+    el("span", "ts-qend", row).textContent = "front";
+    const ol = el("ol", "", row);
+    if (!snap.items.length) el("li", "ts-empty", ol).textContent = "empty";
+    snap.items.forEach((v, i) => {
+      const li = el("li", snap.marks[i] ? `m-${snap.marks[i]}` : "", ol);
+      el("b", "", li).textContent = text(v);
+    });
+    el("span", "ts-qend", row).textContent = "back";
+  }
+
   /** List layout, in SVG units. */
   const STEP = 92;
   const BOX = { w: 52, h: 36, top: 30 };
@@ -344,6 +373,8 @@ export function createStructureScene(root: HTMLElement): StructureScene {
         else if (snap.kind === "map") drawMap(id, snap);
         else if (snap.kind === "calls") drawCalls(id, snap);
         else if (snap.kind === "list") drawList(id, snap);
+        else if (snap.kind === "stack") drawStack(id, snap);
+        else if (snap.kind === "queue") drawQueue(id, snap);
         else drawTree(id, snap);
       }
 
