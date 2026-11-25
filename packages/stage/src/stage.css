@@ -901,7 +901,7 @@
 .tx-struct .ts-main { container-type: inline-size; display: grid; gap: 22px; min-width: 0; }
 .tx-struct .ts-array { --cw: clamp(26px, calc((100cqi - 8px) / var(--n)), 52px); display: grid; gap: 4px; justify-items: start; }
 .tx-struct .ts-name { font: 600 11px/1 var(--mono); color: var(--label); letter-spacing: 0.04em; }
-.tx-struct .ts-row { display: grid; grid-template-columns: repeat(var(--n), var(--cw)); margin: 0; padding: 0; list-style: none; }
+.tx-struct .ts-row { display: grid; grid-template-columns: repeat(var(--n), var(--cw)); margin: 14px 0 0; padding: 0; list-style: none; }
 .tx-struct .ts-cell { position: relative; display: grid; place-items: center; height: var(--cw); margin-left: -1px; background: var(--node-bg); border: 1px solid var(--node-stroke); color: var(--node-ink); transition: background-color .2s, box-shadow .2s, opacity .2s; }
 .tx-struct .ts-cell:first-child { margin-left: 0; border-radius: 8px 0 0 8px; }
 .tx-struct .ts-cell:last-child { border-radius: 0 8px 8px 0; }

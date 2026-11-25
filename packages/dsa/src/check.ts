@@ -3,7 +3,9 @@ import ts from "typescript";
 import { quotedOutputs, type DsaLesson } from "@tintelix/schema";
 import { argsFor, checkValue } from "./input";
 import { parseListing, siteLiterals } from "./listing";
-import { stepSlice } from "./play";
+import { runCounts, stepSlice } from "./play";
+
+export { runCounts };
 import { trace, type Algo } from "./trace";
 
 /** Build-time only: imports the TypeScript compiler and Node's child_process, so the page never loads it. */
@@ -51,18 +53,6 @@ export function runPyListing(code: string, args: unknown[]): unknown {
   const r = spawnSync("python3", ["-I", "-c", HARNESS], { input: JSON.stringify({ code, args }), encoding: "utf8", timeout: 10_000 });
   if (r.status !== 0) throw new Error(r.stderr || r.error?.message || "python3 failed");
   return JSON.parse(r.stdout);
-}
-
-/** Each run's final step count on a preset, as the outputs step text quotes: `{slowSteps}`. */
-export function runCounts(lesson: DsaLesson, presetId: string, algos: Record<string, Algo>): Record<string, number> {
-  const preset = lesson.presets.find((p) => p.id === presetId);
-  const out: Record<string, number> = {};
-  if (!preset) return out;
-  for (const [name, run] of Object.entries(lesson.runs)) {
-    const algo = algos[run.algo];
-    if (algo) out[`${name}Steps`] = trace(algo, preset.input).frames.at(-1)?.steps ?? 0;
-  }
-  return out;
 }
 
 /**
