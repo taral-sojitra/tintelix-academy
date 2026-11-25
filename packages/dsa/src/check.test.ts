@@ -119,6 +119,46 @@ describe("checkDsaLesson", () => {
   });
 });
 
+describe("checkDsaLesson with several runs", () => {
+  function countPositive(t: Tracer, { nums }: { nums: number[] }) {
+    let n = 0;
+    for (const x of nums) if (x > 0) n++;
+    t.at("count", `${n} positive`);
+    t.result(n);
+  }
+  const COUNT_TS = `export function countPositive(nums: number[]): number {
+  nums.push(-1);
+  return nums.filter((x) => x > 0).length; // @count
+}`;
+  const COUNT_PY = `def count_positive(nums):
+    return len([x for x in nums if x > 0])  # @count`;
+  const two = (): DsaLesson => {
+    const l = base();
+    l.input = { ...l.input, k: { kind: "int", label: "K", min: 0, max: 9 } };
+    l.runs = { slow: { ...l.runs.slow!, args: ["nums"] }, count: { algo: "countPositive", label: "Count", listing: "count", time: "O(n)", space: "O(1)", args: ["nums"] } };
+    l.presets = [
+      { id: "example", label: "Example", input: { nums: [-2, -1, 3, 4], k: 1 }, expect: null, expectByRun: { slow: 2, count: 2 } },
+      { id: "empty", label: "Empty", input: { nums: [], k: 1 }, expect: null, expectByRun: { slow: -1, count: 0 }, edge: "empty" },
+    ];
+    return l;
+  };
+  const twoCode = { algos: { firstPositive, countPositive }, listings: { scan: { ts: TS, py: PY }, count: { ts: COUNT_TS, py: COUNT_PY } } };
+
+  it("checks each run against its own expected result, with only the arguments it names", () => {
+    expect(checkDsaLesson(two(), twoCode, registry, 1)).toEqual([]);
+  });
+  it("reports a run whose own expected result is wrong", () => {
+    const l = two();
+    l.presets[0]!.expectByRun = { slow: 2, count: 5 };
+    expect(checkDsaLesson(l, twoCode, registry, 1)).toEqual(["dsa-fixture: run count on preset example returned 2, expected 5", "dsa-fixture: listing count (ts) on preset example returned 2, expected 5"]);
+  });
+  it("never lets a listing change a preset's input", () => {
+    const l = two();
+    checkDsaLesson(l, twoCode, registry, 1);
+    expect(l.presets[0]!.input.nums).toEqual([-2, -1, 3, 4]);
+  });
+});
+
 describe("runTsListing, runCounts and stepSlice", () => {
   it("runs a TypeScript listing", () => {
     expect(runTsListing(TS, [[-1, 5]])).toBe(1);

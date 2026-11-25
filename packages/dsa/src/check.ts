@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import ts from "typescript";
 import { quotedOutputs, type DsaLesson } from "@tintelix/schema";
-import { argsFor, checkValue } from "./input";
+import { argsFor, checkValue, expectedFor } from "./input";
 import { parseListing, siteLiterals } from "./listing";
 import { runCounts, stepSlice } from "./play";
 
@@ -66,6 +66,7 @@ export function checkDsaLesson(lesson: DsaLesson, code: LessonCode, registry: re
 
   if (RESERVED_SLUGS.includes(lesson.slug)) say(`slug ${lesson.slug} is kept for a DSA page`);
   for (const p of lesson.presets) for (const m of checkValue(lesson.input, p.input)) say(`preset ${p.id}: ${m}`);
+  for (const [name, run] of Object.entries(lesson.runs)) for (const a of run.args ?? []) if (!(a in lesson.input)) say(`run ${name} takes ${a}, which isn't an input field`);
   if (!lesson.presets.some((p) => p.edge)) say("no preset is an edge case");
 
   for (const [name, run] of Object.entries(lesson.runs)) {
@@ -76,9 +77,10 @@ export function checkDsaLesson(lesson: DsaLesson, code: LessonCode, registry: re
     }
     const emitted = new Set(siteLiterals(algo.toString()));
     for (const p of lesson.presets) {
-      const t = trace(algo, p.input);
+      const t = trace(algo, structuredClone(p.input));
+      const want = expectedFor(p, name);
       if (t.stopped) say(`run ${name} on preset ${p.id} stopped at the frame limit`);
-      else if (!ok(p.input, t.result, p.expect)) say(`run ${name} on preset ${p.id} returned ${show(t.result)}, expected ${show(p.expect)}`);
+      else if (!ok(p.input, t.result, want)) say(`run ${name} on preset ${p.id} returned ${show(t.result)}, expected ${show(want)}`);
       for (const f of t.frames) emitted.add(f.site);
     }
     const listing = code.listings[run.listing];
@@ -93,8 +95,9 @@ export function checkDsaLesson(lesson: DsaLesson, code: LessonCode, registry: re
     }
     for (const p of lesson.presets) {
       try {
-        const got = runTsListing(parseListing(listing.ts, "ts").code, argsFor(lesson.input, p.input));
-        if (!ok(p.input, got, p.expect)) say(`listing ${run.listing} (ts) on preset ${p.id} returned ${show(got)}, expected ${show(p.expect)}`);
+        const want = expectedFor(p, name);
+        const got = runTsListing(parseListing(listing.ts, "ts").code, argsFor(lesson.input, p.input, run.args));
+        if (!ok(p.input, got, want)) say(`listing ${run.listing} (ts) on preset ${p.id} returned ${show(got)}, expected ${show(want)}`);
       } catch (e) {
         say(`listing ${run.listing} (ts) on preset ${p.id} failed: ${(e as Error).message}`);
       }

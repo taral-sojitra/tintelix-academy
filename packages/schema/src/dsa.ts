@@ -8,7 +8,9 @@ export const MARKS = ["active", "compare", "done", "visited", "queued", "found",
 export type Mark = (typeof MARKS)[number];
 
 /** One structure's state in a frame. More kinds arrive with the lessons that first need them (LLD §12). */
-export type Snapshot = { kind: "array"; values: Value[]; marks: (Mark | null)[] };
+export type Snapshot =
+  | { kind: "array"; values: Value[]; marks: (Mark | null)[] }
+  | { kind: "grid"; rows: Value[][]; marks: (Mark | null)[][] };
 
 /** A named index shown under a structure, such as `left` under cell 3. */
 export interface Pointer {
@@ -57,6 +59,8 @@ export const DsaRun = z.object({
   listing: z.string().min(1),
   time: z.string().min(1),
   space: z.string().min(1),
+  /** The input fields the listing takes, in order; all of them when absent. */
+  args: z.array(z.string().min(1)).optional(),
 });
 export type DsaRun = z.infer<typeof DsaRun>;
 
@@ -65,6 +69,8 @@ export const DsaPreset = z.object({
   label: z.string().min(1),
   input: z.record(z.string(), z.unknown()),
   expect: z.unknown(),
+  /** Per-run expected results, for a lesson whose runs answer different questions. */
+  expectByRun: z.record(z.string(), z.unknown()).optional(),
   edge: z.enum(["empty", "one", "dupes", "none", "worst"]).optional(),
 });
 export type DsaPreset = z.infer<typeof DsaPreset>;

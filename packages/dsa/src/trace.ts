@@ -13,6 +13,17 @@ export interface TArray {
   clearMarks(): void;
 }
 
+/** A grid of rows the tracer watches; cells start empty. */
+export interface TGrid {
+  readonly id: string;
+  readonly rows: number;
+  readonly cols: number;
+  get(r: number, c: number): Value;
+  put(r: number, c: number, v: Value): void;
+  mark(r: number, c: number, m: Mark | null): void;
+  clearMarks(): void;
+}
+
 /** A named index into an array, drawn under the cell it points at. */
 export interface TPointer {
   readonly at: number;
@@ -29,6 +40,7 @@ export interface Tracer {
   /** A variable shown in the data panel. */
   set(name: string, value: Value): void;
   array(id: string, values: Value[]): TArray;
+  grid(id: string, rows: number, cols: number): TGrid;
   pointer(name: string, on: TArray, at: number): TPointer;
   mark(id: string, index: number, mark: Mark | null): void;
   result(value: unknown): void;
@@ -55,6 +67,7 @@ interface ArrayState {
 export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = FRAME_LIMIT): Trace {
   const frames: Frame[] = [];
   const arrays = new Map<string, ArrayState>();
+  const grids = new Map<string, { rows: Value[][]; marks: (Mark | null)[][] }>();
   const pointers: { name: string; on: string; at: number; hidden: boolean }[] = [];
   const vars: Record<string, Value> = {};
   let steps = 0;
@@ -63,6 +76,7 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
   const snapshot = (): Record<string, Snapshot> => {
     const out: Record<string, Snapshot> = {};
     for (const [id, a] of arrays) out[id] = { kind: "array", values: [...a.values], marks: [...a.marks] };
+    for (const [id, g] of grids) out[id] = { kind: "grid", rows: g.rows.map((r) => [...r]), marks: g.marks.map((r) => [...r]) };
     return out;
   };
   const shownPointers = (): Pointer[] =>
@@ -97,6 +111,24 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
           if (i >= 0 && i < state.marks.length) state.marks[i] = m;
         },
         clearMarks: () => state.marks.fill(null),
+      };
+    },
+    grid(id, rows, cols) {
+      const g = { rows: Array.from({ length: rows }, () => Array<Value>(cols).fill(null)), marks: Array.from({ length: rows }, () => Array<Mark | null>(cols).fill(null)) };
+      grids.set(id, g);
+      const inside = (r: number, c: number) => r >= 0 && r < rows && c >= 0 && c < cols;
+      return {
+        id,
+        rows,
+        cols,
+        get: (r, c) => (inside(r, c) ? g.rows[r]![c]! : null),
+        put: (r, c, v) => {
+          if (inside(r, c)) g.rows[r]![c] = v;
+        },
+        mark: (r, c, m) => {
+          if (inside(r, c)) g.marks[r]![c] = m;
+        },
+        clearMarks: () => g.marks.forEach((row) => row.fill(null)),
       };
     },
     pointer(name, on, at) {

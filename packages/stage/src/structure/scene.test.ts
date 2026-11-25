@@ -73,3 +73,18 @@ describe("createStructureScene", () => {
     expect(el.innerHTML).toBe("");
   });
 });
+
+describe("createStructureScene grids", () => {
+  it("draws a grid's rows and columns with marks", () => {
+    const el = document.createElement("div");
+    const f = frame({ structs: { g: { kind: "grid", rows: [[1, 2, 3], [4, null, null]], marks: [[null, "active", null], [null, null, null]] } }, pointers: [] });
+    createStructureScene(el).render(f);
+    const rows = el.querySelectorAll(".ts-grid[data-id='g'] tbody tr");
+    expect(rows).toHaveLength(2);
+    expect([...rows[0]!.querySelectorAll("td")].map((c) => c.textContent)).toEqual(["1", "2", "3"]);
+    expect(rows[1]!.querySelectorAll("td")[1]!.textContent).toBe("");
+    expect(rows[0]!.querySelectorAll("td")[1]!.className).toBe("m-active");
+    expect([...el.querySelectorAll(".ts-grid thead th")].map((c) => c.textContent)).toEqual(["", "0", "1", "2"]);
+    expect([...el.querySelectorAll(".ts-grid tbody th")].map((c) => c.textContent)).toEqual(["0", "1"]);
+  });
+});

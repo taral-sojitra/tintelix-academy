@@ -37,7 +37,7 @@ describe("DSA subject", () => {
     expect(getDsaLesson("how-to-solve")?.id).toBe("dsa-how-to-solve");
     expect(lessonFacts("dsa", "how-to-solve")).toMatchObject({ topic: "How to solve a problem", unit: "step" });
     expect(lessonSummaries("dsa")[0]).toMatchObject({ id: "dsa-how-to-solve", order: 1, available: true, href: "/dsa/how-to-solve" });
-    expect(lessonSummaries("dsa")[1]!.available).toBe(false);
+    expect(lessonSummaries("dsa").filter((l) => l.available).map((l) => l.id)).toEqual(dsaLessons.map((l) => l.id));
   });
 
   it("keeps a registry entry for every problem a lesson links, with its evidence of being free", () => {

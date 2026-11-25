@@ -52,3 +52,9 @@
 .sheet-code { margin: 0; padding: 12px 0; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); overflow-x: auto; }
 .sheet-code div { padding: 0 14px; font: 400 13px/1.6 var(--mono); white-space: pre; }
 .sheet-code div.chg { background: var(--amber-soft); }
+.dsa-card { padding: 14px 16px; border: 1px solid var(--primary); border-radius: var(--radius); background: var(--surface); }
+.dsa-card h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; font-size: 14px; color: var(--primary-ink); }
+.dsa-card dl { margin: 0; display: grid; gap: 8px; }
+.dsa-card dl div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; }
+.dsa-card dt { font: 600 11.5px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.dsa-card dd { margin: 0; font-size: 14px; line-height: 1.45; }

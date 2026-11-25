@@ -10,6 +10,7 @@ import { Icon } from "../Icon";
 import { CodePanel, type Lang } from "./CodePanel";
 import { DsaNarrative, DsaTrack } from "./DsaNarrative";
 import { InputPanel } from "./InputPanel";
+import { PatternCard } from "./PatternCard";
 import { PracticeList } from "./PracticeList";
 import { PredictCard } from "./PredictCard";
 
@@ -226,6 +227,7 @@ export function DsaLessonView({ slug }: { slug: string }) {
             ))}
           </div>
         )}
+        {step.part === "spot" && lesson.card && <PatternCard card={lesson.card} />}
         {step.part === "practice" && <PracticeList practice={lesson.practice} done={ticks} onToggle={toggleTick} />}
         <div className="nav-btns">
           <button type="button" className="btn" onClick={() => go(stepIndex - 1)} disabled={stepIndex === 0}>
