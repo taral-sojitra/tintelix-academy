@@ -1990,11 +1990,90 @@ async def sql_cheatsheet(page):
     return "SELECT cheatsheet shows the syntax card and the mistake to avoid"
 
 
+DSA_READY = ".dsa-scene[data-ready='true']"
+
+
+async def dsa_subject(page):
+    await page.goto(BASE + "/dsa", wait_until="load")
+    await expect(page.get_by_text("24 lessons in 8 modules · 1 open now")).to_be_visible()
+    await expect(page.locator("main a[href='/dsa/how-to-solve']").first).to_be_visible()
+    return "DSA subject page lists 24 lessons in 8 modules, lesson 1 open"
+
+
+async def dsa_intro_flow(page):
+    await page.goto(BASE + "/dsa/how-to-solve", wait_until="load")
+    await expect(page.get_by_role("heading", level=1)).to_have_text("Solve it before you code it")
+    await page.wait_for_selector(DSA_READY, timeout=10000)
+    await expect(page.locator(".dsa-scene .ts-cell b")).to_have_text(["3", "8", "1", "9", "4", "6"])
+    await expect(page.locator(".dsa-code li.lit code")).to_contain_text("function twoSum")
+    await page.locator("body").click(position={"x": 5, "y": 5})
+    for _ in range(3):
+        await page.keyboard.press("ArrowRight")
+    await expect(page.locator(".narr h2")).to_have_text("Step 4: start with the brute force")
+    # Playback pauses on the fifth pair and locks Next until the learner predicts.
+    await expect(page.locator(".dsa-predict.ask")).to_be_visible(timeout=12000)
+    await expect(page.locator(".dsa-note")).to_have_text("3 + 6 = 9, not 10")
+    await expect(page.locator(".nav-btns .btn.primary")).to_be_disabled()
+    await page.locator(".dsa-predict").get_by_role("button", name="6 + 8").click()
+    await expect(page.locator(".dsa-predict .verdict")).to_have_text("Not quite: it's 8 + 1. Watch it play.")
+    await expect(page.locator(".dsa-scene .ts-steps")).to_have_text("Pairs checked: 10", timeout=12000)
+    await expect(page.locator(".dsa-note")).to_have_text("Positions 2 and 3 add up to 10")
+    await expect(page.locator(".narr-body")).to_contain_text("checking 10 pairs")
+    # The same site lights in Python.
+    await expect(page.locator(".dsa-code li.lit code")).to_have_text("        return [i, j];")
+    await page.get_by_role("button", name="Python").click()
+    await expect(page.locator(".dsa-code li.lit code")).to_have_text("                return [i, j]")
+    # A bad custom input is refused in plain words; a good one plays to the pair.
+    form = page.locator(".dsa-form")
+    await form.locator("input[name='nums']").fill("1, x")
+    await form.get_by_role("button", name="Run it").click()
+    await expect(form.locator("small")).to_have_text("“x” isn't a whole number.")
+    await form.locator("input[name='nums']").fill("4, 6")
+    await form.locator("input[name='target']").fill("10")
+    await form.get_by_role("button", name="Run it").click()
+    await expect(page.locator(".dsa-source")).to_contain_text("Playing your input")
+    await expect(page.locator(".dsa-note")).to_have_text("Positions 0 and 1 add up to 10", timeout=8000)
+    await page.locator(".dsa-input").get_by_role("button", name="Empty list").click()
+    await expect(page.locator(".dsa-note")).to_have_text("Every pair checked: no two numbers add up to 5", timeout=8000)
+    await page.get_by_role("button", name="Back to the example").click()
+    await expect(page.locator(".dsa-source")).to_have_count(0)
+    # A reload resumes on the same step, keeps Python and doesn't ask again.
+    await page.reload(wait_until="load")
+    await page.wait_for_selector(DSA_READY, timeout=10000)
+    await expect(page.locator(".narr h2")).to_have_text("Step 4: start with the brute force")
+    await expect(page.locator(".seg button.on")).to_have_text("Python")
+    await expect(page.locator(".dsa-predict.ask")).to_have_count(0)
+    await expect(page.locator(".dsa-scene .ts-steps")).to_have_text("Pairs checked: 10", timeout=12000)
+    return "DSA lesson 1: prediction locks then plays; 10 pairs; Python lights the same line; custom input checked and played; reload resumes"
+
+
+async def dsa_practice_flow(page):
+    await page.goto(BASE + "/dsa/how-to-solve", wait_until="load")
+    await page.wait_for_selector(DSA_READY, timeout=10000)
+    await page.locator(".track .st").nth(7).click()
+    await expect(page.locator(".narr h2")).to_have_text("Your turn: Two Sum on LeetCode")
+    link = page.locator(".dsa-practice a")
+    await expect(link).to_have_text("Two Sum")
+    await expect(link).to_have_attribute("href", "https://leetcode.com/problems/two-sum/")
+    await page.locator(".dsa-practice input").check()
+    await page.reload(wait_until="load")
+    await page.wait_for_selector(DSA_READY, timeout=10000)
+    await expect(page.locator(".dsa-practice input")).to_be_checked()
+    await page.locator(".track .st").nth(4).click()
+    await expect(page.locator(".narr-body")).to_contain_text("it checks all 120 pairs")
+    await expect(page.locator(".dsa-scene .ts-steps")).to_have_text("Pairs checked: 120", timeout=15000)
+    await page.goto(BASE + "/dsa/how-to-solve/cheatsheet", wait_until="load")
+    await expect(page.get_by_role("heading", name="Time and space")).to_be_visible()
+    await expect(page.get_by_text("Every pair: O(n²) time, O(1) extra space")).to_be_visible()
+    await expect(page.locator(".sheet-code div").first).to_have_text("export function twoSum(nums: number[], target: number): number[] | null {")
+    return "DSA lesson 1: LeetCode tick survives a reload; worst case counts 120 pairs; cheatsheet shows time, space and code"
+
+
 async def main() -> None:
     failed = 0
     async with async_playwright() as p:
         browser = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
-        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, vercel_scripts, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow, net_firewall_flow, net_vpn_flow, net_latency_flow, net_bandwidth_flow]:
+        for check in [lesson_flow, chart_matches_model, unknown_lesson_404, cheatsheet_numbers, light_pages_skip_engine, cdn_flow, cdn_resume_old_price, cdn_cheatsheet, lesson_switch, latency_flow, latency_cheatsheet, home_start_here, vercel_scripts, lesson_switch_latency, queueing_flow, queueing_cheatsheet, availability_flow, estimation_flow, scaling_flow, lb_flow, proxy_flow, health_flow, session_flow, data_flow, index_flow, repl_flow, shard_flow, ring_flow, bloom_flow, upload_flow, cap_flow, timeline_flow, txn_flow, mq_flow, idem_flow, limit_flow, fanout_flow, gateway_flow, micro_flow, retry_flow, leader_flow, region_flow, method_flow, url_flow, ids_flow, kv_flow, limiter_flow, crawl_flow, search_flow, suggest_flow, notify_flow, feed_flow, chat_flow, nearby_flow, friends_flow, ride_flow, maps_flow, video_flow, sync_flow, objects_flow, email_flow, mqd_flow, metrics_flow, clicks_flow, board_flow, rag_flow, hotel_flow, orders_flow, payment_flow, wallet_flow, exchange_flow, subject_page, sql_subject, sql_flow, sql_timeout, sql_cheatsheet, sql_lessons, net_flow, net_tcpip_flow, net_ip_flow, net_subnet_flow, net_arp_flow, net_dhcp_flow, net_tcpudp_flow, net_handshake_flow, net_ports_flow, net_dns_flow, net_http_flow, net_tls_flow, net_switch_flow, net_routing_flow, net_nat_flow, net_firewall_flow, net_vpn_flow, net_latency_flow, net_bandwidth_flow, dsa_subject, dsa_intro_flow, dsa_practice_flow]:
             ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
             page = await ctx.new_page()
             errors: list[str] = []
