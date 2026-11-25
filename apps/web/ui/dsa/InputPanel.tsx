@@ -8,17 +8,20 @@ import type { DsaPreset, InputSpec } from "@tintelix/schema";
 export function InputPanel({
   presets,
   spec,
+  initial,
   active,
   onPreset,
   onCustom,
 }: {
   presets: DsaPreset[];
   spec: InputSpec;
+  /** The values the form starts with: the step's preset. */
+  initial: Record<string, unknown>;
   active: string | null;
   onPreset: (p: DsaPreset) => void;
   onCustom: (value: Record<string, unknown>) => void;
 }) {
-  const [raw, setRaw] = useState(() => formatInput(spec, presets[0]!.input));
+  const [raw, setRaw] = useState(() => formatInput(spec, initial));
   const [errors, setErrors] = useState<Record<string, string>>({});
   return (
     <section className="dsa-input" aria-labelledby="dsa-input-h">

@@ -67,3 +67,12 @@ describe("text fields", () => {
     expect(formatInput(words, { s: "abc" })).toEqual({ s: "abc" });
   });
 });
+
+describe("bracket text fields", () => {
+  const spec: InputSpec = { s: { kind: "text", label: "Brackets", alphabet: "brackets", length: [0, 16] } };
+  it("reads brackets and names anything else", () => {
+    expect(parseInput(spec, { s: " {[()]} " })).toEqual({ ok: true, value: { s: "{[()]}" } });
+    expect(parseInput(spec, { s: "(a)" })).toEqual({ ok: false, errors: { s: "Use only the brackets ( ) [ ] { }: “a” isn't one." } });
+    expect(parseInput(spec, { s: "()".repeat(9) })).toEqual({ ok: false, errors: { s: "Keep it to 16 brackets so every cell fits." } });
+  });
+});

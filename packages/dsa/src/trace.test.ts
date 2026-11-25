@@ -199,3 +199,31 @@ describe("trace lists", () => {
     expect(run.frames[1]!.structs.list).toMatchObject({ head: "b", nodes: [{ value: 9, next: null }, { next: "a" }], tags: [] });
   });
 });
+
+describe("trace stacks and queues", () => {
+  it("records a stack bottom first and a queue front first, with marks", () => {
+    const run = trace(
+      (t: Tracer) => {
+        const s = t.stack("stack");
+        const q = t.queue("queue");
+        s.push("(");
+        s.push("[");
+        s.mark(1, "active");
+        q.push(1);
+        q.push(2);
+        t.at("one", "pushed");
+        expect(s.pop()).toBe("[");
+        expect(s.peek()).toBe("(");
+        expect(q.shift()).toBe(1);
+        expect(q.front()).toBe(2);
+        t.at("two", "taken");
+      },
+      {},
+    );
+    expect(run.frames[0]!.structs).toEqual({
+      stack: { kind: "stack", items: ["(", "["], marks: [null, "active"] },
+      queue: { kind: "queue", items: [1, 2], marks: [null, null] },
+    });
+    expect(run.frames[1]!.structs).toEqual({ stack: { kind: "stack", items: ["("], marks: [null] }, queue: { kind: "queue", items: [2], marks: [null] } });
+  });
+});
