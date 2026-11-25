@@ -965,3 +965,21 @@
 .tx-struct .ts-tree .m-dim { opacity: 0.4; }
 /* A tree and its call stack sit side by side when there's room. */
 @media (min-width: 641px) { .tx-struct .ts-main:has(> .ts-tree):has(> .ts-calls) { grid-template-columns: minmax(0, 1fr) auto; align-items: start; } }
+/* Linked lists: boxes in the order made, arrows for next. A back-link arcs under the row. */
+.tx-struct .ts-list { display: grid; gap: 4px; min-width: 0; overflow-x: auto; }
+.tx-struct .ts-list svg { width: 100%; max-width: calc(var(--w) * 1px); min-width: calc(var(--w) * 0.6px); height: auto; overflow: visible; }
+.tx-struct .ts-list rect { fill: var(--node-bg); stroke: var(--node-stroke); stroke-width: 1.5; transition: fill .2s; }
+.tx-struct .ts-list text { font: 600 15px var(--mono); fill: var(--node-ink); text-anchor: middle; }
+.tx-struct .ts-list text.nil { fill: var(--faint); font-weight: 500; }
+.tx-struct .ts-list .ts-link { fill: none; stroke: var(--node-stroke); stroke-width: 2; }
+.tx-struct .ts-list .ts-link.back { stroke: var(--primary); }
+.tx-struct .ts-list marker path { fill: var(--node-stroke); }
+.tx-struct .ts-list text.ts-tag { font: 700 12px var(--mono); fill: var(--primary-ink); }
+.tx-struct .ts-list text.ts-tag.t1 { fill: var(--cyan); }
+.tx-struct .ts-list text.ts-tag.t2 { fill: var(--green-ink); }
+.tx-struct .ts-list text.ts-tag.head { fill: var(--muted); font-weight: 600; }
+.tx-struct .ts-list .m-active rect, .tx-struct .ts-list .m-compare rect { fill: var(--primary-soft); stroke: var(--primary); stroke-width: 3; }
+.tx-struct .ts-list .m-done rect { fill: var(--green-soft); }
+.tx-struct .ts-list .m-found rect { fill: var(--green-soft); stroke: var(--green); stroke-width: 3; }
+.tx-struct .ts-list .m-visited rect { fill: var(--border); }
+.tx-struct .ts-list .m-bad rect { fill: var(--red-soft); stroke: var(--red-ink); }

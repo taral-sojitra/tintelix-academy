@@ -42,6 +42,11 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "combination-sum", title: "Combination Sum", evidence: "Top Interview 150, Top 100 Liked" },
   { slug: "n-queens-ii", title: "N-Queens II", evidence: "Top Interview 150" },
   { slug: "letter-combinations-of-a-phone-number", title: "Letter Combinations of a Phone Number", evidence: "LeetCode 75, Top Interview 150" },
+  { slug: "reverse-linked-list", title: "Reverse Linked List", evidence: "LeetCode 75, Top 100 Liked" },
+  { slug: "linked-list-cycle", title: "Linked List Cycle", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "delete-the-middle-node-of-a-linked-list", title: "Delete the Middle Node of a Linked List", evidence: "LeetCode 75" },
+  { slug: "merge-two-sorted-lists", title: "Merge Two Sorted Lists", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "odd-even-linked-list", title: "Odd Even Linked List", evidence: "LeetCode 75" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;

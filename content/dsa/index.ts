@@ -18,6 +18,9 @@ import { listings as howToSolveListings } from "./how-to-solve/listings";
 import * as twoPointersAlgos from "./two-pointers/algo";
 import { twoPointers } from "./two-pointers/lesson";
 import { listings as twoPointersListings } from "./two-pointers/listings";
+import * as linkedListsAlgos from "./linked-lists/algo";
+import { linkedLists } from "./linked-lists/lesson";
+import { listings as linkedListsListings } from "./linked-lists/listings";
 import * as recursionAlgos from "./recursion/algo";
 import { recursion } from "./recursion/lesson";
 import { listings as recursionListings } from "./recursion/listings";
@@ -29,7 +32,7 @@ import { strings } from "./strings/lesson";
 import { listings as stringsListings } from "./strings/listings";
 
 /** Every written DSA lesson, in teaching order. */
-export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO, strings, hashing, twoPointers, slidingWindow, binarySearch, recursion, backtracking];
+export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO, strings, hashing, twoPointers, slidingWindow, binarySearch, recursion, backtracking, linkedLists];
 
 /** Each lesson's algorithms (by export name) and listings (by key), keyed by lesson slug. */
 export const dsaCode: Record<string, { algos: Record<string, Algo>; listings: Record<string, { ts: string; py: string }> }> = {
@@ -42,6 +45,7 @@ export const dsaCode: Record<string, { algos: Record<string, Algo>; listings: Re
   "binary-search": { algos: binarySearchAlgos as Record<string, Algo>, listings: binarySearchListings },
   recursion: { algos: recursionAlgos as Record<string, Algo>, listings: recursionListings },
   backtracking: { algos: backtrackingAlgos as Record<string, Algo>, listings: backtrackingListings },
+  "linked-lists": { algos: linkedListsAlgos as Record<string, Algo>, listings: linkedListsListings },
 };
 
 export { dsa } from "./subject";

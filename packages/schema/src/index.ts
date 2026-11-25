@@ -6,4 +6,4 @@ export { Control, Lesson, SCENE_KINDS, SCENE_MODES, SceneNode, SceneSpec, Step, 
 export type { Inputs, Model, Outputs } from "./model";
 export { LessonStub, Subject, SubjectId, SUBJECT_IDS } from "./subject";
 export { SqlLesson, SqlTask } from "./sql";
-export { Anchor, DsaLesson, DsaPractice, DsaPredict, DsaPreset, DsaRun, DsaStep, Field, InputSpec, MARKS, PatternCard, type CallFrame, type Frame, type Mark, type TreeNode, type Pointer, type Snapshot, type Value } from "./dsa";
+export { Anchor, DsaLesson, DsaPractice, DsaPredict, DsaPreset, DsaRun, DsaStep, Field, InputSpec, MARKS, PatternCard, type CallFrame, type Frame, type ListNode, type Mark, type TreeNode, type Pointer, type Snapshot, type Value } from "./dsa";

@@ -165,6 +165,82 @@ export function createStructureScene(root: HTMLElement): StructureScene {
     b.append(svg);
   }
 
+  /** List layout, in SVG units. */
+  const STEP = 92;
+  const BOX = { w: 52, h: 36, top: 30 };
+  const arrowId = `ts-arrow-${Math.random().toString(36).slice(2, 8)}`;
+
+  function drawList(id: string, snap: Extract<Snapshot, { kind: "list" }>) {
+    const b = box(id, "list", "ts-list");
+    b.replaceChildren();
+    el("span", "ts-name", b).textContent = id;
+    if (!snap.nodes.length) {
+      el("span", "ts-empty", b).textContent = "empty";
+      return;
+    }
+    const NS = "http://www.w3.org/2000/svg";
+    const make = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>, parent: Element, textContent?: string) => {
+      const e = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+      if (textContent !== undefined) e.textContent = textContent;
+      parent.append(e);
+      return e;
+    };
+    const index = new Map(snap.nodes.map((n, i) => [n.id, i]));
+    const left = (i: number) => 16 + i * STEP;
+    const mid = BOX.top + BOX.h / 2;
+    const tagsAt = new Map<string, string[]>();
+    for (const t of snap.tags) tagsAt.set(t.at, [...(tagsAt.get(t.at) ?? []), t.name]);
+    const rows = Math.max(0, ...[...tagsAt.values()].map((t) => t.length));
+    const bot = BOX.top + BOX.h;
+    const dipOf = (i: number, j: number) => bot + 18 + Math.min(i - j, 4) * 4;
+    // Tags go below the deepest back-link arc, so the arc never runs through a label.
+    let deepest = bot;
+    snap.nodes.forEach((n, i) => {
+      const j = n.next === null ? undefined : index.get(n.next);
+      if (j !== undefined && j <= i) deepest = Math.max(deepest, dipOf(i, j) - 6);
+    });
+    const tagTop = deepest + 16;
+    const w = 16 + snap.nodes.length * STEP;
+    const h = tagTop + 8 + rows * 16;
+    const svg = make("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": `${id}: ${snap.nodes.length} node${snap.nodes.length === 1 ? "" : "s"}` }, b);
+    svg.style.setProperty("--w", String(w));
+    const marker = make("marker", { id: arrowId, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, make("defs", {}, svg));
+    make("path", { d: "M0,0 L10,5 L0,10 z" }, marker);
+    snap.nodes.forEach((n, i) => {
+      const x = left(i);
+      if (n.next === null) {
+        make("text", { class: "nil", x: x + BOX.w + 14, y: mid + 5 }, svg, "∅");
+        return;
+      }
+      const j = index.get(n.next);
+      if (j === undefined) return;
+      let d: string;
+      let cls = "ts-link";
+      if (j === i + 1) d = `M${x + BOX.w},${mid} L${left(j) - 2},${mid}`;
+      else if (j > i) d = `M${x + BOX.w / 2},${BOX.top} C${x + BOX.w / 2},${BOX.top - 26} ${left(j) + BOX.w / 2},${BOX.top - 26} ${left(j) + BOX.w / 2},${BOX.top - 2}`;
+      else {
+        // Back to the same or an earlier node: an arc under the boxes.
+        cls = "ts-link back";
+        const dip = dipOf(i, j);
+        d = `M${x + BOX.w / 2 + 6},${bot} C${x + BOX.w / 2 + 6},${dip} ${left(j) + BOX.w / 2 - 6},${dip} ${left(j) + BOX.w / 2 - 6},${bot + 2}`;
+      }
+      make("path", { class: cls, d, "marker-end": `url(#${arrowId})` }, svg);
+    });
+    snap.nodes.forEach((n, i) => {
+      const g = make("g", { class: n.mark ? `ts-lnode m-${n.mark}` : "ts-lnode" }, svg);
+      make("rect", { x: left(i), y: BOX.top, width: BOX.w, height: BOX.h, rx: 8 }, g);
+      make("text", { class: "v", x: left(i) + BOX.w / 2, y: mid + 5 }, g, n.value === null ? "—" : String(n.value));
+    });
+    const hi = snap.head === null ? undefined : index.get(snap.head);
+    if (hi !== undefined) make("text", { class: "ts-tag head", x: left(hi) + BOX.w / 2, y: BOX.top - 8 }, svg, "head");
+    for (const [at, names] of tagsAt) {
+      const i = index.get(at);
+      if (i === undefined) continue;
+      names.forEach((name, r) => make("text", { class: `ts-tag t${snap.tags.findIndex((t) => t.name === name) % 4}`, x: left(i) + BOX.w / 2, y: tagTop + r * 16 }, svg, name));
+    }
+  }
+
   /** Rows per column: longer maps wrap into side-by-side tables so the stage stays short. */
   const MAP_ROWS = 8;
 
@@ -267,6 +343,7 @@ export function createStructureScene(root: HTMLElement): StructureScene {
         else if (snap.kind === "grid") drawGrid(id, snap);
         else if (snap.kind === "map") drawMap(id, snap);
         else if (snap.kind === "calls") drawCalls(id, snap);
+        else if (snap.kind === "list") drawList(id, snap);
         else drawTree(id, snap);
       }
 

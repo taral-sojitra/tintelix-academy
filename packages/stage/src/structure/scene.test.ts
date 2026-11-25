@@ -159,3 +159,22 @@ describe("createStructureScene calls and trees", () => {
     expect(x(0)).toBe((x(1) + x(2)) / 2);
   });
 });
+
+describe("createStructureScene lists", () => {
+  const list = (nodes: { id: string; value: number; next: string | null }[], head: string | null, tags: { name: string; at: string }[] = []) =>
+    frame({ structs: { list: { kind: "list", head, nodes: nodes.map((n) => ({ ...n, mark: null })), tags } }, pointers: [] });
+  it("draws a box per node in the order made, an arrow per link, and the head", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(list([{ id: "a", value: 1, next: "b" }, { id: "b", value: 2, next: null }], "a", [{ name: "curr", at: "b" }]));
+    const svg = el.querySelector(".ts-list[data-id='list'] svg")!;
+    expect([...svg.querySelectorAll("g.ts-lnode text.v")].map((t) => t.textContent)).toEqual(["1", "2"]);
+    expect(svg.querySelectorAll("path.ts-link")).toHaveLength(1);
+    expect(svg.querySelector("path.ts-link")!.getAttribute("class")).toBe("ts-link");
+    expect([...svg.querySelectorAll("text.ts-tag")].map((t) => t.textContent)).toEqual(["head", "curr"]);
+  });
+  it("bends a link that points back to an earlier node", () => {
+    const el = document.createElement("div");
+    createStructureScene(el).render(list([{ id: "a", value: 1, next: null }, { id: "b", value: 2, next: "a" }], "b"));
+    expect(el.querySelector("path.ts-link")!.getAttribute("class")).toBe("ts-link back");
+  });
+});

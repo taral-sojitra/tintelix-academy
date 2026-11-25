@@ -1,4 +1,4 @@
-import type { CallFrame, Frame, Mark, Pointer, Snapshot, TreeNode, Value } from "@tintelix/schema";
+import type { CallFrame, Frame, ListNode, Mark, Pointer, Snapshot, TreeNode, Value } from "@tintelix/schema";
 
 /** The most frames one run may record; a run that reaches it is stopped. */
 export const FRAME_LIMIT = 400;
@@ -55,6 +55,18 @@ export interface TTree {
   clearMarks(): void;
 }
 
+/** A linked list: nodes, next links, the head, and named tags (prev, curr, slow, fast) on nodes. */
+export interface TList {
+  readonly id: string;
+  add(id: string, value: Value): void;
+  link(id: string, next: string | null): void;
+  put(id: string, value: Value): void;
+  head(id: string | null): void;
+  tag(name: string, id: string | null): void;
+  mark(id: string, m: Mark | null): void;
+  clearMarks(): void;
+}
+
 export interface TPointer {
   readonly at: number;
   move(by: number): void;
@@ -74,6 +86,7 @@ export interface Tracer {
   map(id: string): TMap;
   calls(id: string): TCalls;
   tree(id: string): TTree;
+  list(id: string): TList;
   pointer(name: string, on: TArray, at: number): TPointer;
   mark(id: string, index: number, mark: Mark | null): void;
   result(value: unknown): void;
@@ -105,6 +118,7 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
   const stacks = new Map<string, CallFrame[]>();
   type Node = { label: string; sub: string | null; children: string[]; left: string | null; right: string | null; mark: Mark | null };
   const trees = new Map<string, { root: string | null; binary: boolean; nodes: Map<string, Node> }>();
+  const lists = new Map<string, { head: string | null; nodes: Map<string, Omit<ListNode, "id">>; tags: Map<string, string> }>();
   const pointers: { name: string; on: string; at: number; hidden: boolean }[] = [];
   const vars: Record<string, Value> = {};
   let steps = 0;
@@ -125,6 +139,13 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
           ...(tr.binary ? { left: n.left, right: n.right } : { children: [...n.children] }),
           mark: n.mark,
         })),
+      };
+    for (const [id, l] of lists)
+      out[id] = {
+        kind: "list",
+        head: l.head,
+        nodes: [...l.nodes].map(([nid, n]) => ({ id: nid, ...n })),
+        tags: [...l.tags].map(([name, at]) => ({ name, at })),
       };
     for (const [id, c] of stacks) out[id] = { kind: "calls", frames: c.map((f) => ({ ...f })) };
     for (const [id, m] of maps) out[id] = { kind: "map", entries: [...m.entries], marks: [...m.entries.keys()].map((k) => m.marks.get(k) ?? null) };
@@ -241,6 +262,33 @@ export function trace<I>(algo: (t: Tracer, input: I) => void, input: I, limit = 
           if (n) n.mark = m;
         },
         clearMarks: () => tr.nodes.forEach((n) => (n.mark = null)),
+      };
+    },
+    list(id) {
+      const l = { head: null as string | null, nodes: new Map<string, Omit<ListNode, "id">>(), tags: new Map<string, string>() };
+      lists.set(id, l);
+      return {
+        id,
+        add: (nid, value) => void l.nodes.set(nid, { value, next: null, mark: null }),
+        link: (nid, next) => {
+          const n = l.nodes.get(nid);
+          if (n) n.next = next;
+        },
+        put: (nid, value) => {
+          const n = l.nodes.get(nid);
+          if (n) n.value = value;
+        },
+        head: (nid) => void (l.head = nid),
+        tag: (name, nid) => {
+          // A tag moved to null leaves the list; a moved tag keeps its place in the order, so labels don't swap rows.
+          if (nid === null) l.tags.delete(name);
+          else l.tags.set(name, nid);
+        },
+        mark: (nid, m) => {
+          const n = l.nodes.get(nid);
+          if (n) n.mark = m;
+        },
+        clearMarks: () => l.nodes.forEach((n) => (n.mark = null)),
       };
     },
     pointer(name, on, at) {

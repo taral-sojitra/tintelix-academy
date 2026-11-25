@@ -165,3 +165,37 @@ describe("trace calls and trees", () => {
     });
   });
 });
+
+describe("trace lists", () => {
+  it("keeps nodes in the order made, with next links, the head and named tags", () => {
+    const run = trace(
+      (t: Tracer) => {
+        const l = t.list("list");
+        l.add("a", 1);
+        l.add("b", 2);
+        l.link("a", "b");
+        l.head("a");
+        l.tag("curr", "b");
+        l.mark("a", "done");
+        t.at("one", "built");
+        l.link("b", "a");
+        l.link("a", null);
+        l.put("a", 9);
+        l.head("b");
+        l.tag("curr", null);
+        t.at("two", "flipped");
+      },
+      {},
+    );
+    expect(run.frames[0]!.structs.list).toEqual({
+      kind: "list",
+      head: "a",
+      nodes: [
+        { id: "a", value: 1, next: "b", mark: "done" },
+        { id: "b", value: 2, next: null, mark: null },
+      ],
+      tags: [{ name: "curr", at: "b" }],
+    });
+    expect(run.frames[1]!.structs.list).toMatchObject({ head: "b", nodes: [{ value: 9, next: null }, { next: "a" }], tags: [] });
+  });
+});
