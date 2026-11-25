@@ -37,6 +37,11 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "climbing-stairs", title: "Climbing Stairs", evidence: "Top Interview 150, Top 100 Liked" },
   { slug: "powx-n", title: "Pow(x, n)", evidence: "Top Interview 150" },
   { slug: "maximum-depth-of-binary-tree", title: "Maximum Depth of Binary Tree", evidence: "LeetCode 75, Top Interview 150" },
+  { slug: "subsets", title: "Subsets", evidence: "Top 100 Liked" },
+  { slug: "permutations", title: "Permutations", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "combination-sum", title: "Combination Sum", evidence: "Top Interview 150, Top 100 Liked" },
+  { slug: "n-queens-ii", title: "N-Queens II", evidence: "Top Interview 150" },
+  { slug: "letter-combinations-of-a-phone-number", title: "Letter Combinations of a Phone Number", evidence: "LeetCode 75, Top Interview 150" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;
