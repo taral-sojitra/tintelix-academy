@@ -9,12 +9,15 @@ import { listings as hashingListings } from "./hashing/listings";
 import * as howToSolveAlgos from "./how-to-solve/algo";
 import { howToSolve } from "./how-to-solve/lesson";
 import { listings as howToSolveListings } from "./how-to-solve/listings";
+import * as twoPointersAlgos from "./two-pointers/algo";
+import { twoPointers } from "./two-pointers/lesson";
+import { listings as twoPointersListings } from "./two-pointers/listings";
 import * as stringsAlgos from "./strings/algo";
 import { strings } from "./strings/lesson";
 import { listings as stringsListings } from "./strings/listings";
 
 /** Every written DSA lesson, in teaching order. */
-export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO, strings, hashing];
+export const dsaLessons: DsaLesson[] = [howToSolve, arraysBigO, strings, hashing, twoPointers];
 
 /** Each lesson's algorithms (by export name) and listings (by key), keyed by lesson slug. */
 export const dsaCode: Record<string, { algos: Record<string, Algo>; listings: Record<string, { ts: string; py: string }> }> = {
@@ -22,6 +25,7 @@ export const dsaCode: Record<string, { algos: Record<string, Algo>; listings: Re
   "arrays-big-o": { algos: arraysAlgos as Record<string, Algo>, listings: arraysListings },
   strings: { algos: stringsAlgos as Record<string, Algo>, listings: stringsListings },
   hashing: { algos: hashingAlgos as Record<string, Algo>, listings: hashingListings },
+  "two-pointers": { algos: twoPointersAlgos as Record<string, Algo>, listings: twoPointersListings },
 };
 
 export { dsa } from "./subject";

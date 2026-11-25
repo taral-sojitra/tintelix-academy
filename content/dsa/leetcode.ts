@@ -18,6 +18,11 @@ export const LEETCODE: LeetCodeProblem[] = [
   { slug: "group-anagrams", title: "Group Anagrams", evidence: "Top Interview 150, Top 100 Liked" },
   { slug: "longest-consecutive-sequence", title: "Longest Consecutive Sequence", evidence: "Top Interview 150, Top 100 Liked" },
   { slug: "subarray-sum-equals-k", title: "Subarray Sum Equals K", evidence: "Top 100 Liked" },
+  { slug: "two-sum-ii-input-array-is-sorted", title: "Two Sum II - Input Array Is Sorted", evidence: "Top Interview 150" },
+  { slug: "container-with-most-water", title: "Container With Most Water", evidence: "LeetCode 75, Top Interview 150" },
+  { slug: "remove-duplicates-from-sorted-array", title: "Remove Duplicates from Sorted Array", evidence: "Top Interview 150" },
+  { slug: "move-zeroes", title: "Move Zeroes", evidence: "LeetCode 75" },
+  { slug: "3sum", title: "3Sum", evidence: "Top Interview 150, Top 100 Liked" },
 ];
 
 export const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;
